@@ -1,0 +1,6 @@
+2.0.0
+-----
+
+Initial version using the Meson build system and containing:
+  - FreeType2 font provider
+  - PNG image provider

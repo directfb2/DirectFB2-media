@@ -1,0 +1,8 @@
+DirectFB2-media is built using Meson and Ninja:
+
+  $ meson build/
+  $ ninja -C build/
+
+Finally, you can install DirectFB2-media using:
+
+  $ ninja -C build/ install
