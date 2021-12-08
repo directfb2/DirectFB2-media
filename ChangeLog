@@ -1,0 +1,11 @@
+commit cbe0a1b32a42b67b78858945147fc3a2bcdcfc37
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Dec 8 11:16:40 2021 +0100
+
+    Add FreeType2 font provider and PNG image provider
+
+commit ad2bc5ae902d6b28a5736936f1476fb3826b0603
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Dec 8 11:04:12 2021 +0100
+
+    Initial revision
