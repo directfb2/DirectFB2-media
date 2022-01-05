@@ -1,3 +1,24 @@
+commit e3aadaf71c101d17dc2ece89ac26f93e51a6cf2c
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jan 5 18:16:54 2022 +0100
+
+    Add FFmpeg video provider
+
+commit 3d9e6afb5bbb6a755038406b3081fd5a3ebfaf14
+Merge: ad2bc5a 3608367
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Dec 8 11:19:51 2021 +0100
+
+    Merge pull request #1 from caramelli/master
+    
+    Add FreeType2 font provider and PNG image provider
+
+commit 3608367cb04c17afe4cca4dc127b075307c0d744
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Dec 8 11:17:24 2021 +0100
+
+    Add ChangeLog
+
 commit cbe0a1b32a42b67b78858945147fc3a2bcdcfc37
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Dec 8 11:16:40 2021 +0100
