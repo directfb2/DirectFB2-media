@@ -14,16 +14,22 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
-libpng_dep = dependency('libpng', required: false)
+enable_png = get_option('png')
 
-if not libpng_dep.found()
-  warning('PNG image provider will not be built.')
-  subdir_done()
+if enable_png
+  png_dep = dependency('libpng', required: false)
+
+  if not png_dep.found()
+    warning('PNG image provider will not be built.')
+    enable_png = false
+  endif
+
+  if enable_png
+    library('idirectfbimageprovider_png',
+            'idirectfbimageprovider_png.c',
+            include_directories: config_inc,
+            dependencies: [directfb_dep, png_dep],
+            install: true,
+            install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+  endif
 endif
-
-library('idirectfbimageprovider_png',
-        'idirectfbimageprovider_png.c',
-        include_directories: config_inc,
-        dependencies: [directfb_dep, libpng_dep],
-        install: true,
-        install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
