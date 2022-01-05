@@ -21,14 +21,21 @@ directfb_dep = dependency('directfb-internal')
 moduledir = directfb_dep.get_pkgconfig_variable('moduledir')
 
 config_h = configuration_data()
+
 config_h.set('WORDS_BIGENDIAN', host_machine.endian() == 'big', description: 'Byte ordering is bigendian.')
+
+fusionsound_dep = []
+if get_option('fusionsound')
+  fusionsound_dep = dependency('fusionsound')
+  if fusionsound_dep.found()
+    config_h.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
+  endif
+endif
+
 configure_file(configuration: config_h, output: 'config.h')
+
 config_inc = include_directories('.')
 
-if get_option('ft2')
-  subdir('interfaces/IDirectFBFont')
-endif
-
-if get_option('png')
-  subdir('interfaces/IDirectFBImageProvider')
-endif
+subdir('interfaces/IDirectFBFont')
+subdir('interfaces/IDirectFBImageProvider')
+subdir('interfaces/IDirectFBVideoProvider')

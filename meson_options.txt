@@ -14,9 +14,17 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
+option('ffmpeg',
+       type: 'boolean',
+       description: 'FFmpeg video provider')
+
 option('ft2',
        type: 'boolean',
        description: 'FreeType2 font provider')
+
+option('fusionsound',
+       type: 'boolean',
+       description: 'FusionSound support')
 
 option('png',
        type: 'boolean',
