@@ -1,3 +1,24 @@
+commit 0b97b7d8955ca1286fec0e0d3923c55a384e229c
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 11 07:24:10 2022 +0100
+
+    FusionSound is optional
+
+commit 35b104a580cd514d79d510861cbec84f3684a2d8
+Merge: 3d9e6af d7d4d75
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Jan 5 18:26:41 2022 +0100
+
+    Merge pull request #2 from caramelli/master
+    
+    Add FFmpeg video provider
+
+commit d7d4d75b45a500c701e5f2d8f3e58b0d7e1b23dc
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jan 5 18:17:19 2022 +0100
+
+    Add ChangeLog
+
 commit e3aadaf71c101d17dc2ece89ac26f93e51a6cf2c
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Jan 5 18:16:54 2022 +0100
