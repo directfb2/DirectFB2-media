@@ -26,7 +26,7 @@ config_h.set('WORDS_BIGENDIAN', host_machine.endian() == 'big', description: 'By
 
 fusionsound_dep = []
 if get_option('fusionsound')
-  fusionsound_dep = dependency('fusionsound')
+  fusionsound_dep = dependency('fusionsound', required: false)
   if fusionsound_dep.found()
     config_h.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
   endif
