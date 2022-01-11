@@ -1,3 +1,24 @@
+commit 7f9b77383a587c6978fc7bee1829dec299c1de3e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 11 18:36:37 2022 +0100
+
+    FFmpeg: fix destination rectangle
+
+commit 3039ceeadf3fc0cac2cfb96f05a58573cc639958
+Merge: 35b104a 2275176
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jan 11 07:26:11 2022 +0100
+
+    Merge pull request #3 from caramelli/master
+    
+    FusionSound is optional
+
+commit 22751761d8cb5505f9dca957c49424eae01cbbb5
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 11 07:24:17 2022 +0100
+
+    Update ChangeLog
+
 commit 0b97b7d8955ca1286fec0e0d3923c55a384e229c
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Jan 11 07:24:10 2022 +0100
