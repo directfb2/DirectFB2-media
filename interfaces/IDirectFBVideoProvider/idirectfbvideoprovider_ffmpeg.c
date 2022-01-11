@@ -853,7 +853,7 @@ IDirectFBVideoProvider_FFmpeg_GetStreamDescription( IDirectFBVideoProvider *thiz
 
      ret_desc->video.framerate  = data->rate;
      ret_desc->video.aspect     = av_q2d( data->video.ctx->sample_aspect_ratio );
-     ret_desc->video.aspect    *= (double) data->video.ctx->width / data->video.ctx->height;
+     ret_desc->video.aspect    *= (double) data->desc.width / data->desc.height;
      ret_desc->video.bitrate    = data->video.ctx->bit_rate;
 
 #ifdef HAVE_FUSIONSOUND
@@ -901,8 +901,11 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
 
           rect = *dest_rect;
      }
-     else
-          rect = dst_data->area.wanted;
+     else {
+          rect.x = rect.y = 0;
+          rect.w = data->video.ctx->width;
+          rect.h = data->video.ctx->height;
+     }
 
      if (data->video.thread)
           return DFB_OK;
@@ -1490,6 +1493,51 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
+     data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
+     data->desc.width  = data->video.st->codec->width;
+     data->desc.height = data->video.st->codec->height;
+     switch (data->video.st->codec->pix_fmt) {
+          case PIX_FMT_RGB555:
+               data->desc.pixelformat = DSPF_ARGB1555;
+               break;
+          case PIX_FMT_RGB565:
+               data->desc.pixelformat = DSPF_RGB16;
+               break;
+          case PIX_FMT_RGB24:
+          case PIX_FMT_BGR24:
+               data->desc.pixelformat = DSPF_RGB24;
+               break;
+          case PIX_FMT_RGB32:
+          case PIX_FMT_BGR32:
+               data->desc.pixelformat = DSPF_RGB32;
+               break;
+          case PIX_FMT_YUYV422:
+               data->desc.pixelformat = DSPF_YUY2;
+               break;
+          case PIX_FMT_UYVY422:
+               data->desc.pixelformat = DSPF_UYVY;
+               break;
+          case PIX_FMT_YUV420P:
+               data->desc.pixelformat = DSPF_I420;
+               break;
+          case PIX_FMT_NV12:
+               data->desc.pixelformat = DSPF_NV12;
+               break;
+          case PIX_FMT_NV21:
+               data->desc.pixelformat = DSPF_NV21;
+               break;
+          default:
+               D_ERROR( "VideoProvider/FFMPEG: Unknown pixel format!\n" );
+               ret = DFB_FAILURE;
+               goto error;
+     }
+
+     data->rate = av_q2d(data->video.st->r_frame_rate);
+     if (!data->rate || !finite(data->rate)) {
+          D_INFO( "VideoProvider/FFMPEG: Assuming 25 fps\n" );
+          data->rate = 25.0;
+     }
+
      data->video.ctx   = data->video.st->codec;
      data->video.codec = avcodec_find_decoder( data->video.ctx->codec_id );
 
@@ -1565,51 +1613,6 @@ Construct( IDirectFBVideoProvider *thiz,
                data->audio.queue.max_size = MAX_QUEUE_LEN * 64 * 1024;
      }
 #endif
-
-     data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width  = data->video.ctx->width;
-     data->desc.height = data->video.ctx->height;
-     switch (data->video.ctx->pix_fmt) {
-          case PIX_FMT_RGB555:
-               data->desc.pixelformat = DSPF_ARGB1555;
-               break;
-          case PIX_FMT_RGB565:
-               data->desc.pixelformat = DSPF_RGB16;
-               break;
-          case PIX_FMT_RGB24:
-          case PIX_FMT_BGR24:
-               data->desc.pixelformat = DSPF_RGB24;
-               break;
-          case PIX_FMT_RGB32:
-          case PIX_FMT_BGR32:
-               data->desc.pixelformat = DSPF_RGB32;
-               break;
-          case PIX_FMT_YUYV422:
-               data->desc.pixelformat = DSPF_YUY2;
-               break;
-          case PIX_FMT_UYVY422:
-               data->desc.pixelformat = DSPF_UYVY;
-               break;
-          case PIX_FMT_YUV420P:
-               data->desc.pixelformat = DSPF_I420;
-               break;
-          case PIX_FMT_NV12:
-               data->desc.pixelformat = DSPF_NV12;
-               break;
-          case PIX_FMT_NV21:
-               data->desc.pixelformat = DSPF_NV21;
-               break;
-          default:
-               D_ERROR( "VideoProvider/FFMPEG: Unknown pixel format!\n" );
-               ret = DFB_FAILURE;
-               goto error;
-     }
-
-     data->rate = av_q2d(data->video.st->r_frame_rate);
-     if (!data->rate || !finite(data->rate)) {
-          D_INFO( "VideoProvider/FFMPEG: Assuming 25 fps\n" );
-          data->rate = 25.0;
-     }
 
      data->status = DVSTATE_STOP;
      data->speed  = 1;
