@@ -1,3 +1,24 @@
+commit b2adbad47b47129989f52925782ef4dc7afbf57d
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 18 21:34:15 2022 +0100
+
+    FFmpeg: Restart from the beginning after stopping
+
+commit 7eaac55ea109c20ade8823fc963b2ed3f8fe7bc3
+Merge: 3039cee 8f92dab
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jan 11 18:39:50 2022 +0100
+
+    Merge pull request #4 from caramelli/master
+    
+    FFmpeg: fix destination rectangle
+
+commit 8f92dabed79def83ce6bb5891227ccb4c4d1e436
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 11 18:36:49 2022 +0100
+
+    Update ChangeLog
+
 commit 7f9b77383a587c6978fc7bee1829dec299c1de3e
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Jan 11 18:36:37 2022 +0100
