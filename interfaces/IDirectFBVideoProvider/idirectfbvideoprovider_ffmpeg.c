@@ -971,6 +971,11 @@ IDirectFBVideoProvider_FFmpeg_Stop( IDirectFBVideoProvider *thiz )
 
      data->video.pts = 0;
 
+     if (data->seekable) {
+          av_seek_frame( data->context, -1, 0, AVSEEK_FLAG_BACKWARD );
+          flush_packets( &data->video.queue );
+     }
+
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.thread) {
           direct_waitqueue_signal( &data->audio.cond );
