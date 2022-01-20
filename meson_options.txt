@@ -26,6 +26,10 @@ option('fusionsound',
        type: 'boolean',
        description: 'FusionSound support')
 
+option('jpeg',
+       type: 'boolean',
+       description: 'JPEG image provider')
+
 option('png',
        type: 'boolean',
        description: 'PNG image provider')

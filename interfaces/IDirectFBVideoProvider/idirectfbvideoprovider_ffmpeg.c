@@ -1407,12 +1407,12 @@ Construct( IDirectFBVideoProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult      ret;
-     int            i;
-     AVProbeData    pd;
-     AVInputFormat *fmt;
-     unsigned char  buf[2048];
-     unsigned int   len                    = 0;
+     DFBResult                 ret;
+     int                       i;
+     AVProbeData               pd;
+     AVInputFormat            *fmt;
+     unsigned char             buf[2048];
+     unsigned int              len         = 0;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
@@ -1537,8 +1537,8 @@ Construct( IDirectFBVideoProvider *thiz,
                goto error;
      }
 
-     data->rate = av_q2d(data->video.st->r_frame_rate);
-     if (!data->rate || !finite(data->rate)) {
+     data->rate = av_q2d( data->video.st->r_frame_rate );
+     if (!data->rate || !finite( data->rate )) {
           D_INFO( "VideoProvider/FFMPEG: Assuming 25 fps\n" );
           data->rate = 25.0;
      }
