@@ -1,3 +1,24 @@
+commit 8f27e7c4a83e64a17edafedc5e1078d6bd353077
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 20 09:01:10 2022 +0100
+
+    Add JPEG image provider
+
+commit 7de37e1f37ac8df472672e16681de2c1e6d55d08
+Merge: 7eaac55 0b04437
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jan 18 22:11:15 2022 +0100
+
+    Merge pull request #5 from caramelli/master
+    
+    Restart from the beginning after stopping
+
+commit 0b044375be8163cfc951db293d61ef5f82c9a1be
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 18 22:10:25 2022 +0100
+
+    Update ChangeLog
+
 commit b2adbad47b47129989f52925782ef4dc7afbf57d
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Jan 18 21:34:15 2022 +0100

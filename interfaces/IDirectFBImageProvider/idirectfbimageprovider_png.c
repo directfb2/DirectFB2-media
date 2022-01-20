@@ -50,29 +50,30 @@ enum {
 };
 
 typedef struct {
-     int                  ref;                     /* reference counter */
+     int                    ref;                     /* reference counter */
 
-     IDirectFBDataBuffer *buffer;
+     IDirectFBDataBuffer   *buffer;
 
-     int                  stage;
+     int                    stage;
 
-     png_structp          png_ptr;
-     png_infop            info_ptr;
+     png_structp            png_ptr;
+     png_infop              info_ptr;
 
-     int                  width;
-     int                  height;
-     int                  bpp;
-     int                  color_type;
-     u32                  color_key;
-     bool                 color_keyed;
+     DFBSurfaceDescription  desc;
+     int                    width;
+     int                    height;
+     int                    bpp;
+     int                    color_type;
+     u32                    color_key;
+     bool                   color_keyed;
 
-     void                *image;
-     int                  pitch;
-     u32                  palette[256];
-     DFBColor             colors[256];
+     void                  *image;
+     int                    pitch;
+     u32                    palette[256];
+     DFBColor               colors[256];
 
-     DIRenderCallback     render_callback;
-     void                *render_callback_context;
+     DIRenderCallback       render_callback;
+     void                  *render_callback_context;
 } IDirectFBImageProvider_PNG_data;
 
 /* Called at the start of the progressive load, once we have image info. */
@@ -139,8 +140,6 @@ static DFBResult
 IDirectFBImageProvider_PNG_GetSurfaceDescription( IDirectFBImageProvider *thiz,
                                                   DFBSurfaceDescription  *ret_desc )
 {
-     DFBSurfacePixelFormat primary_format = dfb_primary_layer_pixelformat();
-
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_PNG )
 
      D_DEBUG_AT( ImageProvider_PNG, "%s( %p )\n", __FUNCTION__, thiz );
@@ -148,14 +147,7 @@ IDirectFBImageProvider_PNG_GetSurfaceDescription( IDirectFBImageProvider *thiz,
      if (!ret_desc)
           return DFB_INVARG;
 
-     ret_desc->flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     ret_desc->width  = data->width;
-     ret_desc->height = data->height;
-
-     if (data->color_type & PNG_COLOR_MASK_ALPHA)
-          ret_desc->pixelformat = DFB_PIXELFORMAT_HAS_ALPHA( primary_format ) ? primary_format : DSPF_ARGB;
-     else
-          ret_desc->pixelformat = primary_format;
+     *ret_desc = data->desc;
 
      if (data->color_type == PNG_COLOR_TYPE_PALETTE) {
           ret_desc->flags           |= DSDESC_PALETTE;
@@ -197,7 +189,7 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                                      IDirectFBSurface       *destination,
                                      const DFBRectangle     *dest_rect )
 {
-     DFBResult              ret = DFB_OK;
+     DFBResult              ret;
      IDirectFBSurface_data *dst_data;
      DFBRectangle           rect;
      DFBRectangle           clipped;
@@ -454,8 +446,8 @@ Construct( IDirectFBImageProvider *thiz,
 
      thiz->AddRef                = IDirectFBImageProvider_PNG_AddRef;
      thiz->Release               = IDirectFBImageProvider_PNG_Release;
-     thiz->GetImageDescription   = IDirectFBImageProvider_PNG_GetImageDescription;
      thiz->GetSurfaceDescription = IDirectFBImageProvider_PNG_GetSurfaceDescription;
+     thiz->GetImageDescription   = IDirectFBImageProvider_PNG_GetImageDescription;
      thiz->RenderTo              = IDirectFBImageProvider_PNG_RenderTo;
      thiz->SetRenderCallback     = IDirectFBImageProvider_PNG_SetRenderCallback;
 
@@ -470,7 +462,7 @@ error:
 
      buffer->Release( buffer );
 
-     DIRECT_DEALLOCATE_INTERFACE(thiz);
+     DIRECT_DEALLOCATE_INTERFACE( thiz );
 
      return ret;
 }
@@ -535,6 +527,7 @@ png_info_callback( png_structp png_read_ptr,
 {
      int                              i;
      IDirectFBImageProvider_PNG_data *data;
+     DFBSurfacePixelFormat            primary_format = dfb_primary_layer_pixelformat();
 
      data = png_get_progressive_ptr( png_read_ptr );
 
@@ -551,6 +544,15 @@ png_info_callback( png_structp png_read_ptr,
 
      png_get_IHDR( data->png_ptr, data->info_ptr, (png_uint_32 *)&data->width, (png_uint_32 *)&data->height, &data->bpp,
                    &data->color_type, NULL, NULL, NULL );
+
+     data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
+     data->desc.width  = data->width;
+     data->desc.height = data->height;
+
+     if (data->color_type & PNG_COLOR_MASK_ALPHA)
+          data->desc.pixelformat = DFB_PIXELFORMAT_HAS_ALPHA( primary_format ) ? primary_format : DSPF_ARGB;
+     else
+          data->desc.pixelformat = primary_format;
 
      if (png_get_valid( data->png_ptr, data->info_ptr, PNG_INFO_tRNS )) {
           data->color_keyed = true;
@@ -629,7 +631,7 @@ png_info_callback( png_structp png_read_ptr,
                int           num_trans = 0;
 
                if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
-                    switch(data->bpp) {
+                    switch (data->bpp) {
                          case 1:
                               data->color_key = (((bpp1[trans_color[0].red])   << 16) |
                                                  ((bpp1[trans_color[0].green]) <<  8) |
@@ -852,9 +854,9 @@ png_row_callback( png_structp png_read_ptr,
 
      if (data->render_callback) {
           DIRenderCallbackResult res;
-          DFBRectangle           rect = { 0, row_num, data->width, 1 };
+          DFBRectangle           r = { 0, row_num, data->width, 1 };
 
-          res = data->render_callback( &rect, data->render_callback_context );
+          res = data->render_callback( &r, data->render_callback_context );
           if (res != DIRCR_OK) {
                /* Set abort stage. */
                data->stage = STAGE_ABORT;

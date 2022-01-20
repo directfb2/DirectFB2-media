@@ -2,6 +2,7 @@
 -----
 
 Initial version using the Meson build system and containing:
-  - FreeType2 font provider
-  - PNG image provider
   - FFmpeg video provider
+  - FreeType2 font provider
+  - JPEG image provider
+  - PNG image provider
