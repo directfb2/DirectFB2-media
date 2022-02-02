@@ -1,3 +1,24 @@
+commit 7b32e1de758fe8cf27e18bf6c5b5a8978c381c5e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Feb 2 11:45:05 2022 +0100
+
+    Add DGIFF/DFIFF/DFVFF tools
+
+commit 3b4cdb72531da8c010a3be3cee887076faf2ea17
+Merge: 7de37e1 fa494ca
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Thu Jan 20 09:07:53 2022 +0100
+
+    Merge pull request #6 from caramelli/master
+    
+    Add JPEG image provider
+
+commit fa494caec798046b586a7a35a39adf9bd9d8abcd
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 20 09:01:34 2022 +0100
+
+    Update ChangeLog
+
 commit 8f27e7c4a83e64a17edafedc5e1078d6bd353077
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Thu Jan 20 09:01:10 2022 +0100

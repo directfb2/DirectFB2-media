@@ -15,10 +15,11 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 if enable_ft2
-  library('idirectfbfont_ft2',
-          'idirectfbfont_ft2.c',
-          include_directories: config_inc,
-          dependencies: [directfb_dep, ft2_dep],
-          install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
+  executable('mkdgiff', 'mkdgiff.c', include_directories: config_inc, dependencies: [directfb_dep, ft2_dep], install: true)
 endif
+
+if enable_png
+  executable('mkdfiff', 'mkdfiff.c', include_directories: config_inc, dependencies: [directfb_dep, png_dep], install: true)
+endif
+
+executable('mkdfvff', 'mkdfvff.c', dependencies: directfb_dep, install: true)

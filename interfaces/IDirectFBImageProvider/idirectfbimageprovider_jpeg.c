@@ -617,9 +617,9 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
                return DFB_OK;
 
           /* Else look for the file extension. */
-          if (ctx->filename && strchr( ctx->filename, '.' ) &&
-              (strcasecmp( strchr( ctx->filename, '.' ), ".jpg"  ) == 0 ||
-               strcasecmp( strchr( ctx->filename, '.' ), ".jpeg" ) == 0))
+          if (ctx->filename && strrchr( ctx->filename, '.' ) &&
+              (strcasecmp( strrchr( ctx->filename, '.' ), ".jpg"  ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".jpeg" ) == 0))
                return DFB_OK;
      }
 
