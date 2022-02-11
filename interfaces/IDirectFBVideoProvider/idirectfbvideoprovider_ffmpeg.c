@@ -435,7 +435,7 @@ FFmpegInput( DirectThread *thread,
           }
 
           if (av_read_frame( data->context, &pkt ) < 0) {
-               if (url_feof( data->context->pb ) && data->status != DVSTATE_FINISHED) {
+               if (avio_feof( data->context->pb ) && data->status != DVSTATE_FINISHED) {
                     if (data->input.buffering) {
 #ifdef HAVE_FUSIONSOUND
                          direct_mutex_unlock( &data->audio.queue.lock );
@@ -497,7 +497,7 @@ FFmpegVideo( DirectThread *thread,
 {
      IDirectFBVideoProvider_FFmpeg_data *data = arg;
      DFBSurfacePixelFormat               pixelformat;
-     enum PixelFormat                    pix_fmt;
+     enum AVPixelFormat                    pix_fmt;
      struct SwsContext                  *sws_ctx;
      AVFrame                            *dst_frame;
      void                               *dest_ptr;
@@ -510,24 +510,24 @@ FFmpegVideo( DirectThread *thread,
      data->video.dest->GetPixelFormat( data->video.dest, &pixelformat );
      switch (pixelformat) {
           case DSPF_ARGB1555:
-               pix_fmt = PIX_FMT_RGB555;
+               pix_fmt = AV_PIX_FMT_RGB555;
                break;
           case DSPF_RGB16:
-               pix_fmt = PIX_FMT_RGB565;
+               pix_fmt = AV_PIX_FMT_RGB565;
                break;
           case DSPF_RGB24:
 #ifdef WORDS_BIGENDIAN
-               pix_fmt = PIX_FMT_RGB24;
+               pix_fmt = AV_PIX_FMT_RGB24;
 #else
-               pix_fmt = PIX_FMT_BGR24;
+               pix_fmt = AV_PIX_FMT_BGR24;
 #endif
                break;
           case DSPF_RGB32:
           case DSPF_ARGB:
-               pix_fmt = PIX_FMT_RGB32;
+               pix_fmt = AV_PIX_FMT_RGB32;
                break;
           case DSPF_ABGR:
-               pix_fmt = PIX_FMT_BGR32;
+               pix_fmt = AV_PIX_FMT_BGR32;
                break;
           default:
                return NULL;
@@ -536,7 +536,7 @@ FFmpegVideo( DirectThread *thread,
      sws_ctx = sws_getContext( data->video.ctx->width, data->video.ctx->height, data->video.ctx->pix_fmt,
                                data->video.rect.w, data->video.rect.h, pix_fmt, SWS_FAST_BILINEAR, NULL, NULL, NULL );
 
-     dst_frame = avcodec_alloc_frame();
+     dst_frame = av_frame_alloc();
 
      data->video.dest->Lock( data->video.dest, DSLF_WRITE, &dest_ptr, &dest_pitch );
      avpicture_fill( (AVPicture*) dst_frame, dest_ptr, pix_fmt, data->video.ctx->width, data->video.ctx->height );
@@ -732,7 +732,7 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
           avcodec_close( data->video.ctx );
 
      if (data->context)
-          av_close_input_file( data->context );
+        avformat_close_input(&data->context);
 
      if (data->iobuf)
           av_free( data->iobuf );
@@ -1469,7 +1469,7 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
-     if (av_find_stream_info( data->context ) < 0) {
+     if (avformat_find_stream_info( data->context, NULL ) < 0) {
           D_ERROR( "VideoProvider/FFMPEG: Couldn't find stream info!\n" );
           ret = DFB_FAILURE;
           goto error;
@@ -1502,33 +1502,33 @@ Construct( IDirectFBVideoProvider *thiz,
      data->desc.width  = data->video.st->codec->width;
      data->desc.height = data->video.st->codec->height;
      switch (data->video.st->codec->pix_fmt) {
-          case PIX_FMT_RGB555:
+          case AV_PIX_FMT_RGB555:
                data->desc.pixelformat = DSPF_ARGB1555;
                break;
-          case PIX_FMT_RGB565:
+          case AV_PIX_FMT_RGB565:
                data->desc.pixelformat = DSPF_RGB16;
                break;
-          case PIX_FMT_RGB24:
-          case PIX_FMT_BGR24:
+          case AV_PIX_FMT_RGB24:
+          case AV_PIX_FMT_BGR24:
                data->desc.pixelformat = DSPF_RGB24;
                break;
-          case PIX_FMT_RGB32:
-          case PIX_FMT_BGR32:
+          case AV_PIX_FMT_RGB32:
+          case AV_PIX_FMT_BGR32:
                data->desc.pixelformat = DSPF_RGB32;
                break;
-          case PIX_FMT_YUYV422:
+          case AV_PIX_FMT_YUYV422:
                data->desc.pixelformat = DSPF_YUY2;
                break;
-          case PIX_FMT_UYVY422:
+          case AV_PIX_FMT_UYVY422:
                data->desc.pixelformat = DSPF_UYVY;
                break;
-          case PIX_FMT_YUV420P:
+          case AV_PIX_FMT_YUV420P:
                data->desc.pixelformat = DSPF_I420;
                break;
-          case PIX_FMT_NV12:
+          case AV_PIX_FMT_NV12:
                data->desc.pixelformat = DSPF_NV12;
                break;
-          case PIX_FMT_NV21:
+          case AV_PIX_FMT_NV21:
                data->desc.pixelformat = DSPF_NV21;
                break;
           default:
@@ -1546,14 +1546,14 @@ Construct( IDirectFBVideoProvider *thiz,
      data->video.ctx   = data->video.st->codec;
      data->video.codec = avcodec_find_decoder( data->video.ctx->codec_id );
 
-     if (!data->video.codec || avcodec_open( data->video.ctx, data->video.codec ) < 0) {
+     if (!data->video.codec || avcodec_open2( data->video.ctx, data->video.codec, NULL ) < 0) {
           D_ERROR( "VideoProvider/FFMPEG: Failed to open video codec!\n" );
           data->video.ctx = NULL;
           ret = DFB_FAILURE;
           goto error;
      }
 
-     data->video.src_frame = avcodec_alloc_frame();
+     data->video.src_frame = av_frame_alloc();
      if (!data->video.src_frame) {
           ret = D_OOM();
           goto error;
@@ -1690,7 +1690,7 @@ error:
           avcodec_close( data->video.ctx );
 
      if (data->context)
-          av_close_input_file( data->context );
+        avformat_close_input(&data->context );
 
      if (data->iobuf)
           av_free( data->iobuf );
