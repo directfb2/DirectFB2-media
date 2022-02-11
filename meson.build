@@ -24,11 +24,15 @@ config_h = configuration_data()
 
 config_h.set('WORDS_BIGENDIAN', host_machine.endian() == 'big', description: 'Byte ordering is bigendian.')
 
+enable_fusionsound = get_option('fusionsound')
+
 fusionsound_dep = []
-if get_option('fusionsound')
+if enable_fusionsound
   fusionsound_dep = dependency('fusionsound', required: false)
   if fusionsound_dep.found()
     config_h.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
+  else
+    enable_fusionsound = false
   endif
 endif
 
@@ -46,6 +50,10 @@ if enable_ffmpeg
                 dependency('libavformat', required: false),
                 dependency('libavutil',   required: false),
                 dependency('libswscale',  required: false)]
+
+  if enable_fusionsound
+    ffmpeg_dep += dependency('libswresample', required: false)
+  endif
 
   foreach dep : ffmpeg_dep
     if not dep.found()

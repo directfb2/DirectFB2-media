@@ -24,6 +24,9 @@
 #include <fusionsound_limits.h>
 #endif
 #include <libavformat/avformat.h>
+#ifdef HAVE_FUSIONSOUND
+#include <libswresample/swresample.h>
+#endif
 #include <libswscale/swscale.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbvideoprovider.h>
@@ -129,14 +132,13 @@ typedef struct {
 
           bool                      seeked;
 
+          AVFrame                  *src_frame;
+
           IFusionSound             *sound;
           IFusionSoundStream       *stream;
           IFusionSoundPlayback     *playback;
 
           float                     volume;
-          int                       sample_size;
-          int                       sample_rate;
-          int                       buffer_size;
      } audio;
 #endif
 
@@ -633,13 +635,23 @@ FFmpegAudio( DirectThread *thread,
              void         *arg )
 {
      IDirectFBVideoProvider_FFmpeg_data *data = arg;
-     u8                                  buf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
+     int                                 bytespersample = av_get_bytes_per_sample( AV_SAMPLE_FMT_S16 ) *
+                                                          av_get_channel_layout_nb_channels( AV_CH_LAYOUT_STEREO );
+     u8                                  buf[bytespersample * data->audio.ctx->sample_rate];
+     struct SwrContext                  *swr_ctx;
+
+     swr_ctx = swr_alloc_set_opts( NULL,
+                                   AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, data->audio.ctx->sample_rate,
+                                   data->audio.ctx->channel_layout, data->audio.ctx->sample_fmt, data->audio.ctx->sample_rate,
+                                   0, NULL );
+
+     swr_init( swr_ctx );
 
      while (data->status != DVSTATE_STOP) {
           AVPacket  pkt;
           u8       *pkt_data;
           int       pkt_size;
-          int       len  = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+          int       got_frame;
           int       size = 0;
 
           direct_mutex_lock( &data->audio.lock );
@@ -663,7 +675,7 @@ FFmpegAudio( DirectThread *thread,
           }
 
           for (pkt_data = pkt.data, pkt_size = pkt.size; pkt_size > 0;) {
-               int decoded = avcodec_decode_audio3( data->audio.ctx, (int16_t*) &buf[size], &len, &pkt );
+               int decoded = avcodec_decode_audio4( data->audio.ctx, data->audio.src_frame, &got_frame, &pkt );
 
                if (decoded < 0)
                     break;
@@ -671,28 +683,33 @@ FFmpegAudio( DirectThread *thread,
                pkt_data += decoded;
                pkt_size -= decoded;
 
-               if (len > 0)
-                    size += len;
+               size += data->audio.src_frame->nb_samples;
           }
-
-          size /= data->audio.sample_size;
 
           if (pkt.pts != AV_NOPTS_VALUE) {
                data->audio.pts = av_rescale_q( pkt.pts, data->audio.st->time_base, AV_TIME_BASE_Q );
           }
           else if (size && data->audio.pts != -1) {
-               data->audio.pts += (s64) size * AV_TIME_BASE / data->audio.sample_rate;
+               data->audio.pts += (s64) size * AV_TIME_BASE / data->audio.ctx->sample_rate;
           }
 
           av_free_packet( &pkt );
 
           direct_mutex_unlock( &data->audio.lock );
 
-          if (size)
+          if (size) {
+               uint8_t *out[] = { buf };
+
+               swr_convert( swr_ctx, out, sizeof(buf) / bytespersample,
+                            (void *) data->audio.src_frame->data, data->audio.src_frame->nb_samples );
+
                data->audio.stream->Write( data->audio.stream, buf, size );
+          }
           else
                usleep( 1000 );
      }
+
+     swr_free( &swr_ctx );
 
      return NULL;
 }
@@ -712,6 +729,9 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
      thiz->Stop( thiz );
 
 #ifdef HAVE_FUSIONSOUND
+     if (data->audio.src_frame)
+          av_free( data->audio.src_frame );
+
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
 
@@ -732,7 +752,7 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
           avcodec_close( data->video.ctx );
 
      if (data->context)
-        avformat_close_input(&data->context);
+          avformat_close_input( &data->context );
 
      if (data->iobuf)
           av_free( data->iobuf );
@@ -929,6 +949,8 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
 
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.stream) {
+          data->audio.volume = 1.0;
+
           data->audio.thread = direct_thread_create( DTT_DEFAULT, FFmpegAudio, data, "FFmpeg Audio" );
      }
 #endif
@@ -1571,7 +1593,7 @@ Construct( IDirectFBVideoProvider *thiz,
           data->audio.ctx   = data->audio.st->codec;
           data->audio.codec = avcodec_find_decoder( data->audio.ctx->codec_id );
 
-          if (!data->audio.codec || avcodec_open( data->audio.ctx, data->audio.codec ) < 0) {
+          if (!data->audio.codec || avcodec_open2( data->audio.ctx, data->audio.codec, NULL ) < 0) {
                data->audio.st    = NULL;
                data->audio.ctx   = NULL;
                data->audio.codec = NULL;
@@ -1597,11 +1619,6 @@ Construct( IDirectFBVideoProvider *thiz,
           }
           else {
                data->audio.stream->GetPlayback( data->audio.stream, &data->audio.playback );
-
-               data->audio.volume      = 1.0;
-               data->audio.sample_size = 2 * dsc.channels;
-               data->audio.sample_rate = dsc.samplerate;
-               data->audio.buffer_size = dsc.buffersize;
           }
      }
      else if (data->audio.st) {
@@ -1610,6 +1627,12 @@ Construct( IDirectFBVideoProvider *thiz,
      }
 
      if (data->audio.st) {
+          data->audio.src_frame = av_frame_alloc();
+          if (!data->audio.src_frame) {
+               ret = D_OOM();
+               goto error;
+          }
+
           data->audio.queue.max_len = av_rescale_q( MAX_QUEUE_LEN * AV_TIME_BASE, AV_TIME_BASE_Q,
                                                     data->audio.st->time_base );
           if (data->audio.ctx->bit_rate > 0)
@@ -1670,6 +1693,9 @@ Construct( IDirectFBVideoProvider *thiz,
 
 error:
 #ifdef HAVE_FUSIONSOUND
+     if (data->audio.src_frame)
+          av_free( data->audio.src_frame );
+
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
 
@@ -1690,7 +1716,7 @@ error:
           avcodec_close( data->video.ctx );
 
      if (data->context)
-        avformat_close_input(&data->context );
+          avformat_close_input( &data->context );
 
      if (data->iobuf)
           av_free( data->iobuf );
