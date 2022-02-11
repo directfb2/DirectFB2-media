@@ -1,3 +1,41 @@
+commit 6a60a042975bc2262c3d7445da80790a04960e38
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Feb 11 19:05:24 2022 +0100
+
+    FFmpeg: Update audio part
+
+commit 41d60a3662ba41c069153eb54bd1761066817293
+Merge: ab2ce71 042bc75
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Feb 11 18:04:32 2022 +0100
+
+    Merge pull request #8 from ebachard/master
+    
+    Update idirectfbvideoprovider_ffmpeg.c
+
+commit 042bc75102548008ae3cb3eca0a22a72f92ad252
+Author: ebachard <ebachard@users.noreply.github.com>
+Date:   Thu Feb 10 16:36:58 2022 +0100
+
+    Update idirectfbvideoprovider_ffmpeg.c
+    
+    Fix all build issues with ffmpeg 4.3.2
+
+commit ab2ce71ad98910bf05d0687d6c9c554deed014c0
+Merge: 3b4cdb7 288ab19
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Feb 2 11:50:07 2022 +0100
+
+    Merge pull request #7 from caramelli/master
+    
+    Add DGIFF/DFIFF/DFVFF tools
+
+commit 288ab193d8746a1bbd5cc48b61dd1327bb410909
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Feb 2 11:47:41 2022 +0100
+
+    Update ChangeLog
+
 commit 7b32e1de758fe8cf27e18bf6c5b5a8978c381c5e
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Feb 2 11:45:05 2022 +0100
