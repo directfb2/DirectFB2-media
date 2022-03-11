@@ -22,3 +22,12 @@ if enable_ffmpeg
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
 endif
+
+if enable_gstreamer
+  library('idirectfbvideoprovider_gstreamer',
+          'idirectfbvideoprovider_gstreamer.c',
+          include_directories: config_inc,
+          dependencies: [directfb_dep, gstreamer_dep, fusionsound_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+endif

@@ -1,3 +1,24 @@
+commit 1541780e510f0915b9b8595ca9626fa2bad4b062
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Mar 11 09:24:33 2022 +0100
+
+    Add GStreamer video provider
+
+commit 2f5673db9dd6b7861e3c3079cd05397893918da2
+Merge: 41d60a3 fe45c04
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Feb 11 19:09:19 2022 +0100
+
+    Merge pull request #9 from caramelli/master
+    
+    FFmpeg: Update audio part
+
+commit fe45c045454d69f996229365deb0ee351a38f2d4
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Feb 11 19:06:04 2022 +0100
+
+    Update ChangeLog
+
 commit 6a60a042975bc2262c3d7445da80790a04960e38
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Feb 11 19:05:24 2022 +0100
