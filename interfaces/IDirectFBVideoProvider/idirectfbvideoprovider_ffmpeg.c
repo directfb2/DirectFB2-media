@@ -17,6 +17,7 @@
 */
 
 #include <config.h>
+#include <core/layers.h>
 #include <direct/thread.h>
 #include <display/idirectfbsurface.h>
 #ifdef HAVE_FUSIONSOUND
@@ -72,6 +73,7 @@ typedef struct {
      IDirectFB                     *idirectfb;
 
      bool                           seekable;
+
      void                          *iobuf;
      AVIOContext                   *pb;
      AVFormatContext               *context;
@@ -180,8 +182,8 @@ av_read_callback( void    *opaque,
                   int      buf_size )
 {
      DFBResult                           ret;
-     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
      unsigned int                        len  = 0;
+     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
 
      if (!buf || buf_size < 0)
           return -1;
@@ -202,8 +204,8 @@ av_seek_callback( void    *opaque,
                   int      whence )
 {
      DFBResult                           ret;
-     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
      unsigned int                        pos;
+     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
 
      switch (whence) {
           case SEEK_SET:
@@ -437,7 +439,7 @@ FFmpegInput( DirectThread *thread,
           }
 
           if (av_read_frame( data->context, &pkt ) < 0) {
-               if (avio_feof( data->context->pb ) && data->status != DVSTATE_FINISHED) {
+               if (avio_feof( data->context->pb )) {
                     if (data->input.buffering) {
 #ifdef HAVE_FUSIONSOUND
                          direct_mutex_unlock( &data->audio.queue.lock );
@@ -456,8 +458,10 @@ FFmpegInput( DirectThread *thread,
                               data->input.seek_flag = 0;
                          }
                          else {
-                              data->status = DVSTATE_FINISHED;
-                              dispatch_event( data, DVPET_FINISHED );
+                              if (data->status != DVSTATE_FINISHED) {
+                                   data->status = DVSTATE_FINISHED;
+                                   dispatch_event( data, DVPET_FINISHED );
+                              }
                          }
                     }
                }
@@ -497,17 +501,17 @@ static void *
 FFmpegVideo( DirectThread *thread,
              void         *arg )
 {
-     IDirectFBVideoProvider_FFmpeg_data *data = arg;
      DFBSurfacePixelFormat               pixelformat;
-     enum AVPixelFormat                    pix_fmt;
+     enum AVPixelFormat                  pix_fmt;
      struct SwsContext                  *sws_ctx;
      AVFrame                            *dst_frame;
      void                               *dest_ptr;
      int                                 dest_pitch;
+     long                                duration;
      s64                                 firtspts = 0;
      unsigned int                        framecnt = 0;
-     long                                duration = 1000000.0 / data->rate;
      int                                 drop     = 0;
+     IDirectFBVideoProvider_FFmpeg_data *data     = arg;
 
      data->video.dest->GetPixelFormat( data->video.dest, &pixelformat );
      switch (pixelformat) {
@@ -543,6 +547,8 @@ FFmpegVideo( DirectThread *thread,
      data->video.dest->Lock( data->video.dest, DSLF_WRITE, &dest_ptr, &dest_pitch );
      avpicture_fill( (AVPicture*) dst_frame, dest_ptr, pix_fmt, data->video.ctx->width, data->video.ctx->height );
      data->video.dest->Unlock( data->video.dest );
+
+     duration = 1000000.0 / data->rate;
 
      while (data->status != DVSTATE_STOP) {
           AVPacket  pkt;
@@ -634,11 +640,11 @@ static void *
 FFmpegAudio( DirectThread *thread,
              void         *arg )
 {
-     IDirectFBVideoProvider_FFmpeg_data *data = arg;
+     struct SwrContext                  *swr_ctx;
+     IDirectFBVideoProvider_FFmpeg_data *data           = arg;
      int                                 bytespersample = av_get_bytes_per_sample( AV_SAMPLE_FMT_S16 ) *
                                                           av_get_channel_layout_nb_channels( AV_CH_LAYOUT_STEREO );
      u8                                  buf[bytespersample * data->audio.ctx->sample_rate];
-     struct SwrContext                  *swr_ctx;
 
      swr_ctx = swr_alloc_set_opts( NULL,
                                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, data->audio.ctx->sample_rate,
@@ -720,8 +726,7 @@ FFmpegAudio( DirectThread *thread,
 static void
 IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
 {
-     EventLink *link, *tmp;
-
+     EventLink                          *link, *tmp;
      IDirectFBVideoProvider_FFmpeg_data *data = thiz->priv;
 
      D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
@@ -745,17 +750,9 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
           avcodec_close( data->audio.ctx );
 #endif
 
-     if (data->video.src_frame)
-          av_free( data->video.src_frame );
+     av_free( data->video.src_frame );
 
-     if (data->video.ctx)
-          avcodec_close( data->video.ctx );
-
-     if (data->context)
-          avformat_close_input( &data->context );
-
-     if (data->iobuf)
-          av_free( data->iobuf );
+     avcodec_close( data->video.ctx );
 
 #ifdef HAVE_FUSIONSOUND
      flush_packets( &data->audio.queue );
@@ -778,6 +775,10 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
      }
 
      direct_mutex_deinit( &data->events_lock );
+
+     avformat_close_input( &data->context );
+
+     av_free( data->iobuf );
 
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
@@ -846,12 +847,12 @@ IDirectFBVideoProvider_FFmpeg_GetSurfaceDescription( IDirectFBVideoProvider *thi
      if (!ret_desc)
           return DFB_INVARG;
 
-     *ret_desc = data->desc;
-
      if (data->video.src_frame->interlaced_frame) {
           data->desc.flags |= DSDESC_CAPS;
-          data->desc.caps = DSCAPS_INTERLACED;
+          data->desc.caps   = DSCAPS_INTERLACED;
      }
+
+     *ret_desc = data->desc;
 
      return DFB_OK;
 }
@@ -877,7 +878,7 @@ IDirectFBVideoProvider_FFmpeg_GetStreamDescription( IDirectFBVideoProvider *thiz
      ret_desc->video.bitrate    = data->video.ctx->bit_rate;
 
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio.st) {
+     if (data->audio.stream) {
           ret_desc->caps |= DVSCAPS_AUDIO;
 
           snprintf( ret_desc->audio.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->audio.codec->name );
@@ -949,8 +950,6 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
 
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.stream) {
-          data->audio.volume = 1.0;
-
           data->audio.thread = direct_thread_create( DTT_DEFAULT, FFmpegAudio, data, "FFmpeg Audio" );
      }
 #endif
@@ -1055,7 +1054,7 @@ IDirectFBVideoProvider_FFmpeg_SeekTo( IDirectFBVideoProvider *thiz,
      direct_mutex_lock( &data->input.lock );
 
      time = get_stream_clock( data ) - data->start_time;
-     pos = (time < 0) ? 0.0 : (double) time / AV_TIME_BASE;
+     pos  = (time < 0) ? 0.0 : (double) time / AV_TIME_BASE;
 
      time = seconds * AV_TIME_BASE;
 
@@ -1102,7 +1101,7 @@ IDirectFBVideoProvider_FFmpeg_GetLength( IDirectFBVideoProvider *thiz,
           return DFB_INVARG;
 
      if (data->context->duration != AV_NOPTS_VALUE) {
-          *ret_seconds = (double)data->context->duration / AV_TIME_BASE;
+          *ret_seconds = (double) data->context->duration / AV_TIME_BASE;
           return DFB_OK;
      }
 
@@ -1407,7 +1406,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      fmt = av_probe_input_format( &pd, 1 );
      if (fmt) {
           if (fmt->name) {
-               /* ignore formats that are known to not contain video stream. */
+               /* Ignore formats that are known to not contain video stream. */
                if (!strcmp( fmt->name, "aac" ) ||
                    !strcmp( fmt->name, "ac3" ) ||
                    !strcmp( fmt->name, "au"  ) ||
@@ -1554,9 +1553,8 @@ Construct( IDirectFBVideoProvider *thiz,
                data->desc.pixelformat = DSPF_NV21;
                break;
           default:
-               D_ERROR( "VideoProvider/FFMPEG: Unknown pixel format!\n" );
-               ret = DFB_FAILURE;
-               goto error;
+               data->desc.pixelformat = dfb_primary_layer_pixelformat();
+               break;
      }
 
      data->rate = av_q2d( data->video.st->r_frame_rate );
@@ -1600,7 +1598,8 @@ Construct( IDirectFBVideoProvider *thiz,
           }
      }
 
-     if (data->audio.st && FusionSoundInit( NULL, NULL ) == DR_OK && FusionSoundCreate( &data->audio.sound ) == DR_OK) {
+     if (data->audio.st &&
+         FusionSoundInit( NULL, NULL ) == DR_OK && FusionSoundCreate( &data->audio.sound ) == DR_OK) {
           FSStreamDescription dsc;
 
           if (data->audio.ctx->channels > FS_MAX_CHANNELS)
@@ -1626,7 +1625,7 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
-     if (data->audio.st) {
+     if (data->audio.stream) {
           data->audio.src_frame = av_frame_alloc();
           if (!data->audio.src_frame) {
                ret = D_OOM();
@@ -1659,6 +1658,8 @@ Construct( IDirectFBVideoProvider *thiz,
      direct_mutex_init( &data->video.queue.lock );
 
 #ifdef HAVE_FUSIONSOUND
+     data->audio.volume = 1.0;
+
      direct_mutex_init( &data->audio.lock );
      direct_waitqueue_init( &data->audio.cond );
      direct_mutex_init( &data->audio.queue.lock );

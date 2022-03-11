@@ -40,10 +40,11 @@ configure_file(configuration: config_h, output: 'config.h')
 
 config_inc = include_directories('.')
 
-enable_ffmpeg = get_option('ffmpeg')
-enable_ft2    = get_option('ft2')
-enable_jpeg   = get_option('jpeg')
-enable_png    = get_option('png')
+enable_ffmpeg    = get_option('ffmpeg')
+enable_ft2       = get_option('ft2')
+enable_gstreamer = get_option('gstreamer')
+enable_jpeg      = get_option('jpeg')
+enable_png       = get_option('png')
 
 if enable_ffmpeg
   ffmpeg_dep = [dependency('libavcodec',  required: false),
@@ -75,6 +76,15 @@ if enable_ft2
       break
     endif
   endforeach
+endif
+
+if enable_gstreamer
+  gstreamer_dep = dependency('gstreamer-app-1.0', required: false)
+
+  if not gstreamer_dep.found()
+    warning('GStreamer video provider will not be built.')
+    enable_gstreamer = false
+  endif
 endif
 
 if enable_jpeg
