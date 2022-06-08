@@ -911,10 +911,7 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
 
      dst_data = destination->priv;
      if (!dst_data)
-          return DFB_DESTROYED;
-
-     if (data->status == DVSTATE_FINISHED && !data->seekable)
-          return DFB_UNSUPPORTED;
+          return DFB_DEAD;
 
      if (dest_rect) {
           if (dest_rect->w < 1 || dest_rect->h < 1)
@@ -1642,7 +1639,7 @@ Construct( IDirectFBVideoProvider *thiz,
 #endif
 
      data->status = DVSTATE_STOP;
-     data->speed  = 1;
+     data->speed  = 1.0;
 
      if (data->context->start_time != AV_NOPTS_VALUE)
           data->start_time = data->context->start_time;

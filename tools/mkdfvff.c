@@ -20,10 +20,10 @@
 #include <direct/util.h>
 #include <directfb_strings.h>
 
-static DirectFBPixelFormatNames(format_names);
-static DirectFBColorSpaceNames(colorspace_names);
+static const DirectFBPixelFormatNames(format_names);
+static const DirectFBColorSpaceNames(colorspace_names);
 
-static const char            *filename;
+static const char            *filename   = NULL;
 static bool                   debug      = false;
 static DFBSurfacePixelFormat  format     = DSPF_YUV444P;
 static int                    width      = 320;
@@ -227,7 +227,7 @@ static long load_video( DFBSurfaceDescription *desc )
      int            frame_size;
      struct stat    st;
      long           nb_frames;
-     FILE          *fp   = NULL;
+     FILE          *fp;
      unsigned char *data = NULL;
 
      desc->flags = DSDESC_NONE;
