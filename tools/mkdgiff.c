@@ -25,12 +25,12 @@
 #define MAX_SIZE_COUNT  256
 #define MAX_ROW_WIDTH  2047
 
-static DirectFBPixelFormatNames(format_names);
+static const DirectFBPixelFormatNames(format_names);
 
-static const char            *filename;
+static const char            *filename      = NULL;
 static bool                   debug         = false;
 static DFBSurfacePixelFormat  format        = DSPF_A8;
-static int                    size_count;
+static int                    size_count    = 0;
 static int                    face_sizes[MAX_SIZE_COUNT];
 static bool                   premultiplied = false;
 

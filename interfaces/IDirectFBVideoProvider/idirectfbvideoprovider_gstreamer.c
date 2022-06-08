@@ -359,7 +359,9 @@ GStreamerVideo( DirectThread *self,
 
      while (data->status != DVSTATE_STOP) {
           sample = gst_app_sink_pull_sample( GST_APP_SINK( data->appsink_video) );
-          buffer = gst_sample_get_buffer( sample );
+
+          if (sample)
+               buffer = gst_sample_get_buffer( sample );
 
           direct_mutex_lock( &data->video_lock );
 
@@ -578,10 +580,10 @@ IDirectFBVideoProvider_GSTREAMER_PlayTo( IDirectFBVideoProvider *thiz,
 
      dst_data = destination->priv;
      if (!dst_data)
-          return DFB_DESTROYED;
+          return DFB_DEAD;
 
-     if (data->status == DVSTATE_FINISHED && !data->seekable)
-          return DFB_UNSUPPORTED;
+     if (data->video_thread)
+          return DFB_OK;
 
      direct_mutex_lock( &data->video_lock );
 
@@ -1172,7 +1174,7 @@ Construct( IDirectFBVideoProvider *thiz,
 #endif
 
      data->status = DVSTATE_STOP;
-     data->speed  = 1;
+     data->speed  = 1.0;
 
      GstQuery *query = gst_query_new_seeking( GST_FORMAT_TIME );
      if (gst_element_query( data->pipeline, query )) {

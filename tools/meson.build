@@ -15,11 +15,16 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 if enable_ft2
-  executable('mkdgiff', 'mkdgiff.c', include_directories: config_inc, dependencies: [directfb_dep, ft2_dep], install: true)
+  executable('mkdgiff', 'mkdgiff.c',
+             include_directories: config_inc, dependencies: [directfb_dep, ft2_dep], install: true)
 endif
 
 if enable_png
-  executable('mkdfiff', 'mkdfiff.c', include_directories: config_inc, dependencies: [directfb_dep, png_dep], install: true)
+  executable('directfb-csource', 'directfb-csource.c',
+             include_directories: config_inc, dependencies: [directfb_dep, png_dep], install: true)
+
+  executable('mkdfiff', 'mkdfiff.c',
+             include_directories: config_inc, dependencies: [directfb_dep, png_dep], install: true)
 endif
 
 executable('mkdfvff', 'mkdfvff.c', dependencies: directfb_dep, install: true)

@@ -114,4 +114,6 @@ subdir('interfaces/IDirectFBFont')
 subdir('interfaces/IDirectFBImageProvider')
 subdir('interfaces/IDirectFBVideoProvider')
 
-subdir('tools')
+if get_option('tools')
+  subdir('tools')
+endif

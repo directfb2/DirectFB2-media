@@ -1,3 +1,24 @@
+commit 9240297e847d20b657675c91a8ea475b859ce038
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jun 8 18:42:57 2022 +0200
+
+    Add directfb-csource tool
+
+commit 3ca663fa59e5dbff72882238aaf2d6a1ac07a6f2
+Merge: 2f5673d b7d2983
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Mar 11 09:26:50 2022 +0100
+
+    Merge pull request #10 from caramelli/master
+    
+    Add GStreamer video provider
+
+commit b7d2983c2b7dd760ecd8bfad2478ec0481c77bb8
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Mar 11 09:25:08 2022 +0100
+
+    Update ChangeLog
+
 commit 1541780e510f0915b9b8595ca9626fa2bad4b062
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Mar 11 09:24:33 2022 +0100

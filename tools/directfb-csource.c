@@ -17,7 +17,6 @@
 */
 
 #include <config.h>
-#include <dfiff.h>
 #include <directfb_strings.h>
 #include <gfx/convert.h>
 #include <png.h>
@@ -39,17 +38,11 @@ static const u32 DM_565[DM_565_WIDTH * DM_565_HEIGHT] = {
 
 static const DirectFBPixelFormatNames(format_names);
 
-static const char            *filename      = NULL;
-static bool                   debug         = false;
-static DFBSurfacePixelFormat  format        = DSPF_UNKNOWN;
-static bool                   simpledither  = false;
-static bool                   premultiplied = false;
-
-#define DEBUG(...)                             \
-     do {                                      \
-          if (debug)                           \
-               fprintf( stderr, __VA_ARGS__ ); \
-     } while (0)
+static const char            *filename     = NULL;
+static DFBSurfacePixelFormat  format       = DSPF_UNKNOWN;
+const char                   *name         = NULL;
+static bool                   simpledither = false;
+static DFBColor              *transparent  = NULL;
 
 /**********************************************************************************************************************/
 
@@ -57,20 +50,19 @@ static void print_usage()
 {
      int i = 0;
 
-     fprintf( stderr, "DirectFB Fast Image File Format Tool\n\n" );
-     fprintf( stderr, "Usage: mkdfiff [options] image\n\n" );
-     fprintf( stderr, "Options:\n\n" );
-     fprintf( stderr, "  -d, --debug                 Output debug information.\n" );
-     fprintf( stderr, "  -f, --format <pixelformat>  Choose the pixel format (default ARGB or RGB32).\n" );
-     fprintf( stderr, "  -s, --simple-dither         Use a pre-generated dither matrix (only for RGB16).\n" );
-     fprintf( stderr, "  -p, --premultiplied         Generate premultiplied pixels.\n" );
-     fprintf( stderr, "  -h, --help                  Show this help message.\n\n" );
+     fprintf( stderr, "C code generation utility for DirectFB surfaces\n\n" );
+     fprintf( stderr, "Usage: directfb-csource [options] image\n\n");
+     fprintf( stderr, "  --format=<pixelformat>    Choose the pixel format (default ARGB or RGB32).\n");
+     fprintf( stderr, "  --name=<identifer>        Specifies the identifier name for the generated variables.\n");
+     fprintf( stderr, "  --simple-dither           Use a pre-generated dither matrix (only for RGB16).\n");
+     fprintf( stderr, "  --transparent=<AARRGGBB>  Set completely transparent pixels to this color value.\n");
+     fprintf( stderr, "  --help                    Show this help message.\n\n");
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
           DFBSurfacePixelFormat format = format_names[i].format;
-          if ( DFB_BYTES_PER_PIXEL       ( format ) >= 1 &&
-              !DFB_PIXELFORMAT_IS_INDEXED( format )      &&
-              !DFB_COLOR_IS_YUV          ( format )) {
+          if (  DFB_BYTES_PER_PIXEL       ( format ) >= 1                    &&
+              (!DFB_PIXELFORMAT_IS_INDEXED( format ) || format == DSPF_LUT8) &&
+               !DFB_COLOR_IS_YUV          ( format )) {
                fprintf( stderr, "  %-10s %2d bits\n", format_names[i].name, DFB_BITS_PER_PIXEL( format ) );
           }
           ++i;
@@ -85,7 +77,6 @@ static DFBBoolean parse_format( const char *arg )
      while (format_names[i].format != DSPF_UNKNOWN) {
           if (!strcasecmp( arg, format_names[i].name )                   &&
                DFB_BYTES_PER_PIXEL       ( format_names[i].format ) >= 1 &&
-              !DFB_PIXELFORMAT_IS_INDEXED( format_names[i].format )      &&
               !DFB_COLOR_IS_YUV          ( format_names[i].format )) {
                format = format_names[i].format;
                return DFB_TRUE;
@@ -99,51 +90,76 @@ static DFBBoolean parse_format( const char *arg )
      return DFB_FALSE;
 }
 
+static DFBBoolean parse_transparent( const char *arg )
+{
+     char *error;
+     u32   argb;
+
+     argb = strtoul( arg, &error, 16 );
+
+     if (*error) {
+          fprintf( stderr, "Invalid transparent color specified!\n" );
+          return DFB_FALSE;
+     }
+
+     transparent = alloca( sizeof(DFBColor) );
+
+     transparent->b = argb & 0xFF;
+     argb >>= 8;
+     transparent->g = argb & 0xFF;
+     argb >>= 8;
+     transparent->r = argb & 0xFF;
+     argb >>= 8;
+     transparent->a = argb & 0xFF;
+
+     return DFB_TRUE;
+}
+
 static DFBBoolean parse_command_line( int argc, char *argv[] )
 {
      int n;
 
      for (n = 1; n < argc; n++) {
-          const char *arg = argv[n];
+          if (strncmp (argv[n], "--", 2) == 0) {
+               const char *arg = argv[n] + 2;
 
-          if (strcmp( arg, "-h" ) == 0 || strcmp( arg, "--help" ) == 0) {
-               print_usage();
-               return DFB_FALSE;
-          }
-
-          if (strcmp( arg, "-d" ) == 0 || strcmp( arg, "--debug" ) == 0) {
-               debug = true;
-               continue;
-          }
-
-          if (strcmp( arg, "-f" ) == 0 || strcmp( arg, "--format" ) == 0) {
-               if (++n == argc) {
+               if (strcmp( arg, "help" ) == 0) {
                     print_usage();
                     return DFB_FALSE;
                }
 
-               if (!parse_format( argv[n] ))
-                    return DFB_FALSE;
+               if (strncmp( arg, "format=", 7 ) == 0) {
+                    if (!parse_format( arg + 7 ))
+                         return DFB_FALSE;
 
-               continue;
+                    continue;
+               }
+
+               if (strncmp( arg, "name=", 5 ) == 0 && !name) {
+                    name = arg + 5;
+                    if (*name)
+                         continue;
+               }
+
+               if (strcmp( arg, "simple-dither" ) == 0) {
+                    simpledither = true;
+                    continue;
+               }
+
+               if (strncmp( arg, "transparent=", 12 ) == 0) {
+                    if (!parse_transparent( arg + 12 ))
+                         return DFB_FALSE;
+
+                    continue;
+               }
           }
 
-          if (strcmp( arg, "-s" ) == 0 || strcmp( arg, "--simple-dither" ) == 0) {
-               simpledither = true;
-               continue;
-          }
-
-          if (strcmp( arg, "-p" ) == 0 || strcmp( arg, "--premultiplied" ) == 0) {
-               premultiplied = true;
-               continue;
-          }
-
-          if (filename || access( arg, R_OK )) {
+          if (filename || access( argv[n], R_OK )) {
                print_usage();
                return DFB_FALSE;
           }
 
-          filename = arg;
+          filename = argv[n];
      }
 
      if (!filename) {
@@ -156,7 +172,7 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
 
 /**********************************************************************************************************************/
 
-static DFBResult load_image( DFBSurfaceDescription *desc )
+static DFBResult load_image( DFBSurfaceDescription *desc, DFBColor *palette, int *palette_size )
 {
      DFBSurfacePixelFormat  dest_format;
      DFBSurfacePixelFormat  src_format;
@@ -239,6 +255,10 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
                break;
 
           case PNG_COLOR_TYPE_PALETTE:
+               if (dest_format == DSPF_LUT8) {
+                    src_format = DSPF_LUT8;
+                    break;
+               }
                png_set_palette_to_rgb( png_ptr );
                /* fall through */
 
@@ -254,6 +274,32 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
      }
 
      switch (src_format) {
+          case DSPF_LUT8: {
+               png_colorp info_palette;
+               int        num_palette;
+
+               png_get_PLTE( png_ptr, info_ptr, &info_palette, &num_palette );
+
+               if (num_palette) {
+                    int       i, num;
+                    png_byte *alpha;
+
+                    *palette_size = MIN( num_palette, 256 );
+                    for (i = 0; i < *palette_size; i++) {
+                         palette[i].a = 0xFF;
+                         palette[i].r = info_palette[i].red;
+                         palette[i].g = info_palette[i].green;
+                         palette[i].b = info_palette[i].blue;
+                    }
+
+                    if (png_get_valid( png_ptr, info_ptr, PNG_INFO_tRNS )) {
+                         png_get_tRNS( png_ptr, info_ptr, &alpha, &num, NULL );
+                         for (i = 0; i < MIN( num, *palette_size ); i++)
+                              palette[i].a = alpha[i];
+                    }
+               }
+               break;
+          }
           case DSPF_RGB32:
                 png_set_filler( png_ptr, 0xFF,
 #ifdef WORDS_BIGENDIAN
@@ -272,7 +318,9 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
                break;
      }
 
-     pitch = (DFB_BYTES_PER_LINE( src_format, width ) + 7) & ~7;
+     pitch = width * DFB_BYTES_PER_PIXEL( src_format );
+     if (pitch & 3)
+          pitch += 4 - (pitch & 3);
 
      data = malloc( height * pitch );
      if (!data) {
@@ -291,17 +339,18 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
      if (!dest_format)
           dest_format = src_format;
 
-     if (premultiplied) {
-          for (y = 0; y < height; y++) {
-               u32 *p = (u32*)(data + y * pitch);
+     /* replace color in completely transparent pixels */
+     if (transparent && DFB_PIXELFORMAT_HAS_ALPHA( src_format )) {
+          unsigned char *row;
+          int            h;
 
-               for (x = 0; x < width; x++) {
-                    u32 s = p[x];
-                    u32 a = (s >> 24) + 1;
+          for (row = data, h = height; h; h--, row += pitch) {
+               u32 *pixel;
+               int  w;
 
-                    p[x] = ((((s & 0x00FF00FF) * a) >> 8) & 0x00FF00FF) |
-                           ((((s & 0x0000FF00) * a) >> 8) & 0x0000FF00) |
-                           (   s & 0xFF000000                         );
+               for (pixel = (u32*) row, w = width; w; w--, pixel++) {
+                    if ((*pixel & 0xFF000000) == 0)
+                         *pixel = dfb_color_to_argb( transparent );
                }
           }
      }
@@ -311,7 +360,9 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
           int            d_pitch;
           int            h = height;
 
-          d_pitch = (DFB_BYTES_PER_LINE( dest_format, width ) + 7) & ~7;
+          d_pitch = width * DFB_BYTES_PER_PIXEL( dest_format );
+          if (d_pitch & 3)
+               d_pitch += 4 - (d_pitch & 3);
 
           dest = malloc( height * d_pitch );
           if (!dest) {
@@ -458,45 +509,154 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 
 /**********************************************************************************************************************/
 
-static DFIFFHeader header = {
-     magic: { 'D', 'F', 'I', 'F', 'F' },
-     major: 0,
-     minor: 0,
-     flags: 0x01
-};
+static char *variable_name( const char *s )
+{
+     char *vname = strdup( s );
+     char *v     = vname;
 
-#define DFIFF_FLAG_PREMULTIPLIED 0x02
+     while (DFB_TRUE) {
+          switch (*v) {
+               case 0:
+                    return vname;
+               case 'a'...'z':
+               case 'A'...'Z':
+               case '0'...'9':
+               case '_':
+                    break;
+               default:
+                    *v = '_';
+          }
+
+          v++;
+     }
+}
+
+typedef struct {
+     int  pos;
+     bool pad;
+} CSourceData;
+
+static inline void save_uchar( CSourceData *csource, unsigned char d )
+{
+     if (csource->pos > 70) {
+          fprintf( stdout, "\"\n  \"" );
+
+          csource->pos = 3;
+          csource->pad = false;
+     }
+
+     if (d < 33 || d > 126) {
+          fprintf( stdout, "\\%o", d );
+          csource->pos += 1 + 1 + (d > 7) + (d > 63);
+          csource->pad = d < 64;
+          return;
+     }
+
+     if (d == '\\') {
+          fprintf( stdout, "\\\\" );
+          csource->pos += 2;
+     }
+     else if (d == '"') {
+          fprintf( stdout, "\\\"" );
+          csource->pos += 2;
+     }
+     else if (csource->pad && d >= '0' && d <= '9') {
+          fprintf( stdout, "\"\"%c", d );
+          csource->pos += 3;
+     }
+     else {
+          fputc( d, stdout );
+          csource->pos += 1;
+     }
+
+     csource->pad = false;
+}
+
+static void dump_data( const char *vname, const unsigned char *data, unsigned int len )
+{
+     CSourceData csource;
+
+     fprintf( stdout, "static const unsigned char %s_data[] =\n", vname );
+     fprintf( stdout, "  \"" );
+
+     csource.pos = 3;
+     csource.pad = false;
+
+     do
+          save_uchar( &csource, *data++ );
+     while (--len);
+
+     fprintf( stdout, "\";\n\n" );
+}
+
+static void dump_image( DFBSurfaceDescription *desc, DFBColor *palette, int palette_size )
+{
+     int            i;
+     char          *vname;
+     unsigned char *data;
+     unsigned long  len;
+
+     for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
+          if (format_names[i].format == desc->pixelformat) {
+               break;
+          }
+     }
+
+     vname = variable_name( name ?: strrchr( filename, '/' ) ?: filename );
+     data  = desc->preallocated[0].data;
+     len   = desc->height * desc->preallocated[0].pitch;
+
+     /* dump comment */
+     fprintf( stdout, "/* DirectFB surface dump created by directfb-csource */\n\n" );
+
+     /* dump data */
+     dump_data( vname, data, len );
+
+     /* dump palette */
+     if (palette_size > 0) {
+          fprintf( stdout, "static const DFBColor %s_palette[%d] = {\n", vname, palette_size );
+          for (i = 0; i < palette_size; i++)
+               fprintf( stdout, "  { 0x%02x, 0x%02x, 0x%02x, 0x%02x }%c\n",
+                        palette[i].a, palette[i].r, palette[i].g, palette[i].b, i + 1 < palette_size ? ',' : ' ' );
+          fprintf( stdout, "};\n\n" );
+     }
+
+     /* dump description */
+     fprintf( stdout, "static const DFBSurfaceDescription %s_desc = {\n", vname );
+     fprintf( stdout, "  flags                   : DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT |\n"
+                      "                            DSDESC_PREALLOCATED" );
+     if (palette_size > 0)
+          fprintf( stdout, " | DSDESC_PALETTE" );
+     fprintf( stdout, ",\n" );
+     fprintf( stdout, "  width                   : %d,\n", desc->width );
+     fprintf( stdout, "  height                  : %d,\n", desc->height );
+     fprintf( stdout, "  pixelformat             : DSPF_%s,\n", format_names[i].name );
+     fprintf( stdout, "  preallocated : {{  data : (void*) %s_data,\n", vname );
+     fprintf( stdout, "                    pitch : %d }}", desc->preallocated[0].pitch );
+     if (palette_size > 0) {
+          fprintf( stdout, ",\n");
+          fprintf( stdout, "  palette :    {  entries : %s_palette,\n", vname );
+          fprintf( stdout, "                     size : %d  }", palette_size );
+     }
+     fprintf( stdout, "\n};\n" );
+
+     free( vname );
+}
 
 int main( int argc, char *argv[] )
 {
-     int                   i;
      DFBSurfaceDescription desc;
+     DFBColor              palette[256];
+     int                   palette_size = 0;
 
      /* Parse the command line. */
      if (!parse_command_line( argc, argv ))
           return -1;
 
-     if (load_image( &desc ))
+     if (load_image( &desc, palette, &palette_size ))
           return -2;
 
-     for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
-          if (format_names[i].format == desc.pixelformat) {
-               DEBUG( "Writing image: %dx%d, %s\n", desc.width, desc.height, format_names[i].name );
-               break;
-          }
-     }
-
-     header.width  = desc.width;
-     header.height = desc.height;
-     header.format = desc.pixelformat;
-     header.pitch  = desc.preallocated[0].pitch;
-
-     if (premultiplied)
-          header.flags |= DFIFF_FLAG_PREMULTIPLIED;
-
-     fwrite( &header, sizeof(header), 1, stdout );
-
-     fwrite( desc.preallocated[0].data, header.pitch, header.height, stdout );
+     dump_image( &desc, palette, palette_size );
 
      free( desc.preallocated[0].data );
 
