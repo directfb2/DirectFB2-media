@@ -1,3 +1,24 @@
+commit 2f60c93927ccd7b2f2587a1377d351800729bf70
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Aug 26 22:03:43 2022 +0200
+
+    mkdfvff: Add an option to set the number of video frames to output
+
+commit 7b5f635b519899f7c163429847b079901f95633c
+Merge: 3ca663f e8dc6af
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Jun 8 19:26:49 2022 +0200
+
+    Merge pull request #11 from caramelli/master
+    
+    Add directfb-csource tool
+
+commit e8dc6af746af68221df62e31fd16db2bc15e446e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jun 8 18:43:31 2022 +0200
+
+    Update ChangeLog
+
 commit 9240297e847d20b657675c91a8ea475b859ce038
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Jun 8 18:42:57 2022 +0200
