@@ -276,7 +276,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 
      data = malloc( height * pitch );
      if (!data) {
-          fprintf( stderr, "Failed to allocate %lu bytes!\n", (unsigned long) (height * pitch) );
+          fprintf( stderr, "Failed to allocate %lu bytes!\n", height * pitch );
           goto out;
      }
      else {
@@ -293,7 +293,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 
      if (premultiplied) {
           for (y = 0; y < height; y++) {
-               u32 *p = (u32*)(data + y * pitch);
+               u32 *p = (u32*) (data + y * pitch);
 
                for (x = 0; x < width; x++) {
                     u32 s = p[x];
@@ -315,7 +315,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 
           dest = malloc( height * d_pitch );
           if (!dest) {
-               fprintf( stderr, "Failed to allocate %lu bytes!\n", (unsigned long) (height * d_pitch) );
+               fprintf( stderr, "Failed to allocate %lu bytes!\n", height * d_pitch );
                goto out;
           }
 

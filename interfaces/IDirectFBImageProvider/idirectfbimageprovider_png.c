@@ -542,7 +542,7 @@ png_info_callback( png_structp png_read_ptr,
      /* Set info stage. */
      data->stage = STAGE_INFO;
 
-     png_get_IHDR( data->png_ptr, data->info_ptr, (png_uint_32 *)&data->width, (png_uint_32 *)&data->height, &data->bpp,
+     png_get_IHDR( data->png_ptr, data->info_ptr, (png_uint_32*) &data->width, (png_uint_32*) &data->height, &data->bpp,
                    &data->color_type, NULL, NULL, NULL );
 
      data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;

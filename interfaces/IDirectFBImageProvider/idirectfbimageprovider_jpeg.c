@@ -489,7 +489,7 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
                          if (direct) {
                               switch (dst_data->surface->config.format) {
                                    case DSPF_NV16:
-                                        copy_line_nv16( lock.addr, (u16*)lock.addr + uv_offset, *buffer, rect.w );
+                                        copy_line_nv16( lock.addr, (u16*) lock.addr + uv_offset, *buffer, rect.w );
                                         break;
 
                                    case DSPF_UYVY:
