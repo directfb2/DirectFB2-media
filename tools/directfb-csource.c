@@ -324,7 +324,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc, DFBColor *palette, int
 
      data = malloc( height * pitch );
      if (!data) {
-          fprintf( stderr, "Failed to allocate %lu bytes!\n", (unsigned long) (height * pitch) );
+          fprintf( stderr, "Failed to allocate %lu bytes!\n", height * pitch );
           goto out;
      }
      else {
@@ -366,7 +366,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc, DFBColor *palette, int
 
           dest = malloc( height * d_pitch );
           if (!dest) {
-               fprintf( stderr, "Failed to allocate %lu bytes!\n", (unsigned long) (height * d_pitch) );
+               fprintf( stderr, "Failed to allocate %lu bytes!\n", height * d_pitch );
                goto out;
           }
 

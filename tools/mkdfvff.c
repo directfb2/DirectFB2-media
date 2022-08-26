@@ -25,12 +25,13 @@ static const DirectFBColorSpaceNames(colorspace_names);
 
 static const char            *filename   = NULL;
 static bool                   debug      = false;
-static DFBSurfacePixelFormat  format     = DSPF_YUV444P;
-static int                    width      = 320;
-static int                    height     = 180;
 static DFBSurfaceColorSpace   colorspace = DSCS_BT601;
+static DFBSurfacePixelFormat  format     = DSPF_YUV444P;
 static unsigned int           fps_num    = 24;
 static unsigned int           fps_den    = 1;
+static int                    width      = 0;
+static int                    height     = 0;
+static unsigned long          nframes    = 0;
 
 #define DEBUG(...)                             \
      do {                                      \
@@ -45,13 +46,14 @@ static void print_usage()
      int i = 0;
 
      fprintf( stderr, "DirectFB Fast Video File Format Tool\n\n" );
-     fprintf( stderr, "Usage: mkdfvff [options] image\n\n" );
+     fprintf( stderr, "Usage: mkdfvff [options] video\n\n" );
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                           Output debug information.\n" );
-     fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default YUV444P).\n" );
-     fprintf( stderr, "  -s, --size       <width>x<height>     Choose the size (default 320x180).\n" );
      fprintf( stderr, "  -c, --colorspace <colorspace>         Choose the color space (default BT601).\n" );
+     fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default YUV444P).\n" );
      fprintf( stderr, "  -r, --rate       <fps_num>/<fps_den>  Choose the frame rate (default 24).\n" );
+     fprintf( stderr, "  -s, --size       <width>x<height>     Set frame size.\n" );
+     fprintf( stderr, "  -n, --nframes    <nframes>            Set the number of frames to output.\n" );
      fprintf( stderr, "  -h, --help                            Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
@@ -80,6 +82,25 @@ static void print_usage()
      fprintf( stderr, "\n" );
 }
 
+static DFBBoolean parse_colorspace( const char *arg )
+{
+     int i = 0;
+
+     while (colorspace_names[i].colorspace != DSCS_UNKNOWN) {
+          if (!strcasecmp( arg, colorspace_names[i].name ) &&
+              colorspace_names[i].colorspace != DSCS_RGB) {
+               colorspace = colorspace_names[i].colorspace;
+               return DFB_TRUE;
+          }
+
+          ++i;
+     }
+
+     fprintf( stderr, "Invalid color space specified!\n" );
+
+     return DFB_FALSE;
+}
+
 static DFBBoolean parse_format( const char *arg )
 {
      int i = 0;
@@ -100,41 +121,22 @@ static DFBBoolean parse_format( const char *arg )
      return DFB_FALSE;
 }
 
-static DFBBoolean parse_size( const char *arg )
-{
-     if( sscanf( arg, "%dx%d", &width, &height ) == 2 )
-         return DFB_TRUE;
-
-     fprintf( stderr, "Invalid size specified!\n" );
-
-     return DFB_FALSE;
-}
-
-static DFBBoolean parse_colorspace( const char *arg )
-{
-     int i = 0;
-
-     while (colorspace_names[i].colorspace != DSCS_UNKNOWN) {
-          if (!strcasecmp( arg, colorspace_names[i].name ) &&
-              colorspace_names[i].colorspace != DSCS_RGB) {
-               colorspace = colorspace_names[i].colorspace;
-               return DFB_TRUE;
-          }
-
-          ++i;
-     }
-
-     fprintf( stderr, "Invalid color space specified!\n" );
-
-     return DFB_FALSE;
-}
-
 static DFBBoolean parse_rate( const char *arg )
 {
-     if( sscanf( arg, "%u/%u", &fps_num, &fps_den ) == 2 )
+     if (sscanf( arg, "%u/%u", &fps_num, &fps_den ) == 2)
          return DFB_TRUE;
 
      fprintf( stderr, "Invalid frame rate specified!\n" );
+
+     return DFB_FALSE;
+}
+
+static DFBBoolean parse_size( const char *arg )
+{
+     if (sscanf( arg, "%dx%d", &width, &height ) == 2)
+         return DFB_TRUE;
+
+     fprintf( stderr, "Invalid size specified!\n" );
 
      return DFB_FALSE;
 }
@@ -156,6 +158,18 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                continue;
           }
 
+          if (strcmp( arg, "-c" ) == 0 || strcmp( arg, "--colorspace" ) == 0) {
+               if (++n == argc) {
+                    print_usage();
+                    return DFB_FALSE;
+               }
+
+               if (!parse_colorspace( argv[n] ))
+                    return DFB_FALSE;
+
+               continue;
+          }
+
           if (strcmp( arg, "-f" ) == 0 || strcmp( arg, "--format" ) == 0) {
                if (++n == argc) {
                     print_usage();
@@ -163,6 +177,18 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                }
 
                if (!parse_format( argv[n] ))
+                    return DFB_FALSE;
+
+               continue;
+          }
+
+          if (strcmp( arg, "-r" ) == 0 || strcmp( arg, "--rate" ) == 0) {
+               if (++n == argc) {
+                    print_usage();
+                    return DFB_FALSE;
+               }
+
+               if (!parse_rate( argv[n] ))
                     return DFB_FALSE;
 
                continue;
@@ -180,26 +206,13 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                continue;
           }
 
-          if (strcmp( arg, "-c" ) == 0 || strcmp( arg, "--colorspace" ) == 0) {
+          if (strcmp( arg, "-n" ) == 0 || strcmp( arg, "--nframes" ) == 0) {
                if (++n == argc) {
                     print_usage();
                     return DFB_FALSE;
                }
 
-               if (!parse_colorspace( argv[n] ))
-                    return DFB_FALSE;
-
-               continue;
-          }
-
-          if (strcmp( arg, "-r" ) == 0 || strcmp( arg, "--rate" ) == 0) {
-               if (++n == argc) {
-                    print_usage();
-                    return DFB_FALSE;
-               }
-
-               if (!parse_rate( argv[n] ))
-                    return DFB_FALSE;
+               nframes = strtoul( argv[n], NULL, 10 );
 
                continue;
           }
@@ -226,7 +239,6 @@ static long load_video( DFBSurfaceDescription *desc )
 {
      int            frame_size;
      struct stat    st;
-     long           nb_frames;
      FILE          *fp;
      unsigned char *data = NULL;
 
@@ -240,9 +252,16 @@ static long load_video( DFBSurfaceDescription *desc )
           goto out;
      }
 
-     stat( filename, &st );
+     if (!width || !height) {
+          fprintf( stderr, "No size specified!\n" );
+          goto out;
+     }
 
-     nb_frames = st.st_size / frame_size;
+     if (!nframes) {
+          stat( filename, &st );
+
+          nframes = st.st_size / frame_size;
+     }
 
      data = malloc( frame_size );
      if (!data) {
@@ -263,20 +282,20 @@ static long load_video( DFBSurfaceDescription *desc )
      if (fp)
           fclose( fp );
 
-     return desc->flags ? nb_frames : DFB_FAILURE;
+     return desc->flags ? DFB_OK : DFB_FAILURE;
 }
 
-static void write_frames( DFBSurfaceDescription *desc, long nb_frames )
+static void write_frames( DFBSurfaceDescription *desc )
 {
-     int   frame_size;
-     long  frame;
-     FILE *fp = NULL;
+     int            frame_size;
+     unsigned long  frame;
+     FILE          *fp = NULL;
 
      frame_size = DFB_BYTES_PER_LINE( format, width ) * DFB_PLANE_MULTIPLY( format, height );
 
      fp = fopen( filename, "rb" );
 
-     for (frame = 0; frame < nb_frames; frame++) {
+     for (frame = 0; frame < nframes; frame++) {
           fread( desc->preallocated[0].data, 1, frame_size, fp );
 
           fwrite( desc->preallocated[0].data, 1, frame_size, stdout );
@@ -297,21 +316,20 @@ static DFVFFHeader header = {
 int main( int argc, char *argv[] )
 {
      int                   i, j;
-     long                  nb_frames;
      DFBSurfaceDescription desc;
 
      /* Parse the command line. */
      if (!parse_command_line( argc, argv ))
           return -1;
 
-     if (!(nb_frames = load_video( &desc )))
+     if (load_video( &desc ))
           return -2;
 
      for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
           if (format_names[i].format == desc.pixelformat) {
                for (j = 0; j < D_ARRAY_SIZE(colorspace_names); j++) {
                     if (colorspace_names[j].colorspace == desc.colorspace) {
-                         DEBUG( "Writing video (%ld frames): %dx%d, %s(%s), %u/%u fps\n", nb_frames, desc.width,
+                         DEBUG( "Writing video (%lu frames): %dx%d, %s(%s), %u/%u fps\n", nframes, desc.width,
                                  desc.height, format_names[i].name, colorspace_names[j].name, fps_num, fps_den );
                          break;
                     }
@@ -329,7 +347,7 @@ int main( int argc, char *argv[] )
 
      fwrite( &header, sizeof(header), 1, stdout );
 
-     write_frames( &desc, nb_frames );
+     write_frames( &desc );
 
      free( desc.preallocated[0].data );
 
