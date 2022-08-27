@@ -1,3 +1,24 @@
+commit 7945497145d344fd8b0e330ab7eba7345b98cde2
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Aug 27 08:58:20 2022 +0200
+
+    mkdfiff: Add raw input image support
+
+commit 9fb221026a347f6f6fe783411814abbb308e7e76
+Merge: 7b5f635 b9d7db5
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Aug 26 22:05:10 2022 +0200
+
+    Merge pull request #12 from caramelli/master
+    
+    mkdfvff: Add an option to set the number of video frames to output
+
+commit b9d7db54247d8bfdd8e24c09c50155698a3a92ed
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Aug 26 22:03:53 2022 +0200
+
+    Update ChangeLog
+
 commit 2f60c93927ccd7b2f2587a1377d351800729bf70
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Aug 26 22:03:43 2022 +0200

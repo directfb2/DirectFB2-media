@@ -22,28 +22,14 @@
 #include <gfx/convert.h>
 #include <png.h>
 
-#define DM_565_WIDTH       8
-#define DM_565_HEIGHT      8
-#define DM_565_WIDTH_SHIFT 3
-
-static const u32 DM_565[DM_565_WIDTH * DM_565_HEIGHT] = {
-     3072, 4195332, 1051649, 5243909, 3072, 4195332, 1051649, 5243909,
-     6291462, 2099202, 7340039, 3147779, 6291462, 2099202, 7340039, 3147779,
-     1051649, 5243909, 3072, 4195332, 1051649, 5243909, 3072, 4195332,
-     7340039, 3147779, 6291462, 2099202, 7340039, 3147779, 6291462, 2099202,
-     3072, 4195332, 1051649, 5243909, 3072, 4195332, 1051649, 5243909,
-     6291462, 2099202, 7340039, 3147779, 6291462, 2099202, 7340039, 3147779,
-     1051649, 5243909, 3072, 4195332, 1051649, 5243909, 3072, 4195332,
-     7340039, 3147779, 6291462, 2099202, 7340039, 3147779, 6291462, 2099202,
-};
-
 static const DirectFBPixelFormatNames(format_names);
 
 static const char            *filename      = NULL;
 static bool                   debug         = false;
 static DFBSurfacePixelFormat  format        = DSPF_UNKNOWN;
-static bool                   simpledither  = false;
 static bool                   premultiplied = false;
+static int                    width         = 0;
+static int                    height        = 0;
 
 #define DEBUG(...)                             \
      do {                                      \
@@ -60,11 +46,11 @@ static void print_usage()
      fprintf( stderr, "DirectFB Fast Image File Format Tool\n\n" );
      fprintf( stderr, "Usage: mkdfiff [options] image\n\n" );
      fprintf( stderr, "Options:\n\n" );
-     fprintf( stderr, "  -d, --debug                 Output debug information.\n" );
-     fprintf( stderr, "  -f, --format <pixelformat>  Choose the pixel format (default ARGB or RGB32).\n" );
-     fprintf( stderr, "  -s, --simple-dither         Use a pre-generated dither matrix (only for RGB16).\n" );
-     fprintf( stderr, "  -p, --premultiplied         Generate premultiplied pixels.\n" );
-     fprintf( stderr, "  -h, --help                  Show this help message.\n\n" );
+     fprintf( stderr, "  -d, --debug                    Output debug information.\n" );
+     fprintf( stderr, "  -f, --format <pixelformat>     Choose the pixel format (default ARGB or RGB32).\n" );
+     fprintf( stderr, "  -p, --premultiplied            Generate premultiplied pixels (default false).\n" );
+     fprintf( stderr, "  -s, --size   <width>x<height>  Set image size (for raw input image).\n" );
+     fprintf( stderr, "  -h, --help                     Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
           DFBSurfacePixelFormat format = format_names[i].format;
@@ -99,6 +85,16 @@ static DFBBoolean parse_format( const char *arg )
      return DFB_FALSE;
 }
 
+static DFBBoolean parse_size( const char *arg )
+{
+     if (sscanf( arg, "%dx%d", &width, &height ) == 2)
+         return DFB_TRUE;
+
+     fprintf( stderr, "Invalid size specified!\n" );
+
+     return DFB_FALSE;
+}
+
 static DFBBoolean parse_command_line( int argc, char *argv[] )
 {
      int n;
@@ -128,13 +124,20 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                continue;
           }
 
-          if (strcmp( arg, "-s" ) == 0 || strcmp( arg, "--simple-dither" ) == 0) {
-               simpledither = true;
+          if (strcmp( arg, "-p" ) == 0 || strcmp( arg, "--premultiplied" ) == 0) {
+               premultiplied = true;
                continue;
           }
 
-          if (strcmp( arg, "-p" ) == 0 || strcmp( arg, "--premultiplied" ) == 0) {
-               premultiplied = true;
+          if (strcmp( arg, "-s" ) == 0 || strcmp( arg, "--size" ) == 0) {
+               if (++n == argc) {
+                    print_usage();
+                    return DFB_FALSE;
+               }
+
+               if (!parse_size( argv[n] ))
+                    return DFB_FALSE;
+
                continue;
           }
 
@@ -162,7 +165,6 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
      DFBSurfacePixelFormat  src_format;
      char                   header[8];
      int                    bytes, type;
-     png_uint_32            width, height;
      int                    pitch, x, y;
      FILE                  *fp;
      png_structp            png_ptr  = NULL;
@@ -180,258 +182,269 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
           goto out;
      }
 
-     bytes = fread( header, 1, sizeof(header), fp );
-
-     if (png_sig_cmp( (unsigned char*) header, 0, bytes )) {
-          fprintf( stderr, "File '%s' doesn't seem to be a PNG image!\n", filename );
-          goto out;
-     }
-
-     png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-     if (!png_ptr)
-          goto out;
-
-     if (setjmp( png_jmpbuf( png_ptr ) )) {
-          if (desc->preallocated[0].data) {
-               free (desc->preallocated[0].data);
-               desc->preallocated[0].data = NULL;
-          }
-
-          /* data might have been clobbered */
-          data = NULL;
-
-          goto out;
-     }
-
-     info_ptr = png_create_info_struct( png_ptr );
-     if (!info_ptr)
-          goto out;
-
-     png_init_io( png_ptr, fp );
-
-     png_set_sig_bytes( png_ptr, bytes );
-
-     png_read_info( png_ptr, info_ptr );
-
-     png_get_IHDR( png_ptr, info_ptr, &width, &height, &bytes, &type, NULL, NULL, NULL );
-
-     if (bytes == 16)
-          png_set_strip_16( png_ptr );
-
-#ifdef WORDS_BIGENDIAN
-     png_set_swap_alpha( png_ptr );
-#else
-     png_set_bgr( png_ptr );
-#endif
-
-     src_format = (type & PNG_COLOR_MASK_ALPHA) ? DSPF_ARGB : DSPF_RGB32;
-
-     switch (type) {
-          case PNG_COLOR_TYPE_GRAY:
-               if (dest_format == DSPF_A8) {
-                    src_format = DSPF_A8;
-                    break;
-               }
-               /* fall through */
-
-          case PNG_COLOR_TYPE_GRAY_ALPHA:
-               png_set_gray_to_rgb( png_ptr );
-               break;
-
-          case PNG_COLOR_TYPE_PALETTE:
-               png_set_palette_to_rgb( png_ptr );
-               /* fall through */
-
-          case PNG_COLOR_TYPE_RGB:
-               /* fall through */
-
-          case PNG_COLOR_TYPE_RGB_ALPHA:
-               if (dest_format == DSPF_RGB24) {
-                    png_set_strip_alpha( png_ptr );
-                    src_format = DSPF_RGB24;
-               }
-               break;
-     }
-
-     switch (src_format) {
-          case DSPF_RGB32:
-                png_set_filler( png_ptr, 0xFF,
-#ifdef WORDS_BIGENDIAN
-                                PNG_FILLER_BEFORE
-#else
-                                PNG_FILLER_AFTER
-#endif
-                              );
-                break;
-          case DSPF_ARGB:
-          case DSPF_A8:
-               if (png_get_valid( png_ptr, info_ptr, PNG_INFO_tRNS ))
-                    png_set_tRNS_to_alpha( png_ptr );
-               break;
-          default:
-               break;
-     }
-
-     pitch = (DFB_BYTES_PER_LINE( src_format, width ) + 7) & ~7;
-
-     data = malloc( height * pitch );
-     if (!data) {
-          fprintf( stderr, "Failed to allocate %lu bytes!\n", height * pitch );
-          goto out;
-     }
-     else {
-          png_bytep row_ptrs[height];
-
-          for (y = 0; y < height; y++)
-               row_ptrs[y] = data + y * pitch;
-
-          png_read_image( png_ptr, row_ptrs );
-     }
-
-     if (!dest_format)
-          dest_format = src_format;
-
-     if (premultiplied) {
-          for (y = 0; y < height; y++) {
-               u32 *p = (u32*) (data + y * pitch);
-
-               for (x = 0; x < width; x++) {
-                    u32 s = p[x];
-                    u32 a = (s >> 24) + 1;
-
-                    p[x] = ((((s & 0x00FF00FF) * a) >> 8) & 0x00FF00FF) |
-                           ((((s & 0x0000FF00) * a) >> 8) & 0x0000FF00) |
-                           (   s & 0xFF000000                         );
-               }
-          }
-     }
-
-     if (DFB_BYTES_PER_PIXEL( src_format ) != DFB_BYTES_PER_PIXEL( dest_format )) {
-          unsigned char *s, *d, *dest;
-          int            d_pitch;
-          int            h = height;
-
-          d_pitch = (DFB_BYTES_PER_LINE( dest_format, width ) + 7) & ~7;
-
-          dest = malloc( height * d_pitch );
-          if (!dest) {
-               fprintf( stderr, "Failed to allocate %lu bytes!\n", height * d_pitch );
+     if (width && height) {
+          if (!dest_format) {
+               fprintf( stderr, "No format specified!\n" );
                goto out;
           }
 
-          switch (dest_format) {
-               case DSPF_RGB444:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_rgb444( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_RGB555:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_rgb555( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_BGR555:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_bgr555( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_RGB16:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch) {
-                         if (simpledither) {
-                              const u32 *dm  = DM_565 + ((h & (DM_565_HEIGHT - 1)) << DM_565_WIDTH_SHIFT);
-                              u32 *src = (u32*) s;
-                              u16 *dst = (u16*) d;
-
-                              for (x = 0; x < width; x++) {
-                                   u32 rgb = (src[x] & 0xFF) | (src[x] & 0xFF00) << 2 | (src[x] & 0xFF0000) << 4;
-                                   rgb += dm[x & (DM_565_WIDTH - 1)];
-                                   rgb += (0x10040100 - ((rgb & 0x1E0001E0) >> 5) - ((rgb & 0x00070000) >> 6));
-                                   dst[x] = (rgb & 0x0F800000) >> 12 | (rgb & 0x0003F000) >> 7 | (rgb & 0x000000F8) >> 3;
-                              }
-                         }
-                         else
-                              dfb_argb_to_rgb16( (u32*) s, (u16*) d, width );
-                    }
-                    break;
-               case DSPF_RGB18:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-#ifdef WORDS_BIGENDIAN
-                         dfb_argb_to_rgb18be( (u32*) s, (u8*) d, width );
-#else
-                         dfb_argb_to_rgb18le( (u32*) s, (u8*) d, width );
-#endif
-                    break;
-               case DSPF_ARGB1666:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-#ifdef WORDS_BIGENDIAN
-                         dfb_argb_to_argb1666be( (u32*) s, (u8*) d, width );
-#else
-                         dfb_argb_to_argb1666le( (u32*) s, (u8*) d, width );
-#endif
-                    break;
-               case DSPF_ARGB6666:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-#ifdef WORDS_BIGENDIAN
-                         dfb_argb_to_argb6666be( (u32*) s, (u8*) d, width );
-#else
-                         dfb_argb_to_argb6666le( (u32*) s, (u8*) d, width );
-#endif
-                    break;
-               case DSPF_ARGB8565:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-#ifdef WORDS_BIGENDIAN
-                         dfb_argb_to_argb8565be( (u32*) s, (u8*) d, width );
-#else
-                         dfb_argb_to_argb8565le( (u32*) s, (u8*) d, width );
-#endif
-                    break;
-               case DSPF_ARGB1555:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_argb1555( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_RGBA5551:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_rgba5551( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_ARGB2554:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_argb2554( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_ARGB4444:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_argb4444( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_RGBA4444:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_rgba4444( (u32*) s, (u16*) d, width );
-                    break;
-               case DSPF_RGB332:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_rgb332( (u32*) s, (u8*) d, width );
-                    break;
-               case DSPF_A8:
-                    for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
-                         dfb_argb_to_a8( (u32*) s, (u8*) d, width );
-                    break;
-               default:
-                    fprintf( stderr, "Unsupported format conversion!\n" );
-                    goto out;
+          if (premultiplied) {
+               fprintf( stderr, "Generate premultiplied pixels is not supported for raw input image!\n" );
+               goto out;
           }
 
-          free( data );
-          data = dest;
-          pitch = d_pitch;
-     }
-     else if (dest_format == DSPF_ABGR) {
-          unsigned char *s;
-          int            h = height;
+          pitch = (DFB_BYTES_PER_LINE( dest_format, width ) + 7) & ~7;
 
-          for (s = data; h; h--, s += pitch)
-               dfb_argb_to_abgr( (u32*) s, (u32*) s, width );
+          data = malloc( height * pitch );
+          if (!data) {
+               fprintf( stderr, "Failed to allocate %d bytes!\n", height * pitch );
+               goto out;
+          }
+          else {
+               fread( data, 1, height * pitch, fp );
+          }
      }
-     else if (dest_format == DSPF_RGBAF88871) {
-          unsigned char *s;
-          int            h = height;
+     else {
+          bytes = fread( header, 1, sizeof(header), fp );
 
-          for (s = data; h; h--, s += pitch)
-               dfb_argb_to_rgbaf88871( (u32*) s, (u32*) s, width );
+          if (png_sig_cmp( (unsigned char*) header, 0, bytes )) {
+               fprintf( stderr, "File '%s' doesn't seem to be a PNG image!\n", filename );
+               goto out;
+          }
+
+          png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+          if (!png_ptr)
+               goto out;
+
+          if (setjmp( png_jmpbuf( png_ptr ) )) {
+               if (desc->preallocated[0].data) {
+                    free (desc->preallocated[0].data);
+                    desc->preallocated[0].data = NULL;
+               }
+
+               /* data might have been clobbered */
+               data = NULL;
+
+               goto out;
+          }
+
+          info_ptr = png_create_info_struct( png_ptr );
+          if (!info_ptr)
+               goto out;
+
+          png_init_io( png_ptr, fp );
+
+          png_set_sig_bytes( png_ptr, bytes );
+
+          png_read_info( png_ptr, info_ptr );
+
+          png_get_IHDR( png_ptr, info_ptr, (png_uint_32*) &width, (png_uint_32*) &height, &bytes,
+                        &type, NULL, NULL, NULL );
+
+          if (bytes == 16)
+               png_set_strip_16( png_ptr );
+
+     #ifdef WORDS_BIGENDIAN
+          png_set_swap_alpha( png_ptr );
+     #else
+          png_set_bgr( png_ptr );
+     #endif
+
+          src_format = (type & PNG_COLOR_MASK_ALPHA) ? DSPF_ARGB : DSPF_RGB32;
+
+          switch (type) {
+               case PNG_COLOR_TYPE_GRAY:
+                    if (dest_format == DSPF_A8) {
+                         src_format = DSPF_A8;
+                         break;
+                    }
+                    /* fall through */
+
+               case PNG_COLOR_TYPE_GRAY_ALPHA:
+                    png_set_gray_to_rgb( png_ptr );
+                    break;
+
+               case PNG_COLOR_TYPE_PALETTE:
+                    png_set_palette_to_rgb( png_ptr );
+                    /* fall through */
+
+               case PNG_COLOR_TYPE_RGB:
+                    /* fall through */
+
+               case PNG_COLOR_TYPE_RGB_ALPHA:
+                    if (dest_format == DSPF_RGB24) {
+                         png_set_strip_alpha( png_ptr );
+                         src_format = DSPF_RGB24;
+                    }
+                    break;
+          }
+
+          switch (src_format) {
+               case DSPF_RGB32:
+                     png_set_filler( png_ptr, 0xFF,
+     #ifdef WORDS_BIGENDIAN
+                                     PNG_FILLER_BEFORE
+     #else
+                                     PNG_FILLER_AFTER
+     #endif
+                                   );
+                     break;
+               case DSPF_ARGB:
+               case DSPF_A8:
+                    if (png_get_valid( png_ptr, info_ptr, PNG_INFO_tRNS ))
+                         png_set_tRNS_to_alpha( png_ptr );
+                    break;
+               default:
+                    break;
+          }
+
+          pitch = (DFB_BYTES_PER_LINE( src_format, width ) + 7) & ~7;
+
+          data = malloc( height * pitch );
+          if (!data) {
+               fprintf( stderr, "Failed to allocate %d bytes!\n", height * pitch );
+               goto out;
+          }
+          else {
+               png_bytep row_ptrs[height];
+
+               for (y = 0; y < height; y++)
+                    row_ptrs[y] = data + y * pitch;
+
+               png_read_image( png_ptr, row_ptrs );
+          }
+
+          if (!dest_format)
+               dest_format = src_format;
+
+          if (premultiplied) {
+               for (y = 0; y < height; y++) {
+                    u32 *p = (u32*) (data + y * pitch);
+
+                    for (x = 0; x < width; x++) {
+                         u32 s = p[x];
+                         u32 a = (s >> 24) + 1;
+
+                         p[x] = ((((s & 0x00FF00FF) * a) >> 8) & 0x00FF00FF) |
+                                ((((s & 0x0000FF00) * a) >> 8) & 0x0000FF00) |
+                                (   s & 0xFF000000                         );
+                    }
+               }
+          }
+
+          if (DFB_BYTES_PER_PIXEL( src_format ) != DFB_BYTES_PER_PIXEL( dest_format )) {
+               unsigned char *s, *d, *dest;
+               int            d_pitch;
+               int            h = height;
+
+               d_pitch = (DFB_BYTES_PER_LINE( dest_format, width ) + 7) & ~7;
+
+               dest = malloc( height * d_pitch );
+               if (!dest) {
+                    fprintf( stderr, "Failed to allocate %d bytes!\n", height * d_pitch );
+                    goto out;
+               }
+
+               switch (dest_format) {
+                    case DSPF_RGB444:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgb444( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGB555:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgb555( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_BGR555:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_bgr555( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGB16:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgb16( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGB18:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+     #ifdef WORDS_BIGENDIAN
+                              dfb_argb_to_rgb18be( (u32*) s, (u8*) d, width );
+     #else
+                              dfb_argb_to_rgb18le( (u32*) s, (u8*) d, width );
+     #endif
+                         break;
+                    case DSPF_ARGB1666:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+     #ifdef WORDS_BIGENDIAN
+                              dfb_argb_to_argb1666be( (u32*) s, (u8*) d, width );
+     #else
+                              dfb_argb_to_argb1666le( (u32*) s, (u8*) d, width );
+     #endif
+                         break;
+                    case DSPF_ARGB6666:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+     #ifdef WORDS_BIGENDIAN
+                              dfb_argb_to_argb6666be( (u32*) s, (u8*) d, width );
+     #else
+                              dfb_argb_to_argb6666le( (u32*) s, (u8*) d, width );
+     #endif
+                         break;
+                    case DSPF_ARGB8565:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+     #ifdef WORDS_BIGENDIAN
+                              dfb_argb_to_argb8565be( (u32*) s, (u8*) d, width );
+     #else
+                              dfb_argb_to_argb8565le( (u32*) s, (u8*) d, width );
+     #endif
+                         break;
+                    case DSPF_ARGB1555:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_argb1555( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGBA5551:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgba5551( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_ARGB2554:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_argb2554( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_ARGB4444:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_argb4444( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGBA4444:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgba4444( (u32*) s, (u16*) d, width );
+                         break;
+                    case DSPF_RGB332:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_rgb332( (u32*) s, (u8*) d, width );
+                         break;
+                    case DSPF_A8:
+                         for (s = data, d = dest; h; h--, s += pitch, d += d_pitch)
+                              dfb_argb_to_a8( (u32*) s, (u8*) d, width );
+                         break;
+                    default:
+                         fprintf( stderr, "Unsupported format conversion!\n" );
+                         goto out;
+               }
+
+               free( data );
+               data = dest;
+               pitch = d_pitch;
+          }
+          else if (dest_format == DSPF_ABGR) {
+               unsigned char *s;
+               int            h = height;
+
+               for (s = data; h; h--, s += pitch)
+                    dfb_argb_to_abgr( (u32*) s, (u32*) s, width );
+          }
+          else if (dest_format == DSPF_RGBAF88871) {
+               unsigned char *s;
+               int            h = height;
+
+               for (s = data; h; h--, s += pitch)
+                    dfb_argb_to_rgbaf88871( (u32*) s, (u32*) s, width );
+          }
      }
 
      desc->flags                 = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT | DSDESC_PREALLOCATED;

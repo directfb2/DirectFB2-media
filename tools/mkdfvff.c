@@ -25,8 +25,8 @@ static const DirectFBColorSpaceNames(colorspace_names);
 
 static const char            *filename   = NULL;
 static bool                   debug      = false;
-static DFBSurfaceColorSpace   colorspace = DSCS_BT601;
 static DFBSurfacePixelFormat  format     = DSPF_YUV444P;
+static DFBSurfaceColorSpace   colorspace = DSCS_BT601;
 static unsigned int           fps_num    = 24;
 static unsigned int           fps_den    = 1;
 static int                    width      = 0;
@@ -49,18 +49,18 @@ static void print_usage()
      fprintf( stderr, "Usage: mkdfvff [options] video\n\n" );
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                           Output debug information.\n" );
-     fprintf( stderr, "  -c, --colorspace <colorspace>         Choose the color space (default BT601).\n" );
      fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default YUV444P).\n" );
+     fprintf( stderr, "  -c, --colorspace <colorspace>         Choose the color space (default BT601).\n" );
      fprintf( stderr, "  -r, --rate       <fps_num>/<fps_den>  Choose the frame rate (default 24).\n" );
-     fprintf( stderr, "  -s, --size       <width>x<height>     Set frame size.\n" );
-     fprintf( stderr, "  -n, --nframes    <nframes>            Set the number of frames to output.\n" );
+     fprintf( stderr, "  -s, --size       <width>x<height>     Set video frame size (for raw input video).\n" );
+     fprintf( stderr, "  -n, --nframes    <nframes>            Set the number of video frames to output.\n" );
      fprintf( stderr, "  -h, --help                            Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
           DFBSurfacePixelFormat format = format_names[i].format;
           if (DFB_BYTES_PER_PIXEL( format_names[i].format ) < 3 &&
               DFB_COLOR_IS_YUV   ( format )) {
-               fprintf( stderr, "  %-7s %d byte(s)", format_names[i].name, DFB_BYTES_PER_PIXEL( format ) );
+               fprintf( stderr, "  %-10s %d byte(s)", format_names[i].name, DFB_BYTES_PER_PIXEL( format ) );
                if (DFB_PLANAR_PIXELFORMAT( format )) {
                     int planes = DFB_PLANE_MULTIPLY( format, 10 );
                     fprintf( stderr, " (x %d.%d)", planes / 10, planes % 10 );
@@ -82,25 +82,6 @@ static void print_usage()
      fprintf( stderr, "\n" );
 }
 
-static DFBBoolean parse_colorspace( const char *arg )
-{
-     int i = 0;
-
-     while (colorspace_names[i].colorspace != DSCS_UNKNOWN) {
-          if (!strcasecmp( arg, colorspace_names[i].name ) &&
-              colorspace_names[i].colorspace != DSCS_RGB) {
-               colorspace = colorspace_names[i].colorspace;
-               return DFB_TRUE;
-          }
-
-          ++i;
-     }
-
-     fprintf( stderr, "Invalid color space specified!\n" );
-
-     return DFB_FALSE;
-}
-
 static DFBBoolean parse_format( const char *arg )
 {
      int i = 0;
@@ -117,6 +98,25 @@ static DFBBoolean parse_format( const char *arg )
      }
 
      fprintf( stderr, "Invalid pixel format specified!\n" );
+
+     return DFB_FALSE;
+}
+
+static DFBBoolean parse_colorspace( const char *arg )
+{
+     int i = 0;
+
+     while (colorspace_names[i].colorspace != DSCS_UNKNOWN) {
+          if (!strcasecmp( arg, colorspace_names[i].name ) &&
+              colorspace_names[i].colorspace != DSCS_RGB) {
+               colorspace = colorspace_names[i].colorspace;
+               return DFB_TRUE;
+          }
+
+          ++i;
+     }
+
+     fprintf( stderr, "Invalid color space specified!\n" );
 
      return DFB_FALSE;
 }
@@ -158,18 +158,6 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                continue;
           }
 
-          if (strcmp( arg, "-c" ) == 0 || strcmp( arg, "--colorspace" ) == 0) {
-               if (++n == argc) {
-                    print_usage();
-                    return DFB_FALSE;
-               }
-
-               if (!parse_colorspace( argv[n] ))
-                    return DFB_FALSE;
-
-               continue;
-          }
-
           if (strcmp( arg, "-f" ) == 0 || strcmp( arg, "--format" ) == 0) {
                if (++n == argc) {
                     print_usage();
@@ -177,6 +165,18 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                }
 
                if (!parse_format( argv[n] ))
+                    return DFB_FALSE;
+
+               continue;
+          }
+
+          if (strcmp( arg, "-c" ) == 0 || strcmp( arg, "--colorspace" ) == 0) {
+               if (++n == argc) {
+                    print_usage();
+                    return DFB_FALSE;
+               }
+
+               if (!parse_colorspace( argv[n] ))
                     return DFB_FALSE;
 
                continue;

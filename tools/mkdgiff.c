@@ -30,9 +30,9 @@ static const DirectFBPixelFormatNames(format_names);
 static const char            *filename      = NULL;
 static bool                   debug         = false;
 static DFBSurfacePixelFormat  format        = DSPF_A8;
+static bool                   premultiplied = false;
 static int                    size_count    = 0;
 static int                    face_sizes[MAX_SIZE_COUNT];
-static bool                   premultiplied = false;
 
 #define DEBUG(...)                             \
      do {                                      \
@@ -51,8 +51,8 @@ static void print_usage()
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                 Output debug information.\n" );
      fprintf( stderr, "  -f, --format <pixelformat>  Choose the pixel format (default A8).\n" );
-     fprintf( stderr, "  -s, --sizes  <s1>[,s2...]   Choose sizes to generate glyph images.\n" );
-     fprintf( stderr, "  -p, --premultiplied         Use premultiplied alpha (only for ARGB or ABGR).\n" );
+     fprintf( stderr, "  -p, --premultiplied         Use premultiplied alpha (default false, only for ARGB/ABGR).\n" );
+     fprintf( stderr, "  -s, --sizes  <s1>[,s2...]   Set sizes to generate glyph images.\n" );
      fprintf( stderr, "  -h, --help                  Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
@@ -151,6 +151,11 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                continue;
           }
 
+          if (strcmp( arg, "-p" ) == 0 || strcmp( arg, "--premultiplied" ) == 0) {
+               premultiplied = true;
+               continue;
+          }
+
           if (strcmp( arg, "-s" ) == 0 || strcmp( arg, "--sizes" ) == 0) {
                if (++n == argc) {
                     print_usage();
@@ -160,11 +165,6 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                if (!parse_sizes( argv[n] ))
                     return DFB_FALSE;
 
-               continue;
-          }
-
-          if (strcmp( arg, "-p" ) == 0 || strcmp( arg, "--premultiplied" ) == 0) {
-               premultiplied = true;
                continue;
           }
 
