@@ -60,8 +60,7 @@ typedef struct {
      png_infop              info_ptr;
 
      DFBSurfaceDescription  desc;
-     int                    width;
-     int                    height;
+
      int                    bpp;
      int                    color_type;
      u32                    color_key;
@@ -148,12 +147,6 @@ IDirectFBImageProvider_PNG_GetSurfaceDescription( IDirectFBImageProvider *thiz,
           return DFB_INVARG;
 
      *ret_desc = data->desc;
-
-     if (data->color_type == PNG_COLOR_TYPE_PALETTE) {
-          ret_desc->flags           |= DSDESC_PALETTE;
-          ret_desc->palette.entries  = data->colors;
-          ret_desc->palette.size     = 256;
-     }
 
      return DFB_OK;
 }
@@ -266,10 +259,11 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                         rect.y == 0                                &&
                         rect.w == dst_data->surface->config.size.w &&
                         rect.h == dst_data->surface->config.size.h &&
-                        rect.w == data->width                      &&
-                        rect.h == data->height) {
-                         for (y = 0; y < data->height; y++)
-                              direct_memcpy( lock.addr + lock.pitch * y, data->image + data->pitch * y, data->width );
+                        rect.w == data->desc.width                 &&
+                        rect.h == data->desc.height) {
+                         for (y = 0; y < data->desc.height; y++)
+                              direct_memcpy( lock.addr + lock.pitch * y, data->image + data->pitch * y,
+                                             data->desc.width );
 
                          break;
                     }
@@ -278,12 +272,12 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
 
           case PNG_COLOR_TYPE_GRAY: {
                if (data->bpp == 16) {
-                    dfb_scale_linear_32( data->image, data->width, data->height,
+                    dfb_scale_linear_32( data->image, data->desc.width, data->desc.height,
                                          lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
                     break;
                }
 
-               void *image_argb = D_MALLOC( data->width * data->height * 4 );
+               void *image_argb = D_MALLOC( data->desc.width * data->desc.height * 4 );
 
                if (!image_argb) {
                     ret = D_OOM();
@@ -301,21 +295,21 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
 
                     switch (bit_depth) {
                          case 8:
-                              for (y = 0; y < data->height; y++) {
+                              for (y = 0; y < data->desc.height; y++) {
                                    u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb + data->width * y * 4;
+                                   u32 *D = image_argb + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->width; x++)
+                                   for (x = 0; x < data->desc.width; x++)
                                         D[x] = data->palette[S[x]];
                               }
                               break;
 
                          case 4:
-                              for (y = 0; y < data->height; y++) {
+                              for (y = 0; y < data->desc.height; y++) {
                                    u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->width * y * 4;
+                                   u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->width; x++) {
+                                   for (x = 0; x < data->desc.width; x++) {
                                         if (x & 1)
                                              D[x] = data->palette[S[x>>1]&0xf];
                                         else
@@ -325,12 +319,12 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                               break;
 
                          case 2:
-                              for (y = 0; y < data->height; y++) {
+                              for (y = 0; y < data->desc.height; y++) {
                                    int  n = 6;
                                    u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->width * y * 4;
+                                   u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->width; x++) {
+                                   for (x = 0; x < data->desc.width; x++) {
                                         D[x] = data->palette[(S[x>>2]>>n)&3];
                                         n = n ? n - 2 : 6;
                                    }
@@ -338,12 +332,12 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                               break;
 
                          case 1:
-                              for (y = 0; y < data->height; y++) {
+                              for (y = 0; y < data->desc.height; y++) {
                                    int  n = 7;
                                    u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->width * y * 4;
+                                   u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->width; x++) {
+                                   for (x = 0; x < data->desc.width; x++) {
                                         D[x] = data->palette[(S[x>>3]>>n)&1];
                                         n = n ? n - 1 : 7;
                                    }
@@ -354,7 +348,7 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                               D_ERROR( "ImageProvider/PNG: Unsupported indexed bit depth %d!\n", bit_depth );
                     }
 
-                    dfb_scale_linear_32( image_argb, data->width, data->height,
+                    dfb_scale_linear_32( image_argb, data->desc.width, data->desc.height,
                                          lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
 
                     D_FREE( image_argb );
@@ -363,7 +357,7 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
           }
 
           default:
-               dfb_scale_linear_32( data->image, data->width, data->height,
+               dfb_scale_linear_32( data->image, data->desc.width, data->desc.height,
                                     lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
                break;
      }
@@ -526,10 +520,8 @@ png_info_callback( png_structp png_read_ptr,
                    png_infop   png_info_ptr )
 {
      int                              i;
-     IDirectFBImageProvider_PNG_data *data;
+     IDirectFBImageProvider_PNG_data *data           = png_get_progressive_ptr( png_read_ptr );
      DFBSurfacePixelFormat            primary_format = dfb_primary_layer_pixelformat();
-
-     data = png_get_progressive_ptr( png_read_ptr );
 
      u32 bpp1[2]  = { 0, 0xff };
      u32 bpp2[4]  = { 0, 0x55, 0xaa, 0xff };
@@ -542,12 +534,10 @@ png_info_callback( png_structp png_read_ptr,
      /* Set info stage. */
      data->stage = STAGE_INFO;
 
-     png_get_IHDR( data->png_ptr, data->info_ptr, (png_uint_32*) &data->width, (png_uint_32*) &data->height, &data->bpp,
-                   &data->color_type, NULL, NULL, NULL );
+     data->desc.flags = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
 
-     data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width  = data->width;
-     data->desc.height = data->height;
+     png_get_IHDR( data->png_ptr, data->info_ptr, (png_uint_32*) &data->desc.width, (png_uint_32*) &data->desc.height,
+                   &data->bpp, &data->color_type, NULL, NULL, NULL );
 
      if (data->color_type & PNG_COLOR_MASK_ALPHA)
           data->desc.pixelformat = DFB_PIXELFORMAT_HAS_ALPHA( primary_format ) ? primary_format : DSPF_ARGB;
@@ -665,7 +655,7 @@ png_info_callback( png_structp png_read_ptr,
 
      switch (data->color_type) {
           case PNG_COLOR_TYPE_PALETTE: {
-               data->pitch = (data->width + 7) & ~7;
+               data->pitch = (data->desc.width + 7) & ~7;
 
                png_colorp    palette;
                png_bytep     trans_alpha;
@@ -689,12 +679,16 @@ png_info_callback( png_structp png_read_ptr,
                                        (data->colors[i].g <<  8) |
                                         data->colors[i].b;
                }
+
+               data->desc.flags           |= DSDESC_PALETTE;
+               data->desc.palette.entries  = data->colors;
+               data->desc.palette.size     = 256;
                break;
           }
 
           case PNG_COLOR_TYPE_GRAY:
                if (data->bpp < 16) {
-                    data->pitch = data->width;
+                    data->pitch = data->desc.width;
                     break;
                }
                /* fall through */
@@ -704,7 +698,7 @@ png_info_callback( png_structp png_read_ptr,
                /* fall through */
 
           default:
-               data->pitch = data->width * 4;
+               data->pitch = data->desc.width * 4;
 
                if (!data->color_keyed)
                     png_set_strip_16( data->png_ptr );
@@ -734,9 +728,7 @@ png_row_callback( png_structp png_read_ptr,
                   png_uint_32 row_num,
                   int         pass_num )
 {
-     IDirectFBImageProvider_PNG_data *data;
-
-     data = png_get_progressive_ptr( png_read_ptr );
+     IDirectFBImageProvider_PNG_data *data = png_get_progressive_ptr( png_read_ptr );
 
      /* Check error stage. */
      if (data->stage < 0)
@@ -748,7 +740,7 @@ png_row_callback( png_structp png_read_ptr,
      /* Check image data pointer. */
      if (!data->image) {
           /* Allocate image data. */
-          data->image = D_CALLOC( 1, data->pitch * data->height );
+          data->image = D_CALLOC( 1, data->pitch * data->desc.height );
           if (!data->image) {
                D_OOM();
 
@@ -809,7 +801,7 @@ png_row_callback( png_structp png_read_ptr,
                u16 *src16 = (u16*) src + src16_initial_offset;
                u32 *dst32 = (u32*) dst + dst32_initial_offset;
 
-               int remaining = data->width - dst32_initial_offset;
+               int remaining = data->desc.width - dst32_initial_offset;
 
                while (remaining > 0) {
                     int keyed = 0;
@@ -854,7 +846,7 @@ png_row_callback( png_structp png_read_ptr,
 
      if (data->render_callback) {
           DIRenderCallbackResult res;
-          DFBRectangle           r = { 0, row_num, data->width, 1 };
+          DFBRectangle           r = { 0, row_num, data->desc.width, 1 };
 
           res = data->render_callback( &r, data->render_callback_context );
           if (res != DIRCR_OK) {
@@ -868,9 +860,7 @@ static void
 png_end_callback( png_structp png_read_ptr,
                   png_infop   png_info_ptr )
 {
-     IDirectFBImageProvider_PNG_data *data;
-
-     data = png_get_progressive_ptr( png_read_ptr );
+     IDirectFBImageProvider_PNG_data *data = png_get_progressive_ptr( png_read_ptr );
 
      /* Check error stage. */
      if (data->stage < 0)

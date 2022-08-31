@@ -31,3 +31,11 @@ if enable_png
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
+
+if enable_tiff
+  library('idirectfbimageprovider_tiff',
+          'idirectfbimageprovider_tiff.c',
+          dependencies: [directfb_dep, tiff_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
