@@ -1,3 +1,24 @@
+commit eea9fe2370f5a62794a04a2418076a3615cc31aa
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Aug 31 11:00:18 2022 +0200
+
+    Add TIFF image provider
+
+commit 49310d3fb914b2b80c459c18bb2f5ed8a4d54dfa
+Merge: 9fb2210 3e6b5a3
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sat Aug 27 09:00:36 2022 +0200
+
+    Merge pull request #13 from caramelli/master
+    
+    mkdfiff: Add raw input image support
+
+commit 3e6b5a35112263cf1fff75219f1ad87189bfa883
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Aug 27 08:58:33 2022 +0200
+
+    Update ChangeLog
+
 commit 7945497145d344fd8b0e330ab7eba7345b98cde2
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sat Aug 27 08:58:20 2022 +0200
