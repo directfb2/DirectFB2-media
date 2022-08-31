@@ -38,6 +38,10 @@ option('png',
        type: 'boolean',
        description: 'PNG image provider')
 
+option('tiff',
+       type: 'boolean',
+       description: 'TIFF image provider')
+
 option('tools',
        type: 'boolean',
        description: 'Compile tools')

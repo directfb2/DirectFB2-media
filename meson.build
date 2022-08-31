@@ -45,6 +45,7 @@ enable_ft2       = get_option('ft2')
 enable_gstreamer = get_option('gstreamer')
 enable_jpeg      = get_option('jpeg')
 enable_png       = get_option('png')
+enable_tiff      = get_option('tiff')
 
 if enable_ffmpeg
   ffmpeg_dep = [dependency('libavcodec',  required: false),
@@ -107,6 +108,15 @@ if enable_png
   if not png_dep.found()
     warning('PNG image provider will not be built.')
     enable_png = false
+  endif
+endif
+
+if enable_tiff
+  tiff_dep = dependency('libtiff-4', required: false)
+
+  if not tiff_dep.found()
+    warning('TIFF image provider will not be built.')
+    enable_tiff = false
   endif
 endif
 

@@ -49,7 +49,7 @@ typedef struct {
 } EventLink;
 
 typedef struct {
-     int                            ref;
+     int                            ref;                    /* reference counter */
 
      IDirectFB                     *idirectfb;
 
