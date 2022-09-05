@@ -123,8 +123,9 @@ ft2UTF8DecodeText( CoreFont     *thiz,
      while (pos < length) {
           unsigned int c;
 
-          if (bytes[pos] < 128)
+          if (bytes[pos] < 128) {
                c = bytes[pos++];
+          }
           else {
                c = DIRECT_UTF8_GET_CHAR( &bytes[pos] );
                pos += DIRECT_UTF8_SKIP(bytes[pos]);
@@ -207,6 +208,64 @@ static const CoreFontEncodingFuncs ft2Latin1Funcs = {
 /**********************************************************************************************************************/
 
 static DFBResult
+get_glyph_info( CoreFont      *thiz,
+                unsigned int   index,
+                CoreGlyphData *info )
+{
+     FT_Error     err;
+     FT_Face      face;
+     FT_Int       load_flags;
+     FT2ImplData *data = thiz->impl_data;
+
+     direct_mutex_lock( &library_mutex );
+
+     face = data->face;
+
+     load_flags = (long) face->generic.data;
+
+     if ((err = FT_Load_Glyph( face, index, load_flags ))) {
+          D_DEBUG_AT( Font_FT2, "Could not load glyph for character index #%u!\n", index );
+          direct_mutex_unlock( &library_mutex );
+          return DFB_FAILURE;
+     }
+
+     if (face->glyph->format != ft_glyph_format_bitmap) {
+          load_flags &= FT_LOAD_TARGET_MONO;
+
+          err = FT_Render_Glyph( face->glyph, load_flags ? ft_render_mode_mono : ft_render_mode_normal );
+          if (err) {
+               D_ERROR( "Font/FT2: Could not render glyph for character index #%u!\n", index );
+               direct_mutex_unlock( &library_mutex );
+               return DFB_FAILURE;
+          }
+     }
+
+     direct_mutex_unlock( &library_mutex );
+
+     info->width  = face->glyph->bitmap.width;
+     info->height = face->glyph->bitmap.rows;
+
+     if (data->fixed_advance) {
+          info->xadvance = -data->fixed_advance * thiz->up_unit_y;
+          info->yadvance =  data->fixed_advance * thiz->up_unit_x;
+     }
+     else {
+          info->xadvance =  face->glyph->advance.x << 2;
+          info->yadvance = -face->glyph->advance.y << 2;
+     }
+
+     if (data->fixed_clip && info->width > data->fixed_advance)
+          info->width = data->fixed_advance;
+
+     if (info->layer == 1 && info->width > 0 && info->height > 0) {
+          info->width  += data->outline_radius;
+          info->height += data->outline_radius;
+     }
+
+     return DFB_OK;
+}
+
+static DFBResult
 render_glyph( CoreFont      *thiz,
               unsigned int   index,
               CoreGlyphData *info )
@@ -242,18 +301,16 @@ render_glyph( CoreFont      *thiz,
           return ret;
      }
 
-     info->width = face->glyph->bitmap.width;
      if (info->width + info->start > surface->config.size.w)
           info->width = surface->config.size.w - info->start;
 
-     info->height = face->glyph->bitmap.rows;
      if (info->height > surface->config.size.h)
           info->height = surface->config.size.h;
 
      /* bitmap_left and bitmap_top are relative to the glyph's origin on the baseline.
         info->left  and info->top  are relative to the top left of the character cell. */
-     info->left =  face->glyph->bitmap_left - thiz->ascender*thiz->up_unit_x;
-     info->top  = -face->glyph->bitmap_top  - thiz->ascender*thiz->up_unit_y;
+     info->left =  face->glyph->bitmap_left - thiz->ascender * thiz->up_unit_x;
+     info->top  = -face->glyph->bitmap_top  - thiz->ascender * thiz->up_unit_y;
 
      if (info->layer == 1 && info->width > 0 && info->height > 0) {
           int   xoffset, yoffset;
@@ -363,6 +420,7 @@ render_glyph( CoreFont      *thiz,
           }
 
           src = face->glyph->bitmap.buffer;
+
           lock.addr += DFB_BYTES_PER_LINE( surface->config.format, info->start );
 
           for (y = 0; y < info->height; y++) {
@@ -609,64 +667,6 @@ render_glyph( CoreFont      *thiz,
 }
 
 static DFBResult
-get_glyph_info( CoreFont      *thiz,
-                unsigned int   index,
-                CoreGlyphData *info )
-{
-     FT_Error     err;
-     FT_Face      face;
-     FT_Int       load_flags;
-     FT2ImplData *data = (FT2ImplData*) thiz->impl_data;
-
-     direct_mutex_lock( &library_mutex );
-
-     face = data->face;
-
-     load_flags = (long) face->generic.data;
-
-     if ((err = FT_Load_Glyph( face, index, load_flags ))) {
-          D_DEBUG_AT( Font_FT2, "Could not load glyph for character index #%u!\n", index );
-          direct_mutex_unlock( &library_mutex );
-          return DFB_FAILURE;
-     }
-
-     if (face->glyph->format != ft_glyph_format_bitmap) {
-          load_flags &= FT_LOAD_TARGET_MONO;
-
-          err = FT_Render_Glyph( face->glyph, load_flags ? ft_render_mode_mono : ft_render_mode_normal );
-          if (err) {
-               D_ERROR( "Font/FT2: Could not render glyph for character index #%u!\n", index );
-               direct_mutex_unlock( &library_mutex );
-               return DFB_FAILURE;
-          }
-     }
-
-     direct_mutex_unlock( &library_mutex );
-
-     info->width  = face->glyph->bitmap.width;
-     info->height = face->glyph->bitmap.rows;
-
-     if (data->fixed_advance) {
-          info->xadvance = -data->fixed_advance * thiz->up_unit_y;
-          info->yadvance =  data->fixed_advance * thiz->up_unit_x;
-     }
-     else {
-          info->xadvance =  face->glyph->advance.x << 2;
-          info->yadvance = -face->glyph->advance.y << 2;
-     }
-
-     if (data->fixed_clip && info->width > data->fixed_advance)
-          info->width = data->fixed_advance;
-
-     if (info->layer == 1 && info->width > 0 && info->height > 0) {
-          info->width  += data->outline_radius;
-          info->height += data->outline_radius;
-     }
-
-     return DFB_OK;
-}
-
-static DFBResult
 get_kerning( CoreFont     *thiz,
              unsigned int  prev,
              unsigned int  current,
@@ -693,8 +693,8 @@ get_kerning( CoreFont     *thiz,
                direct_mutex_unlock( &library_mutex );
 
                /* Fill cache. */
-               cache->x           = (int)(-vector.x * data->base.up_unit_x + vector.y * data->base.up_unit_x) >> 6;
-               cache->y           = (int)( vector.y * data->base.up_unit_y + vector.x * data->base.up_unit_x) >> 6;
+               cache->x           = (int) (-vector.x * data->base.up_unit_x + vector.y * data->base.up_unit_x) >> 6;
+               cache->y           = (int) ( vector.y * data->base.up_unit_y + vector.x * data->base.up_unit_x) >> 6;
                cache->initialised = true;
           }
 
@@ -716,10 +716,10 @@ get_kerning( CoreFont     *thiz,
 
      /* Convert to integer. */
      if (kern_x)
-          *kern_x = (int)(-vector.x * thiz->up_unit_y + vector.y * thiz->up_unit_x) >> 6;
+          *kern_x = (int) (-vector.x * thiz->up_unit_y + vector.y * thiz->up_unit_x) >> 6;
 
      if (kern_y)
-          *kern_y = (int)( vector.y * thiz->up_unit_y + vector.x * thiz->up_unit_x) >> 6;
+          *kern_y = (int) ( vector.y * thiz->up_unit_y + vector.x * thiz->up_unit_x) >> 6;
 
      return DFB_OK;
 }
@@ -769,18 +769,17 @@ release_freetype()
 static void
 IDirectFBFont_FT2_Destruct( IDirectFBFont *thiz )
 {
-     IDirectFBFont_data *data = thiz->priv;
-     FT2ImplData        *impl_data = data->font->impl_data;
+     FT2ImplData *data = ((IDirectFBFont_data *) thiz->priv)->font->impl_data;
 
      D_DEBUG_AT( Font_FT2, "%s( %p )\n", __FUNCTION__, thiz );
 
      direct_mutex_lock( &library_mutex );
 
-     FT_Done_Face( impl_data->face );
+     FT_Done_Face( data->face );
 
      direct_mutex_unlock( &library_mutex );
 
-     D_FREE( impl_data );
+     D_FREE( data );
 
      IDirectFBFont_Destruct( thiz );
 
@@ -790,7 +789,7 @@ IDirectFBFont_FT2_Destruct( IDirectFBFont *thiz )
 static DirectResult
 IDirectFBFont_FT2_Release( IDirectFBFont *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA(IDirectFBFont)
+     DIRECT_INTERFACE_GET_DATA( IDirectFBFont )
 
      D_DEBUG_AT( Font_FT2, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -842,26 +841,34 @@ Construct( IDirectFBFont              *thiz,
      DFBResult    ret;
      int          i;
      FT_Error     err;
-     FT_Face      face;
+     FT_Face      face       = NULL;
      FT_Int       load_flags = FT_LOAD_DEFAULT;
      FT_ULong     mask       = 0;
      float        sin_rot    = 0.0;
      float        cos_rot    = 1.0;
-     CoreFont    *font;
-     FT2ImplData *data;
+     int          fw         = 0;
+     int          fh         = 0;
+     CoreFont    *font       = NULL;
+     FT2ImplData *data       = NULL;
 
      D_DEBUG_AT( Font_FT2, "%s( %p )\n", __FUNCTION__, thiz );
+
+     /* Check for valid description. */
+     if (!(desc->flags & (DFDESC_HEIGHT | DFDESC_WIDTH | DFDESC_FRACT_HEIGHT | DFDESC_FRACT_WIDTH)))
+          return DFB_INVARG;
+
      D_DEBUG_AT( Font_FT2, "  -> file '%s' (index %u) at pixel size %dx%d and rotation %d\n", ctx->filename,
-                 (desc->flags & DFDESC_INDEX)    ? desc->index    : 0,
-                 (desc->flags & DFDESC_WIDTH)    ? desc->width    : 0,
-                 (desc->flags & DFDESC_HEIGHT)   ? desc->height   : 0,
-                 (desc->flags & DFDESC_ROTATION) ? desc->rotation : 0 );
+                 desc->flags & DFDESC_INDEX        ? desc->index        : 0,
+                 desc->flags & DFDESC_FRACT_WIDTH  ? desc->fract_width  :
+                 desc->flags & DFDESC_WIDTH        ? desc->width        : 0,
+                 desc->flags & DFDESC_FRACT_HEIGHT ? desc->fract_height :
+                 desc->flags & DFDESC_HEIGHT       ? desc->height       : 0,
+                 desc->flags & DFDESC_ROTATION     ? desc->rotation     : 0 );
 
      /* Initialize the FreeType library object. */
      ret = init_freetype();
      if (ret) {
           D_DERROR( ret, "Font/FT2: Initialization of the FreeType2 library failed!\n" );
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
           return ret;
      }
 
@@ -883,21 +890,16 @@ Construct( IDirectFBFont              *thiz,
                               (desc->flags & DFDESC_INDEX) ? desc->index : 0, ctx->filename );
                     break;
           }
-          release_freetype();
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_FAILURE;
+          ret = DFB_FAILURE;
+          goto error;
      }
 
      if ((desc->flags & DFDESC_ROTATION) && desc->rotation) {
           if (!FT_IS_SCALABLE( face )) {
                D_ERROR( "Font/FT2: Face %u from font file '%s' is not scalable so cannot be rotated!\n",
                          (desc->flags & DFDESC_INDEX) ? desc->index : 0, ctx->filename );
-               direct_mutex_lock( &library_mutex );
-               FT_Done_Face( face );
-               direct_mutex_unlock( &library_mutex );
-               release_freetype();
-               DIRECT_DEALLOCATE_INTERFACE( thiz );
-               return DFB_UNSUPPORTED;
+               ret = DFB_UNSUPPORTED;
+               goto error;
           }
 
           float rot_radians = 2.0 * M_PI * desc->rotation / (1 << 24);
@@ -968,50 +970,41 @@ Construct( IDirectFBFont              *thiz,
 
                direct_mutex_unlock( &library_mutex );
 
-               if (!err)
+               if (!err) {
                     mask = 0xF000;
+               }
                else {
                     D_ERROR( "Font/FT2: Could not select charmap!\n" );
-                    direct_mutex_lock( &library_mutex );
-                    FT_Done_Face( face );
-                    direct_mutex_unlock( &library_mutex );
-                    release_freetype();
-                    DIRECT_DEALLOCATE_INTERFACE( thiz );
-                    return DFB_FAILURE;
+                    ret = DFB_FAILURE;
+                    goto error;
                }
           }
      }
 
-     if (desc->flags & (DFDESC_HEIGHT | DFDESC_WIDTH | DFDESC_FRACT_HEIGHT | DFDESC_FRACT_WIDTH)) {
-          int fw = 0, fh = 0;
+     if (desc->flags & DFDESC_FRACT_HEIGHT)
+          fh = desc->fract_height;
+     else if (desc->flags & DFDESC_HEIGHT)
+          fh = desc->height << 6;
 
-          if (desc->flags & DFDESC_FRACT_HEIGHT)
-               fh = desc->fract_height;
-          else if (desc->flags & DFDESC_HEIGHT)
-               fh = desc->height << 6;
+     if (desc->flags & DFDESC_FRACT_WIDTH)
+          fw = desc->fract_width;
+     else if (desc->flags & DFDESC_WIDTH)
+          fw = desc->width << 6;
 
-          if (desc->flags & DFDESC_FRACT_WIDTH)
-               fw = desc->fract_width;
-          else if (desc->flags & DFDESC_WIDTH)
-               fw = desc->width << 6;
+     direct_mutex_lock( &library_mutex );
 
-          direct_mutex_lock( &library_mutex );
+     err = FT_Set_Char_Size( face, fw, fh, 0, 0 );
 
-          err = FT_Set_Char_Size( face, fw, fh, 0, 0 );
+     direct_mutex_unlock( &library_mutex );
 
-          direct_mutex_unlock( &library_mutex );
-
-          if (err) {
-               D_ERROR( "Font/FT2: Could not set pixel size to %dx%d!\n",
-                         (desc->flags & DFDESC_WIDTH)  ? desc->width  : 0,
-                         (desc->flags & DFDESC_HEIGHT) ? desc->height : 0 );
-               direct_mutex_lock( &library_mutex );
-               FT_Done_Face( face );
-               direct_mutex_unlock( &library_mutex );
-               release_freetype();
-               DIRECT_DEALLOCATE_INTERFACE( thiz );
-               return DFB_FAILURE;
-          }
+     if (err) {
+          D_ERROR( "Font/FT2: Could not set pixel size to %dx%d!\n",
+                   desc->flags & DFDESC_FRACT_WIDTH  ? desc->fract_width  :
+                   desc->flags & DFDESC_WIDTH        ? desc->width        : 0,
+                   desc->flags & DFDESC_FRACT_HEIGHT ? desc->fract_height :
+                   desc->flags & DFDESC_HEIGHT       ? desc->height       : 0 );
+          ret = DFB_FAILURE;
+          goto error;
      }
 
      face->generic.data      = (void*)(long) load_flags;
@@ -1019,14 +1012,8 @@ Construct( IDirectFBFont              *thiz,
 
      /* Create the font object. */
      ret = dfb_font_create( core, desc, ctx->filename, &font );
-     if (ret) {
-          direct_mutex_lock( &library_mutex );
-          FT_Done_Face( face );
-          direct_mutex_unlock( &library_mutex );
-          release_freetype();
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return ret;
-     }
+     if (ret)
+          goto error;
 
      /* Fill font information. */
      font->attributes = (desc->flags & DFDESC_ATTRIBUTES) ? desc->attributes : DFFA_NONE;
@@ -1048,7 +1035,7 @@ Construct( IDirectFBFont              *thiz,
 
      font->ascender   = face->size->metrics.ascender >> 6;
      font->descender  = face->size->metrics.descender >> 6;
-     font->height     = font->ascender + ABS(font->descender) + 1;
+     font->height     = font->ascender - font->descender + 1;
      font->maxadvance = face->size->metrics.max_advance >> 6;
      font->up_unit_x  = -sin_rot;
      font->up_unit_y  = -cos_rot;
@@ -1059,8 +1046,8 @@ Construct( IDirectFBFont              *thiz,
      D_DEBUG_AT( Font_FT2, "  -> maxadvance = %d, up unit: %5.2f,%5.2f\n",
                  font->maxadvance, font->up_unit_x, font->up_unit_y );
 
-     font->RenderGlyph  = render_glyph;
      font->GetGlyphData = get_glyph_info;
+     font->RenderGlyph  = render_glyph;
 
      /* Allocate implementation data. */
      if (FT_HAS_KERNING( face ) && !(font->attributes & DFFA_NOKERNING)) {
@@ -1069,6 +1056,11 @@ Construct( IDirectFBFont              *thiz,
      }
      else
           data = D_CALLOC( 1, sizeof(FT2ImplData) );
+
+     if (!data) {
+          ret = D_OOM();
+          goto error;
+     }
 
      data->face            = face;
      data->disable_charmap = font->attributes & DFFA_NOCHARMAP;
@@ -1101,12 +1093,35 @@ Construct( IDirectFBFont              *thiz,
 
      font->impl_data = data;
 
-     dfb_font_register_encoding( font, "UTF8",   &ft2UTF8Funcs,   DTEID_UTF8 );
-     dfb_font_register_encoding( font, "Latin1", &ft2Latin1Funcs, DTEID_OTHER );
+     ret = dfb_font_register_encoding( font, "UTF8",   &ft2UTF8Funcs,   DTEID_UTF8 );
+     if (ret)
+          goto error;
+
+     ret = dfb_font_register_encoding( font, "Latin1", &ft2Latin1Funcs, DTEID_OTHER );
+     if (ret)
+          goto error;
 
      IDirectFBFont_Construct( thiz, font );
 
      thiz->Release = IDirectFBFont_FT2_Release;
 
      return DFB_OK;
+
+error:
+     if (font) {
+          if (data)
+               D_FREE( data );
+
+          dfb_font_destroy( font );
+     }
+
+     if (face) {
+          direct_mutex_lock( &library_mutex );
+          FT_Done_Face( face );
+          direct_mutex_unlock( &library_mutex );
+     }
+
+     release_freetype();
+
+     return ret;
 }

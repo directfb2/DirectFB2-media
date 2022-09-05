@@ -740,7 +740,7 @@ png_row_callback( png_structp png_read_ptr,
      /* Check image data pointer. */
      if (!data->image) {
           /* Allocate image data. */
-          data->image = D_CALLOC( 1, data->pitch * data->desc.height );
+          data->image = D_CALLOC( data->desc.height, data->pitch );
           if (!data->image) {
                D_OOM();
 

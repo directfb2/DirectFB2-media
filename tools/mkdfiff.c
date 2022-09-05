@@ -163,7 +163,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 {
      DFBSurfacePixelFormat  dest_format;
      DFBSurfacePixelFormat  src_format;
-     char                   header[8];
+     char                   signature[8];
      int                    bytes, type;
      int                    pitch, x, y;
      FILE                  *fp;
@@ -205,9 +205,9 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
           }
      }
      else {
-          bytes = fread( header, 1, sizeof(header), fp );
+          bytes = fread( signature, 1, sizeof(signature), fp );
 
-          if (png_sig_cmp( (unsigned char*) header, 0, bytes )) {
+          if (png_sig_cmp( (unsigned char*) signature, 0, bytes )) {
                fprintf( stderr, "File '%s' doesn't seem to be a PNG image!\n", filename );
                goto out;
           }
