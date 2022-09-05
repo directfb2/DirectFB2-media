@@ -413,7 +413,7 @@ static FT_Error do_face( FT_Face face, int size )
      int               i;
      FT_ULong          code;
      FT_UInt           index;
-     DGIFFFaceHeader   header;
+     DGIFFFaceHeader   faceheader;
      DGIFFGlyphInfo   *glyphs;
      DGIFFGlyphRow    *rows;
      void            **row_data;
@@ -428,7 +428,7 @@ static FT_Error do_face( FT_Face face, int size )
      DEBUG( "%s( %p, %d ) <- %ld glyphs\n", __FUNCTION__, face, size, face->num_glyphs );
 
      /* Clear to not leak any data into file. */
-     memset( &header, 0, sizeof(header) );
+     memset( &faceheader, 0, sizeof(faceheader) );
 
      /* Set the desired size. */
      ret = FT_Set_Char_Size( face, 0, size << 6, 0, 0 );
@@ -533,20 +533,20 @@ static FT_Error do_face( FT_Face face, int size )
 
      D_ASSERT( row_index == num_rows - 1 );
 
-     header.next_face   = next_face;
-     header.size        = size;
-     header.ascender    = face->size->metrics.ascender >> 6;
-     header.descender   = face->size->metrics.descender >> 6;
-     header.height      = header.ascender - header.descender + 1;
-     header.max_advance = face->size->metrics.max_advance >> 6;
-     header.pixelformat = format;
-     header.num_glyphs  = num_glyphs;
-     header.num_rows    = num_rows;
+     faceheader.next_face   = next_face;
+     faceheader.size        = size;
+     faceheader.ascender    = face->size->metrics.ascender >> 6;
+     faceheader.descender   = face->size->metrics.descender >> 6;
+     faceheader.height      = faceheader.ascender - faceheader.descender + 1;
+     faceheader.max_advance = face->size->metrics.max_advance >> 6;
+     faceheader.pixelformat = format;
+     faceheader.num_glyphs  = num_glyphs;
+     faceheader.num_rows    = num_rows;
 
-     DEBUG( "  -> ascender %d, descender %d\n", header.ascender, header.descender );
-     DEBUG( "  -> height %d, max advance %d\n", header.height, header.max_advance );
+     DEBUG( "  -> ascender %d, descender %d\n", faceheader.ascender, faceheader.descender );
+     DEBUG( "  -> height %d, max advance %d\n", faceheader.height, faceheader.max_advance );
 
-     fwrite( &header, sizeof(header), 1, stdout );
+     fwrite( &faceheader, sizeof(faceheader), 1, stdout );
 
      fwrite( glyphs, sizeof(*glyphs), num_glyphs, stdout );
 
