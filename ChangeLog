@@ -1,3 +1,24 @@
+commit 174af22ce3aa6c64925063b83e0212de2f3e12c7
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Sep 6 04:58:13 2022 +0200
+
+    Add STB font provider
+
+commit e70b0e3e3b0908c02c7d4284c09dd01743099482
+Merge: 1736b94 050d2d3
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Mon Sep 5 11:21:39 2022 +0200
+
+    Merge pull request #15 from caramelli/master
+    
+    Font/FT2: return DFB_INVARG if height or width not set in font description
+
+commit 050d2d3f41f9beb37c564caef0cfd2ce3a5d7e90
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Sep 5 11:19:28 2022 +0200
+
+    Update ChangeLog
+
 commit e65e9a71a183c3d74d19d54a9a5ba706ea89907b
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Mon Sep 5 11:19:15 2022 +0200
