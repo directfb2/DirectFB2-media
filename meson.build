@@ -14,7 +14,8 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
-project('DirectFB2-media', 'c')
+project('DirectFB2-media', 'c',
+        meson_version: '>= 0.53')
 
 directfb_dep = dependency('directfb-internal')
 
@@ -40,12 +41,15 @@ configure_file(configuration: config_h, output: 'config.h')
 
 config_inc = include_directories('.')
 
-enable_ffmpeg    = get_option('ffmpeg')
-enable_ft2       = get_option('ft2')
-enable_gstreamer = get_option('gstreamer')
-enable_jpeg      = get_option('jpeg')
-enable_png       = get_option('png')
-enable_tiff      = get_option('tiff')
+fs = import('fs')
+
+enable_ffmpeg       = get_option('ffmpeg')
+enable_ft2          = get_option('ft2')
+enable_gstreamer    = get_option('gstreamer')
+enable_jpeg         = get_option('jpeg')
+enable_png          = get_option('png')
+enable_stb_truetype = get_option('stb_truetype')
+enable_tiff         = get_option('tiff')
 
 if enable_ffmpeg
   ffmpeg_dep = [dependency('libavcodec',  required: false),
@@ -68,7 +72,7 @@ endif
 
 if enable_ft2
   ft2_dep = [dependency('freetype2', required: false),
-             meson.get_compiler('c').find_library('m')]
+             meson.get_compiler('c').find_library('m', required: false)]
 
   foreach dep : ft2_dep
     if not dep.found()
@@ -94,10 +98,13 @@ if enable_jpeg
   if not jpeg_dep.found()
     if meson.get_compiler('c').has_header('jpeglib.h')
       jpeg_dep = meson.get_compiler('c').find_library('jpeg', required: false)
+
       if not jpeg_dep.found()
         warning('JPEG image provider will not be built.')
         enable_jpeg = false
       endif
+    else
+      enable_jpeg = false
     endif
   endif
 endif
@@ -108,6 +115,15 @@ if enable_png
   if not png_dep.found()
     warning('PNG image provider will not be built.')
     enable_png = false
+  endif
+endif
+
+if enable_stb_truetype != ''
+  stb_truetype_dep = meson.get_compiler('c').find_library('m', required: false)
+
+  if not fs.is_file(enable_stb_truetype) or not stb_truetype_dep.found()
+    warning('STB font provider will not be built.')
+    enable_stb_truetype = ''
   endif
 endif
 
