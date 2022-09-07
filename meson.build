@@ -48,6 +48,7 @@ enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
 enable_jpeg         = get_option('jpeg')
 enable_png          = get_option('png')
+enable_sft          = get_option('sft')
 enable_stb_truetype = get_option('stb_truetype')
 enable_tiff         = get_option('tiff')
 
@@ -115,6 +116,19 @@ if enable_png
   if not png_dep.found()
     warning('PNG image provider will not be built.')
     enable_png = false
+  endif
+endif
+
+if enable_sft
+  if meson.get_compiler('c').has_header('schrift.h')
+    sft_dep = meson.get_compiler('c').find_library('schrift', required: false)
+
+    if not sft_dep.found()
+      warning('Schrift font provider will not be built.')
+      enable_sft = false
+    endif
+  else
+    enable_sft = false
   endif
 endif
 

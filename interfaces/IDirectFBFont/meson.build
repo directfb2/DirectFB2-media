@@ -23,6 +23,14 @@ if enable_ft2
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
 endif
 
+if enable_sft
+  library('idirectfbfont_sft',
+          'idirectfbfont_sft.c',
+          dependencies: [directfb_dep, sft_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
+endif
+
 if enable_stb_truetype != ''
   library('idirectfbfont_stb',
           'idirectfbfont_stb.c',
