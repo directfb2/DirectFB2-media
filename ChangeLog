@@ -1,3 +1,24 @@
+commit c8fa2c9c8baa468dafaaebb9ce4e5b30156baa23
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Sep 7 12:53:09 2022 +0200
+
+    Add Schrift font provider
+
+commit ad4016cea906e9ace7e4b7819cc9b454fa3e1d1d
+Merge: e70b0e3 1e8b9de
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Sep 6 05:01:36 2022 +0200
+
+    Merge pull request #16 from caramelli/master
+    
+    Add STB font provider
+
+commit 1e8b9de2b02fe49698aebb7f04aa1a99e25a053d
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Sep 6 04:58:24 2022 +0200
+
+    Update ChangeLog
+
 commit 174af22ce3aa6c64925063b83e0212de2f3e12c7
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Sep 6 04:58:13 2022 +0200

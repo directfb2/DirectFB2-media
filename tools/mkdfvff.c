@@ -57,12 +57,12 @@ static void print_usage()
      fprintf( stderr, "  -h, --help                            Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
-          DFBSurfacePixelFormat format = format_names[i].format;
           if (DFB_BYTES_PER_PIXEL( format_names[i].format ) < 3 &&
-              DFB_COLOR_IS_YUV   ( format )) {
-               fprintf( stderr, "  %-10s %d byte(s)", format_names[i].name, DFB_BYTES_PER_PIXEL( format ) );
-               if (DFB_PLANAR_PIXELFORMAT( format )) {
-                    int planes = DFB_PLANE_MULTIPLY( format, 10 );
+              DFB_COLOR_IS_YUV   ( format_names[i].format )) {
+               fprintf( stderr, "  %-10s %2d byte(s)",
+                        format_names[i].name, DFB_BYTES_PER_PIXEL( format_names[i].format ) );
+               if (DFB_PLANAR_PIXELFORMAT( format_names[i].format )) {
+                    int planes = DFB_PLANE_MULTIPLY( format_names[i].format, 10 );
                     fprintf( stderr, " (x %d.%d)", planes / 10, planes % 10 );
                }
                fprintf( stderr, "\n" );
@@ -88,8 +88,8 @@ static DFBBoolean parse_format( const char *arg )
 
      while (format_names[i].format != DSPF_UNKNOWN) {
           if (!strcasecmp( arg, format_names[i].name ) &&
-               DFB_BYTES_PER_PIXEL( format_names[i].format ) < 3 &&
-               DFB_COLOR_IS_YUV   ( format_names[i].format )) {
+              DFB_BYTES_PER_PIXEL( format_names[i].format ) < 3 &&
+              DFB_COLOR_IS_YUV   ( format_names[i].format )) {
                format = format_names[i].format;
                return DFB_TRUE;
           }

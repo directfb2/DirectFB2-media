@@ -79,8 +79,8 @@ typedef struct {
      AVFormatContext               *context;
 
      DFBSurfaceDescription          desc;
-     double                         rate;
 
+     double                         rate;
      DFBVideoProviderStatus         status;
      double                         speed;
      DFBVideoProviderPlaybackFlags  flags;

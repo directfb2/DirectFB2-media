@@ -73,8 +73,8 @@ typedef struct {
 #endif
 
      DFBSurfaceDescription          desc;
-     double                         rate;
 
+     double                         rate;
      DFBVideoProviderStatus         status;
      double                         speed;
      DFBVideoProviderPlaybackFlags  flags;

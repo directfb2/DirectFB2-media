@@ -53,11 +53,11 @@ static void print_usage()
      fprintf( stderr, "  -h, --help                     Show this help message.\n\n" );
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
-          DFBSurfacePixelFormat format = format_names[i].format;
-          if ( DFB_BYTES_PER_PIXEL       ( format ) >= 1 &&
-              !DFB_PIXELFORMAT_IS_INDEXED( format )      &&
-              !DFB_COLOR_IS_YUV          ( format )) {
-               fprintf( stderr, "  %-10s %2d bits\n", format_names[i].name, DFB_BITS_PER_PIXEL( format ) );
+          if ( DFB_BYTES_PER_PIXEL       ( format_names[i].format ) >= 1 &&
+              !DFB_PIXELFORMAT_IS_INDEXED( format_names[i].format )      &&
+              !DFB_COLOR_IS_YUV          ( format_names[i].format )) {
+               fprintf( stderr, "  %-10s %2d bits\n",
+                        format_names[i].name, DFB_BITS_PER_PIXEL( format_names[i].format ) );
           }
           ++i;
      }

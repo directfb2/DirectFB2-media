@@ -38,6 +38,10 @@ option('png',
        type: 'boolean',
        description: 'PNG image provider')
 
+option('sft',
+       type: 'boolean',
+       description: 'Schrift font provider')
+
 option('stb_truetype',
        type: 'string',
        description: 'STB font provider')
