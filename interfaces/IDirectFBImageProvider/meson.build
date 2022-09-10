@@ -39,3 +39,11 @@ if enable_tiff
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
+
+if enable_yuv
+  library('idirectfbimageprovider_yuv',
+          'idirectfbimageprovider_yuv.c',
+          dependencies: directfb_dep,
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif

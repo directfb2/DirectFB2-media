@@ -53,3 +53,7 @@ option('tiff',
 option('tools',
        type: 'boolean',
        description: 'Compile tools')
+
+option('yuv',
+       type: 'boolean',
+       description: 'YUV image provider')
