@@ -496,8 +496,8 @@ static DFBResult load_image( DFBSurfaceDescription *desc, DFBColor *palette, int
      desc->width                 = width;
      desc->height                = height;
      desc->pixelformat           = dest_format;
-     desc->preallocated[0].pitch = pitch;
      desc->preallocated[0].data  = data;
+     desc->preallocated[0].pitch = pitch;
 
      data = NULL;
 
@@ -598,26 +598,14 @@ static void dump_data( const char *vname, const unsigned char *data, unsigned in
 
 static void dump_image( DFBSurfaceDescription *desc, DFBColor *palette, int palette_size )
 {
-     int            i;
-     char          *vname;
-     unsigned char *data;
-     unsigned long  len;
-
-     for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
-          if (format_names[i].format == desc->pixelformat) {
-               break;
-          }
-     }
-
-     vname = variable_name( name ?: strrchr( filename, '/' ) ?: filename );
-     data  = desc->preallocated[0].data;
-     len   = desc->height * desc->preallocated[0].pitch;
+     int   i;
+     char *vname = variable_name( name ?: strrchr( filename, '/' ) ?: filename );
 
      /* dump comment */
      fprintf( stdout, "/* DirectFB surface dump created by directfb-csource */\n\n" );
 
      /* dump data */
-     dump_data( vname, data, len );
+     dump_data( vname, desc->preallocated[0].data, desc->height * desc->preallocated[0].pitch );
 
      /* dump palette */
      if (palette_size > 0) {
@@ -637,6 +625,11 @@ static void dump_image( DFBSurfaceDescription *desc, DFBColor *palette, int pale
      fprintf( stdout, ",\n" );
      fprintf( stdout, "  width                   : %d,\n", desc->width );
      fprintf( stdout, "  height                  : %d,\n", desc->height );
+     for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
+          if (format_names[i].format == desc->pixelformat) {
+               break;
+          }
+     }
      fprintf( stdout, "  pixelformat             : DSPF_%s,\n", format_names[i].name );
      fprintf( stdout, "  preallocated : {{  data : (void*) %s_data,\n", vname );
      fprintf( stdout, "                    pitch : %d }}", desc->preallocated[0].pitch );

@@ -108,6 +108,8 @@ IDirectFBImageProvider_TIFF_Destruct( IDirectFBImageProvider *thiz )
 {
      IDirectFBImageProvider_TIFF_data *data = thiz->priv;
 
+     D_DEBUG_AT( ImageProvider_TIFF, "%s( %p )\n", __FUNCTION__, thiz );
+
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
           data->buffer->Release( data->buffer );

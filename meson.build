@@ -51,6 +51,7 @@ enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_stb_truetype = get_option('stb_truetype')
 enable_tiff         = get_option('tiff')
+enable_yuv          = get_option('yuv')
 
 if enable_ffmpeg
   ffmpeg_dep = [dependency('libavcodec',  required: false),

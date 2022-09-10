@@ -981,6 +981,9 @@ Construct( IDirectFBVideoProvider *thiz,
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
+     data->ref       = 1;
+     data->idirectfb = idirectfb;
+
      /* Check for valid filename. */
      if (!buffer_data->filename) {
           DIRECT_DEALLOCATE_INTERFACE( thiz );
@@ -996,9 +999,6 @@ Construct( IDirectFBVideoProvider *thiz,
           else
                g_snprintf( uri, sizeof(uri), "file://%s/%s", get_current_dir_name(), buffer_data->filename );
      }
-
-     data->ref       = 1;
-     data->idirectfb = idirectfb;
 
      if (!gst_init_check( NULL, NULL, &err )) {
           D_ERROR( "VideoProvider/GST: Failed to initialize GStreamer!\n" );

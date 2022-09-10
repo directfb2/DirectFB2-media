@@ -1543,6 +1543,12 @@ Construct( IDirectFBVideoProvider *thiz,
           case AV_PIX_FMT_YUV420P:
                data->desc.pixelformat = DSPF_I420;
                break;
+          case AV_PIX_FMT_YUV422P:
+               data->desc.pixelformat = DSPF_Y42B;
+               break;
+          case AV_PIX_FMT_YUV444P:
+               data->desc.pixelformat = DSPF_Y444;
+               break;
           case AV_PIX_FMT_NV12:
                data->desc.pixelformat = DSPF_NV12;
                break;

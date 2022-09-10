@@ -76,7 +76,6 @@ static DFBBoolean parse_format( const char *arg )
                format = format_names[i].format;
                return DFB_TRUE;
           }
-
           ++i;
      }
 
@@ -218,7 +217,7 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
 
           if (setjmp( png_jmpbuf( png_ptr ) )) {
                if (desc->preallocated[0].data) {
-                    free (desc->preallocated[0].data);
+                    free( desc->preallocated[0].data );
                     desc->preallocated[0].data = NULL;
                }
 
@@ -451,8 +450,8 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
      desc->width                 = width;
      desc->height                = height;
      desc->pixelformat           = dest_format;
-     desc->preallocated[0].pitch = pitch;
      desc->preallocated[0].data  = data;
+     desc->preallocated[0].pitch = pitch;
 
      data = NULL;
 

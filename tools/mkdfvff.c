@@ -25,7 +25,7 @@ static const DirectFBColorSpaceNames(colorspace_names);
 
 static const char            *filename   = NULL;
 static bool                   debug      = false;
-static DFBSurfacePixelFormat  format     = DSPF_YUV444P;
+static DFBSurfacePixelFormat  format     = DSPF_Y444;
 static DFBSurfaceColorSpace   colorspace = DSCS_BT601;
 static unsigned int           fps_num    = 24;
 static unsigned int           fps_den    = 1;
@@ -49,7 +49,7 @@ static void print_usage()
      fprintf( stderr, "Usage: mkdfvff [options] video\n\n" );
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                           Output debug information.\n" );
-     fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default YUV444P).\n" );
+     fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default Y444).\n" );
      fprintf( stderr, "  -c, --colorspace <colorspace>         Choose the color space (default BT601).\n" );
      fprintf( stderr, "  -r, --rate       <fps_num>/<fps_den>  Choose the frame rate (default 24).\n" );
      fprintf( stderr, "  -s, --size       <width>x<height>     Set video frame size (for raw input video).\n" );
@@ -87,13 +87,12 @@ static DFBBoolean parse_format( const char *arg )
      int i = 0;
 
      while (format_names[i].format != DSPF_UNKNOWN) {
-          if (!strcasecmp( arg, format_names[i].name ) &&
+          if (!strcasecmp( arg, format_names[i].name )          &&
               DFB_BYTES_PER_PIXEL( format_names[i].format ) < 3 &&
               DFB_COLOR_IS_YUV   ( format_names[i].format )) {
                format = format_names[i].format;
                return DFB_TRUE;
           }
-
           ++i;
      }
 
@@ -274,8 +273,8 @@ static long load_video( DFBSurfaceDescription *desc )
      desc->width                 = width;
      desc->height                = height;
      desc->pixelformat           = format;
-     desc->preallocated[0].pitch = DFB_BYTES_PER_LINE( format, width );
      desc->preallocated[0].data  = data;
+     desc->preallocated[0].pitch = DFB_BYTES_PER_LINE( format, width );
      desc->colorspace            = colorspace;
 
  out:
