@@ -1,3 +1,24 @@
+commit 7e66f48f0c701050e90dc8418a464eae2cba21b0
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Sep 16 08:40:42 2022 +0200
+
+    Add STB image provider
+
+commit d8eb66baca6569939a5fee3cc4f8c73580758943
+Merge: 6881972 24024b9
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sat Sep 10 16:45:59 2022 +0200
+
+    Merge pull request #18 from caramelli/master
+    
+    Add YUV image provider
+
+commit 24024b97958f587929de5aa3235f42265fb22cda
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Sep 10 16:44:39 2022 +0200
+
+    Update ChangeLog
+
 commit 463df4a8366e66309fb7c1f94ece2897e3b4bc66
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sat Sep 10 16:44:32 2022 +0200
