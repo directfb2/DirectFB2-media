@@ -1725,6 +1725,8 @@ error:
      if (data->iobuf)
           av_free( data->iobuf );
 
+     buffer->Release( buffer );
+
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 
      return ret;

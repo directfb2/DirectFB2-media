@@ -49,6 +49,7 @@ enable_gstreamer    = get_option('gstreamer')
 enable_jpeg         = get_option('jpeg')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
+enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
 enable_tiff         = get_option('tiff')
 enable_yuv          = get_option('yuv')
@@ -130,6 +131,13 @@ if enable_sft
     endif
   else
     enable_sft = false
+  endif
+endif
+
+if enable_stb_image != ''
+  if not fs.is_file(enable_stb_image)
+    warning('STB image provider will not be built.')
+    enable_stb_image = ''
   endif
 endif
 

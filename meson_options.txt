@@ -42,8 +42,14 @@ option('sft',
        type: 'boolean',
        description: 'Schrift font provider')
 
+option('stb_image',
+       type: 'string',
+       value: 'stb_image.h',
+       description: 'STB image provider')
+
 option('stb_truetype',
        type: 'string',
+       value: 'stb_truetype.h',
        description: 'STB font provider')
 
 option('tiff',

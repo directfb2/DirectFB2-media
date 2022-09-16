@@ -32,6 +32,15 @@ if enable_png
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
 
+if enable_stb_image != ''
+  library('idirectfbimageprovider_stb',
+          'idirectfbimageprovider_stb.c',
+          c_args: ['-DSTB_IMAGE_H="@0@"'.format(enable_stb_image)],
+          dependencies: directfb_dep,
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
+
 if enable_tiff
   library('idirectfbimageprovider_tiff',
           'idirectfbimageprovider_tiff.c',
