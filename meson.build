@@ -66,7 +66,7 @@ if enable_ffmpeg
 
   foreach dep : ffmpeg_dep
     if not dep.found()
-      warning('FFmpeg video provider will not be built.')
+      warning('FFmpeg image provider and video provider will not be built.')
       enable_ffmpeg = false
       break
     endif

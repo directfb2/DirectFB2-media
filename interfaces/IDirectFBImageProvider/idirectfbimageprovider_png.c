@@ -58,6 +58,7 @@ typedef struct {
 
      png_structp            png_ptr;
      png_infop              info_ptr;
+     void                  *image;
 
      DFBSurfaceDescription  desc;
 
@@ -65,8 +66,6 @@ typedef struct {
      int                    color_type;
      u32                    color_key;
      bool                   color_keyed;
-
-     void                  *image;
      int                    pitch;
      u32                    palette[256];
      DFBColor               colors[256];
@@ -96,12 +95,12 @@ IDirectFBImageProvider_PNG_Destruct( IDirectFBImageProvider *thiz )
 
      D_DEBUG_AT( ImageProvider_PNG, "%s( %p )\n", __FUNCTION__, thiz );
 
-     /* Destroy the PNG read handle. */
-     png_destroy_read_struct( &data->png_ptr, &data->info_ptr, NULL );
-
      /* Deallocate image data. */
      if (data->image)
           D_FREE( data->image );
+
+     /* Destroy the PNG read handle. */
+     png_destroy_read_struct( &data->png_ptr, &data->info_ptr, NULL );
 
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
@@ -278,81 +277,80 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                }
 
                void *image_argb = D_MALLOC( data->desc.width * data->desc.height * 4 );
-
                if (!image_argb) {
-                    ret = D_OOM();
+                    dfb_surface_unlock_buffer( dst_data->surface, &lock );
+                    return D_OOM();
                }
-               else {
-                    if (data->color_type == PNG_COLOR_TYPE_GRAY) {
-                         int num = 1 << bit_depth;
 
-                         for (x = 0; x < num; x++) {
-                              int value = x * 255 / (num - 1);
+               if (data->color_type == PNG_COLOR_TYPE_GRAY) {
+                    int num = 1 << bit_depth;
 
-                              data->palette[x] = 0xff000000 | (value << 16) | (value << 8) | value;
+                    for (x = 0; x < num; x++) {
+                         int value = x * 255 / (num - 1);
+
+                         data->palette[x] = 0xff000000 | (value << 16) | (value << 8) | value;
+                    }
+               }
+
+               switch (bit_depth) {
+                    case 8:
+                         for (y = 0; y < data->desc.height; y++) {
+                              u8  *S = data->image + data->pitch * y;
+                              u32 *D = image_argb + data->desc.width * y * 4;
+
+                              for (x = 0; x < data->desc.width; x++)
+                                   D[x] = data->palette[S[x]];
                          }
-                    }
+                         break;
 
-                    switch (bit_depth) {
-                         case 8:
-                              for (y = 0; y < data->desc.height; y++) {
-                                   u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb + data->desc.width * y * 4;
+                    case 4:
+                         for (y = 0; y < data->desc.height; y++) {
+                              u8  *S = data->image + data->pitch * y;
+                              u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->desc.width; x++)
-                                        D[x] = data->palette[S[x]];
+                              for (x = 0; x < data->desc.width; x++) {
+                                   if (x & 1)
+                                        D[x] = data->palette[S[x>>1]&0xf];
+                                   else
+                                        D[x] = data->palette[S[x>>1]>>4];
                               }
-                              break;
+                         }
+                         break;
 
-                         case 4:
-                              for (y = 0; y < data->desc.height; y++) {
-                                   u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->desc.width * y * 4;
+                    case 2:
+                         for (y = 0; y < data->desc.height; y++) {
+                              int  n = 6;
+                              u8  *S = data->image + data->pitch * y;
+                              u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->desc.width; x++) {
-                                        if (x & 1)
-                                             D[x] = data->palette[S[x>>1]&0xf];
-                                        else
-                                             D[x] = data->palette[S[x>>1]>>4];
-                                   }
+                              for (x = 0; x < data->desc.width; x++) {
+                                   D[x] = data->palette[(S[x>>2]>>n)&3];
+                                   n = n ? n - 2 : 6;
                               }
-                              break;
+                         }
+                         break;
 
-                         case 2:
-                              for (y = 0; y < data->desc.height; y++) {
-                                   int  n = 6;
-                                   u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->desc.width * y * 4;
+                    case 1:
+                         for (y = 0; y < data->desc.height; y++) {
+                              int  n = 7;
+                              u8  *S = data->image + data->pitch * y;
+                              u32 *D = image_argb  + data->desc.width * y * 4;
 
-                                   for (x = 0; x < data->desc.width; x++) {
-                                        D[x] = data->palette[(S[x>>2]>>n)&3];
-                                        n = n ? n - 2 : 6;
-                                   }
+                              for (x = 0; x < data->desc.width; x++) {
+                                   D[x] = data->palette[(S[x>>3]>>n)&1];
+                                   n = n ? n - 1 : 7;
                               }
-                              break;
+                         }
+                         break;
 
-                         case 1:
-                              for (y = 0; y < data->desc.height; y++) {
-                                   int  n = 7;
-                                   u8  *S = data->image + data->pitch * y;
-                                   u32 *D = image_argb  + data->desc.width * y * 4;
-
-                                   for (x = 0; x < data->desc.width; x++) {
-                                        D[x] = data->palette[(S[x>>3]>>n)&1];
-                                        n = n ? n - 1 : 7;
-                                   }
-                              }
-                              break;
-
-                         default:
-                              D_ERROR( "ImageProvider/PNG: Unsupported indexed bit depth %d!\n", bit_depth );
-                    }
-
-                    dfb_scale_linear_32( image_argb, data->desc.width, data->desc.height,
-                                         lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
-
-                    D_FREE( image_argb );
+                    default:
+                         D_ERROR( "ImageProvider/PNG: Unsupported indexed bit depth %d!\n", bit_depth );
                }
+
+               dfb_scale_linear_32( image_argb, data->desc.width, data->desc.height,
+                                    lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
+
+               D_FREE( image_argb );
                break;
           }
 
@@ -390,6 +388,7 @@ IDirectFBImageProvider_PNG_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
+     /* Check PNG signature. */
      if (!png_sig_cmp( ctx->header, 0, 8 ))
           return DFB_OK;
 

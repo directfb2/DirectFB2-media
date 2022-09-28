@@ -110,6 +110,8 @@ IDirectFBImageProvider_TIFF_Destruct( IDirectFBImageProvider *thiz )
 
      D_DEBUG_AT( ImageProvider_TIFF, "%s( %p )\n", __FUNCTION__, thiz );
 
+     TIFFClose( data->tiff );
+
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
           data->buffer->Release( data->buffer );
@@ -270,6 +272,7 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      unsigned short tiff_magic = ctx->header[0] | (ctx->header[1] << 8);
 
+     /* Check the magic. */
      if ((tiff_magic != TIFF_BIGENDIAN) && (tiff_magic != TIFF_LITTLEENDIAN) &&
          (tiff_magic !=  MDI_BIGENDIAN) && (tiff_magic !=  MDI_LITTLEENDIAN))
           return DFB_UNSUPPORTED;

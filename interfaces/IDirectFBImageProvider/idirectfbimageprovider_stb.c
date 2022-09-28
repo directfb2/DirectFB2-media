@@ -45,7 +45,7 @@ typedef struct {
      IDirectFBDataBuffer   *buffer;
      IDirectFB             *idirectfb;
 
-     void                  *ptr;
+     stbi_uc               *image;
 
      DFBSurfaceDescription  desc;
 
@@ -96,7 +96,7 @@ IDirectFBImageProvider_STB_Destruct( IDirectFBImageProvider *thiz )
 
      D_DEBUG_AT( ImageProvider_STB, "%s( %p )\n", __FUNCTION__, thiz );
 
-     stbi_image_free( data->ptr );
+     stbi_image_free( data->image );
 
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
@@ -211,7 +211,7 @@ IDirectFBImageProvider_STB_RenderTo( IDirectFBImageProvider *thiz,
 
      source->Lock( source, DSLF_WRITE, &ptr, &pitch );
 
-     direct_memcpy( ptr, data->ptr, data->desc.width * data->desc.height * 4 );
+     direct_memcpy( ptr, data->image, data->desc.width * data->desc.height * 4 );
 
      source->Unlock( source );
 
@@ -304,8 +304,8 @@ Construct( IDirectFBImageProvider *thiz,
      callbacks.skip = skipSTB;
      callbacks.eof  = eofSTB;
 
-     data->ptr = stbi_load_from_callbacks( &callbacks, data, &width, &height, NULL, 4 );
-     if (!data->ptr)
+     data->image = stbi_load_from_callbacks( &callbacks, data, &width, &height, NULL, 4 );
+     if (!data->image)
           goto error;
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
