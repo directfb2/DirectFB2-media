@@ -1,3 +1,24 @@
+commit b961532deb3828604e98ffab5dac371014d6f8ce
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Sep 28 21:35:04 2022 +0200
+
+    Add FFmpeg image provider
+
+commit 200e0afebb7df9c2ad473f4e8c93f1019be3e0aa
+Merge: d8eb66b bfce998
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Sep 16 08:57:39 2022 +0200
+
+    Merge pull request #19 from caramelli/master
+    
+    Add STB image provider
+
+commit bfce998bbde572c398673979d94a86ad95dfa81d
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Sep 16 08:41:00 2022 +0200
+
+    Update ChangeLog
+
 commit 7e66f48f0c701050e90dc8418a464eae2cba21b0
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Sep 16 08:40:42 2022 +0200
