@@ -74,9 +74,9 @@ typedef struct {
 
      bool                           seekable;
 
-     void                          *iobuf;
-     AVIOContext                   *pb;
-     AVFormatContext               *context;
+     unsigned char                 *io_buf;
+     AVIOContext                   *io_ctx;
+     AVFormatContext               *fmt_ctx;
 
      DFBSurfaceDescription          desc;
 
@@ -346,7 +346,7 @@ FFmpegInput( DirectThread *thread,
 {
      IDirectFBVideoProvider_FFmpeg_data *data = arg;
 
-     if (!data->context->pb->seekable) {
+     if (!data->io_ctx->seekable) {
           data->input.buffering = true;
           direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -366,7 +366,7 @@ FFmpegInput( DirectThread *thread,
           direct_mutex_lock( &data->input.lock );
 
           if (data->input.seeked) {
-               if (av_seek_frame( data->context, -1, data->input.seek_time, data->input.seek_flag ) >= 0) {
+               if (av_seek_frame( data->fmt_ctx, -1, data->input.seek_time, data->input.seek_flag ) >= 0) {
                     direct_mutex_lock( &data->video.lock );
 #ifdef HAVE_FUSIONSOUND
                     direct_mutex_lock( &data->audio.lock );
@@ -377,7 +377,7 @@ FFmpegInput( DirectThread *thread,
                     flush_packets( &data->audio.queue );
 #endif
 
-                    if (!data->input.buffering && !data->context->pb->seekable) {
+                    if (!data->input.buffering && !data->io_ctx->seekable) {
                          data->input.buffering = true;
                          direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -429,7 +429,7 @@ FFmpegInput( DirectThread *thread,
 #else
           else if (data->video.queue.size == 0) {
 #endif
-               if (!data->input.buffering && !data->context->pb->seekable) {
+               if (!data->input.buffering && !data->io_ctx->seekable) {
                     data->input.buffering = true;
                     direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -438,8 +438,8 @@ FFmpegInput( DirectThread *thread,
                }
           }
 
-          if (av_read_frame( data->context, &pkt ) < 0) {
-               if (avio_feof( data->context->pb )) {
+          if (av_read_frame( data->fmt_ctx, &pkt ) < 0) {
+               if (avio_feof( data->io_ctx )) {
                     if (data->input.buffering) {
 #ifdef HAVE_FUSIONSOUND
                          direct_mutex_unlock( &data->audio.queue.lock );
@@ -553,7 +553,7 @@ FFmpegVideo( DirectThread *thread,
      while (data->status != DVSTATE_STOP) {
           AVPacket  pkt;
           long long time, now;
-          int       done = 0;
+          int       got_picture = 0;
 
           time = direct_clock_get_abs_micros();
 
@@ -571,9 +571,9 @@ FFmpegVideo( DirectThread *thread,
                framecnt = 0;
           }
 
-          avcodec_decode_video2( data->video.ctx, data->video.src_frame, &done, &pkt );
+          avcodec_decode_video2( data->video.ctx, data->video.src_frame, &got_picture, &pkt );
 
-          if (done && !drop) {
+          if (got_picture && !drop) {
                sws_scale( sws_ctx, (void*) data->video.src_frame->data, data->video.src_frame->linesize,
                           0, data->video.ctx->height, dst_frame->data, dst_frame->linesize );
 
@@ -776,9 +776,7 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
 
      direct_mutex_deinit( &data->events_lock );
 
-     avformat_close_input( &data->context );
-
-     av_free( data->iobuf );
+     avformat_close_input( &data->fmt_ctx );
 
      /* Decrease the data buffer reference counter. */
      if (data->buffer)
@@ -990,7 +988,7 @@ IDirectFBVideoProvider_FFmpeg_Stop( IDirectFBVideoProvider *thiz )
      data->video.pts = 0;
 
      if (data->seekable) {
-          av_seek_frame( data->context, -1, 0, AVSEEK_FLAG_BACKWARD );
+          av_seek_frame( data->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD );
           flush_packets( &data->video.queue );
      }
 
@@ -1055,7 +1053,7 @@ IDirectFBVideoProvider_FFmpeg_SeekTo( IDirectFBVideoProvider *thiz,
 
      time = seconds * AV_TIME_BASE;
 
-     if (data->context->duration != AV_NOPTS_VALUE && time > data->context->duration)
+     if (data->fmt_ctx->duration != AV_NOPTS_VALUE && time > data->fmt_ctx->duration)
           return DFB_OK;
 
      data->input.seeked    = true;
@@ -1097,8 +1095,8 @@ IDirectFBVideoProvider_FFmpeg_GetLength( IDirectFBVideoProvider *thiz,
      if (!ret_seconds)
           return DFB_INVARG;
 
-     if (data->context->duration != AV_NOPTS_VALUE) {
-          *ret_seconds = (double) data->context->duration / AV_TIME_BASE;
+     if (data->fmt_ctx->duration != AV_NOPTS_VALUE) {
+          *ret_seconds = (double) data->fmt_ctx->duration / AV_TIME_BASE;
           return DFB_OK;
      }
 
@@ -1384,12 +1382,12 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      AVProbeData          pd;
      AVInputFormat       *fmt;
      unsigned char        buf[2048];
-     unsigned int         len    = 0;
+     unsigned int         len;
      IDirectFBDataBuffer *buffer = ctx->buffer;
 
      ret = buffer->WaitForData( buffer, sizeof(buf) );
      if (ret == DFB_OK)
-          ret = buffer->PeekData( buffer, sizeof(buf), 0, &buf[0], &len );
+          ret = buffer->PeekData( buffer, sizeof(buf), 0, buf, &len );
 
      if (ret != DFB_OK)
           return ret;
@@ -1430,7 +1428,7 @@ Construct( IDirectFBVideoProvider *thiz,
      AVProbeData               pd;
      AVInputFormat            *fmt;
      unsigned char             buf[2048];
-     unsigned int              len         = 0;
+     unsigned int              len;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
@@ -1447,7 +1445,9 @@ Construct( IDirectFBVideoProvider *thiz,
 
      data->seekable = (buffer->SeekTo( buffer, 0 ) == DFB_OK);
 
-     buffer->PeekData( buffer, sizeof(buf), 0, &buf[0], &len );
+     ret = buffer->PeekData( buffer, sizeof(buf), 0, buf, &len );
+     if (ret)
+          goto error;
 
      pd.filename = buffer_data->filename;
      pd.buf      = &buf[0];
@@ -1460,49 +1460,51 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
-     data->iobuf = av_malloc( IO_BUFFER_SIZE * 1024 );
-     if (!data->iobuf) {
+     data->io_buf = av_malloc( IO_BUFFER_SIZE * 1024 );
+     if (!data->io_buf) {
           ret = D_OOM();
           goto error;
      }
 
-     data->pb = avio_alloc_context( data->iobuf, IO_BUFFER_SIZE * 1024, 0, data,
-                                    av_read_callback, NULL, data->seekable ? av_seek_callback : NULL );
-     if (!data->pb) {
+     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data,
+                                        av_read_callback, NULL, data->seekable ? av_seek_callback : NULL );
+     if (!data->io_ctx) {
+          av_free( data->io_buf );
           ret = D_OOM();
           goto error;
      }
 
-     data->context = avformat_alloc_context();
-     if (!data->context) {
+     data->fmt_ctx = avformat_alloc_context();
+     if (!data->fmt_ctx) {
+          avio_close( data->io_ctx );
           ret = D_OOM();
           goto error;
      }
 
-     data->context->pb = data->pb;
+     data->fmt_ctx->pb = data->io_ctx;
 
-     if (avformat_open_input( &data->context, pd.filename, fmt, NULL ) < 0) {
+     if (avformat_open_input( &data->fmt_ctx, pd.filename, fmt, NULL ) < 0) {
           D_ERROR( "VideoProvider/FFMPEG: Failed to open stream!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
-     if (avformat_find_stream_info( data->context, NULL ) < 0) {
+     if (avformat_find_stream_info( data->fmt_ctx, NULL ) < 0) {
           D_ERROR( "VideoProvider/FFMPEG: Couldn't find stream info!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
-     for (i = 0; i < data->context->nb_streams; i++) {
-          switch (data->context->streams[i]->codec->codec_type) {
+     for (i = 0; i < data->fmt_ctx->nb_streams; i++) {
+          switch (data->fmt_ctx->streams[i]->codec->codec_type) {
                case AVMEDIA_TYPE_VIDEO:
-                    if (!data->video.st || data->video.st->codec->bit_rate < data->context->streams[i]->codec->bit_rate)
-                         data->video.st = data->context->streams[i];
+                    if (!data->video.st || data->video.st->codec->bit_rate < data->fmt_ctx->streams[i]->codec->bit_rate)
+                         data->video.st = data->fmt_ctx->streams[i];
                     break;
 #ifdef HAVE_FUSIONSOUND
                case AVMEDIA_TYPE_AUDIO:
-                    if (!data->audio.st || data->audio.st->codec->bit_rate < data->context->streams[i]->codec->bit_rate)
-                         data->audio.st = data->context->streams[i];
+                    if (!data->audio.st || data->audio.st->codec->bit_rate < data->fmt_ctx->streams[i]->codec->bit_rate)
+                         data->audio.st = data->fmt_ctx->streams[i];
                     break;
 #endif
                default:
@@ -1516,10 +1518,12 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
+     data->video.ctx = data->video.st->codec;
+
      data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width  = data->video.st->codec->width;
-     data->desc.height = data->video.st->codec->height;
-     switch (data->video.st->codec->pix_fmt) {
+     data->desc.width  = data->video.ctx->width;
+     data->desc.height = data->video.ctx->height;
+     switch (data->video.ctx->pix_fmt) {
           case AV_PIX_FMT_RGB555:
                data->desc.pixelformat = DSPF_ARGB1555;
                break;
@@ -1566,7 +1570,6 @@ Construct( IDirectFBVideoProvider *thiz,
           data->rate = 25.0;
      }
 
-     data->video.ctx   = data->video.st->codec;
      data->video.codec = avcodec_find_decoder( data->video.ctx->codec_id );
 
      if (!data->video.codec || avcodec_open2( data->video.ctx, data->video.codec, NULL ) < 0) {
@@ -1647,8 +1650,8 @@ Construct( IDirectFBVideoProvider *thiz,
      data->status = DVSTATE_STOP;
      data->speed  = 1.0;
 
-     if (data->context->start_time != AV_NOPTS_VALUE)
-          data->start_time = data->context->start_time;
+     if (data->fmt_ctx->start_time != AV_NOPTS_VALUE)
+          data->start_time = data->fmt_ctx->start_time;
 
      data->events_mask = DVPET_ALL;
 
@@ -1719,11 +1722,8 @@ error:
      if (data->video.ctx)
           avcodec_close( data->video.ctx );
 
-     if (data->context)
-          avformat_close_input( &data->context );
-
-     if (data->iobuf)
-          av_free( data->iobuf );
+     if (data->fmt_ctx)
+          avformat_close_input( &data->fmt_ctx );
 
      buffer->Release( buffer );
 

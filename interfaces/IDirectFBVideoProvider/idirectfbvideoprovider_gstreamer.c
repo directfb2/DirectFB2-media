@@ -39,7 +39,7 @@ static DFBResult Construct( IDirectFBVideoProvider              *thiz,
 
 #include <direct/interface_implementation.h>
 
-DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBVideoProvider, GSTREAMER )
+DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBVideoProvider, GStreamer )
 
 /**********************************************************************************************************************/
 
@@ -107,7 +107,7 @@ typedef struct {
      DirectLink                    *events;
      DFBVideoProviderEventType      events_mask;
      DirectMutex                    events_lock;
-} IDirectFBVideoProvider_GSTREAMER_data;
+} IDirectFBVideoProvider_GStreamer_data;
 
 /**********************************************************************************************************************/
 
@@ -128,7 +128,7 @@ decode_pad_added( GstElement *element,
      GstPadLinkReturn                       ret;
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
-     IDirectFBVideoProvider_GSTREAMER_data *data = ptr;
+     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -198,7 +198,7 @@ decode_video_pad_added( GstElement *element,
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
      GstStructure                          *str  = gst_caps_get_structure( caps, 0 );
-     IDirectFBVideoProvider_GSTREAMER_data *data = ptr;
+     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -264,7 +264,7 @@ decode_audio_pad_added( GstElement *element,
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
      GstStructure                          *str  = gst_caps_get_structure( caps, 0 );
-     IDirectFBVideoProvider_GSTREAMER_data *data = ptr;
+     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -317,7 +317,7 @@ decode_audio_pad_added( GstElement *element,
 #endif
 
 static void
-dispatch_event( IDirectFBVideoProvider_GSTREAMER_data *data,
+dispatch_event( IDirectFBVideoProvider_GStreamer_data *data,
                 DFBVideoProviderEventType              type )
 {
      EventLink             *link;
@@ -342,11 +342,12 @@ static void *
 GStreamerVideo( DirectThread *self,
                 void         *arg )
 {
+     DFBResult                              ret;
      GstSample                             *sample;
      GstBuffer                             *buffer;
      IDirectFBSurface_data                 *dst_data;
      CoreSurfaceBufferLock                  lock;
-     IDirectFBVideoProvider_GSTREAMER_data *data = arg;
+     IDirectFBVideoProvider_GStreamer_data *data = arg;
 
      dst_data = data->video_dest->priv;
      if (!dst_data)
@@ -394,9 +395,17 @@ GStreamerVideo( DirectThread *self,
                continue;
           }
 
-          dfb_surface_lock_buffer( dst_data->surface, DSBR_BACK, CSAID_CPU, CSAF_WRITE, &lock );
+          ret = dfb_surface_lock_buffer( dst_data->surface, DSBR_BACK, CSAID_CPU, CSAF_WRITE, &lock );
+          if (ret) {
+               gst_buffer_unref( buffer );
+               direct_mutex_unlock( &data->video_lock );
+               break;
+          }
+
           gst_buffer_extract( buffer, 0, lock.addr, gst_buffer_get_size( buffer ) );
+
           gst_buffer_unref( buffer );
+
           dfb_surface_unlock_buffer( dst_data->surface, &lock );
 
           if (data->frame_callback)
@@ -416,7 +425,7 @@ GStreamerAudio( GstAppSink *appsink,
   GstSample                             *sample;
   GstBuffer                             *buffer;
   int                                    size;
-  IDirectFBVideoProvider_GSTREAMER_data *data           = arg;
+  IDirectFBVideoProvider_GStreamer_data *data           = arg;
   int                                    bytespersample = 2 * data->audio_channels;
   u8                                     buf[bytespersample * data->audio_rate];
 
@@ -433,10 +442,10 @@ GStreamerAudio( GstAppSink *appsink,
 /**********************************************************************************************************************/
 
 static void
-IDirectFBVideoProvider_GSTREAMER_Destruct( IDirectFBVideoProvider *thiz )
+IDirectFBVideoProvider_GStreamer_Destruct( IDirectFBVideoProvider *thiz )
 {
      EventLink                             *link, *tmp;
-     IDirectFBVideoProvider_GSTREAMER_data *data = thiz->priv;
+     IDirectFBVideoProvider_GStreamer_data *data = thiz->priv;
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -472,9 +481,9 @@ IDirectFBVideoProvider_GSTREAMER_Destruct( IDirectFBVideoProvider *thiz )
 }
 
 static DirectResult
-IDirectFBVideoProvider_GSTREAMER_AddRef( IDirectFBVideoProvider *thiz )
+IDirectFBVideoProvider_GStreamer_AddRef( IDirectFBVideoProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -484,23 +493,23 @@ IDirectFBVideoProvider_GSTREAMER_AddRef( IDirectFBVideoProvider *thiz )
 }
 
 static DirectResult
-IDirectFBVideoProvider_GSTREAMER_Release( IDirectFBVideoProvider *thiz )
+IDirectFBVideoProvider_GStreamer_Release( IDirectFBVideoProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
-          IDirectFBVideoProvider_GSTREAMER_Destruct( thiz );
+          IDirectFBVideoProvider_GStreamer_Destruct( thiz );
 
      return DR_OK;
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetCapabilities( IDirectFBVideoProvider       *thiz,
+IDirectFBVideoProvider_GStreamer_GetCapabilities( IDirectFBVideoProvider       *thiz,
                                                   DFBVideoProviderCapabilities *ret_caps )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -519,10 +528,10 @@ IDirectFBVideoProvider_GSTREAMER_GetCapabilities( IDirectFBVideoProvider       *
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetSurfaceDescription( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetSurfaceDescription( IDirectFBVideoProvider *thiz,
                                                         DFBSurfaceDescription  *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -535,10 +544,10 @@ IDirectFBVideoProvider_GSTREAMER_GetSurfaceDescription( IDirectFBVideoProvider *
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetStreamDescription( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetStreamDescription( IDirectFBVideoProvider *thiz,
                                                        DFBStreamDescription   *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -563,7 +572,7 @@ IDirectFBVideoProvider_GSTREAMER_GetStreamDescription( IDirectFBVideoProvider *t
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_PlayTo( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_PlayTo( IDirectFBVideoProvider *thiz,
                                          IDirectFBSurface       *destination,
                                          const DFBRectangle     *dest_rect,
                                          DVFrameCallback         callback,
@@ -571,7 +580,7 @@ IDirectFBVideoProvider_GSTREAMER_PlayTo( IDirectFBVideoProvider *thiz,
 {
      IDirectFBSurface_data *dst_data;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -609,9 +618,9 @@ IDirectFBVideoProvider_GSTREAMER_PlayTo( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_Stop( IDirectFBVideoProvider *thiz )
+IDirectFBVideoProvider_GStreamer_Stop( IDirectFBVideoProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -640,10 +649,10 @@ IDirectFBVideoProvider_GSTREAMER_Stop( IDirectFBVideoProvider *thiz )
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetStatus( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetStatus( IDirectFBVideoProvider *thiz,
                                             DFBVideoProviderStatus *ret_status )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -656,10 +665,10 @@ IDirectFBVideoProvider_GSTREAMER_GetStatus( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_SeekTo( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_SeekTo( IDirectFBVideoProvider *thiz,
                                          double                  seconds )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -680,12 +689,12 @@ IDirectFBVideoProvider_GSTREAMER_SeekTo( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetPos( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetPos( IDirectFBVideoProvider *thiz,
                                          double                 *ret_seconds )
 {
      gint64 position;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -703,12 +712,12 @@ IDirectFBVideoProvider_GSTREAMER_GetPos( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetLength( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetLength( IDirectFBVideoProvider *thiz,
                                             double                 *ret_seconds )
 {
      gint64 duration;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -726,10 +735,10 @@ IDirectFBVideoProvider_GSTREAMER_GetLength( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_SetPlaybackFlags( IDirectFBVideoProvider        *thiz,
+IDirectFBVideoProvider_GStreamer_SetPlaybackFlags( IDirectFBVideoProvider        *thiz,
                                                    DFBVideoProviderPlaybackFlags  flags )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -745,10 +754,10 @@ IDirectFBVideoProvider_GSTREAMER_SetPlaybackFlags( IDirectFBVideoProvider       
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_SetSpeed( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_SetSpeed( IDirectFBVideoProvider *thiz,
                                            double                  multiplier )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -772,10 +781,10 @@ IDirectFBVideoProvider_GSTREAMER_SetSpeed( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetSpeed( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetSpeed( IDirectFBVideoProvider *thiz,
                                            double                 *ret_multiplier )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -789,12 +798,12 @@ IDirectFBVideoProvider_GSTREAMER_GetSpeed( IDirectFBVideoProvider *thiz,
 
 #ifdef HAVE_FUSIONSOUND
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_SetVolume( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_SetVolume( IDirectFBVideoProvider *thiz,
                                             float                   level )
 {
      DFBResult ret = DFB_UNSUPPORTED;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -811,10 +820,10 @@ IDirectFBVideoProvider_GSTREAMER_SetVolume( IDirectFBVideoProvider *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_GetVolume( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_GetVolume( IDirectFBVideoProvider *thiz,
                                             float                  *ret_level )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -828,13 +837,13 @@ IDirectFBVideoProvider_GSTREAMER_GetVolume( IDirectFBVideoProvider *thiz,
 #endif
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_CreateEventBuffer( IDirectFBVideoProvider  *thiz,
+IDirectFBVideoProvider_GStreamer_CreateEventBuffer( IDirectFBVideoProvider  *thiz,
                                                     IDirectFBEventBuffer   **ret_interface )
 {
      DFBResult             ret;
      IDirectFBEventBuffer *buffer;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -855,13 +864,13 @@ IDirectFBVideoProvider_GSTREAMER_CreateEventBuffer( IDirectFBVideoProvider  *thi
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_AttachEventBuffer( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_AttachEventBuffer( IDirectFBVideoProvider *thiz,
                                                     IDirectFBEventBuffer   *buffer )
 {
      DFBResult  ret;
      EventLink *link;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -890,10 +899,10 @@ IDirectFBVideoProvider_GSTREAMER_AttachEventBuffer( IDirectFBVideoProvider *thiz
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_EnableEvents( IDirectFBVideoProvider    *thiz,
+IDirectFBVideoProvider_GStreamer_EnableEvents( IDirectFBVideoProvider    *thiz,
                                                DFBVideoProviderEventType  mask )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -906,10 +915,10 @@ IDirectFBVideoProvider_GSTREAMER_EnableEvents( IDirectFBVideoProvider    *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_DisableEvents( IDirectFBVideoProvider    *thiz,
+IDirectFBVideoProvider_GStreamer_DisableEvents( IDirectFBVideoProvider    *thiz,
                                                 DFBVideoProviderEventType  mask )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -922,13 +931,13 @@ IDirectFBVideoProvider_GSTREAMER_DisableEvents( IDirectFBVideoProvider    *thiz,
 }
 
 static DFBResult
-IDirectFBVideoProvider_GSTREAMER_DetachEventBuffer( IDirectFBVideoProvider *thiz,
+IDirectFBVideoProvider_GStreamer_DetachEventBuffer( IDirectFBVideoProvider *thiz,
                                                     IDirectFBEventBuffer   *buffer )
 {
      DFBResult  ret = DFB_ITEMNOTFOUND;
      EventLink *link;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -977,7 +986,7 @@ Construct( IDirectFBVideoProvider *thiz,
      int                       max_signals = 5;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
-     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_GSTREAMER )
+     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_GStreamer )
 
      D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
 
@@ -1189,29 +1198,29 @@ Construct( IDirectFBVideoProvider *thiz,
      data->audio_volume = 1.0;
 #endif
 
-     thiz->AddRef                = IDirectFBVideoProvider_GSTREAMER_AddRef;
-     thiz->Release               = IDirectFBVideoProvider_GSTREAMER_Release;
-     thiz->GetCapabilities       = IDirectFBVideoProvider_GSTREAMER_GetCapabilities;
-     thiz->GetSurfaceDescription = IDirectFBVideoProvider_GSTREAMER_GetSurfaceDescription;
-     thiz->GetStreamDescription  = IDirectFBVideoProvider_GSTREAMER_GetStreamDescription;
-     thiz->PlayTo                = IDirectFBVideoProvider_GSTREAMER_PlayTo;
-     thiz->Stop                  = IDirectFBVideoProvider_GSTREAMER_Stop;
-     thiz->GetStatus             = IDirectFBVideoProvider_GSTREAMER_GetStatus;
-     thiz->SeekTo                = IDirectFBVideoProvider_GSTREAMER_SeekTo;
-     thiz->GetPos                = IDirectFBVideoProvider_GSTREAMER_GetPos;
-     thiz->GetLength             = IDirectFBVideoProvider_GSTREAMER_GetLength;
-     thiz->SetPlaybackFlags      = IDirectFBVideoProvider_GSTREAMER_SetPlaybackFlags;
-     thiz->SetSpeed              = IDirectFBVideoProvider_GSTREAMER_SetSpeed;
-     thiz->GetSpeed              = IDirectFBVideoProvider_GSTREAMER_GetSpeed;
+     thiz->AddRef                = IDirectFBVideoProvider_GStreamer_AddRef;
+     thiz->Release               = IDirectFBVideoProvider_GStreamer_Release;
+     thiz->GetCapabilities       = IDirectFBVideoProvider_GStreamer_GetCapabilities;
+     thiz->GetSurfaceDescription = IDirectFBVideoProvider_GStreamer_GetSurfaceDescription;
+     thiz->GetStreamDescription  = IDirectFBVideoProvider_GStreamer_GetStreamDescription;
+     thiz->PlayTo                = IDirectFBVideoProvider_GStreamer_PlayTo;
+     thiz->Stop                  = IDirectFBVideoProvider_GStreamer_Stop;
+     thiz->GetStatus             = IDirectFBVideoProvider_GStreamer_GetStatus;
+     thiz->SeekTo                = IDirectFBVideoProvider_GStreamer_SeekTo;
+     thiz->GetPos                = IDirectFBVideoProvider_GStreamer_GetPos;
+     thiz->GetLength             = IDirectFBVideoProvider_GStreamer_GetLength;
+     thiz->SetPlaybackFlags      = IDirectFBVideoProvider_GStreamer_SetPlaybackFlags;
+     thiz->SetSpeed              = IDirectFBVideoProvider_GStreamer_SetSpeed;
+     thiz->GetSpeed              = IDirectFBVideoProvider_GStreamer_GetSpeed;
 #ifdef HAVE_FUSIONSOUND
-     thiz->SetVolume             = IDirectFBVideoProvider_GSTREAMER_SetVolume;
-     thiz->GetVolume             = IDirectFBVideoProvider_GSTREAMER_GetVolume;
+     thiz->SetVolume             = IDirectFBVideoProvider_GStreamer_SetVolume;
+     thiz->GetVolume             = IDirectFBVideoProvider_GStreamer_GetVolume;
 #endif
-     thiz->CreateEventBuffer     = IDirectFBVideoProvider_GSTREAMER_CreateEventBuffer;
-     thiz->AttachEventBuffer     = IDirectFBVideoProvider_GSTREAMER_AttachEventBuffer;
-     thiz->EnableEvents          = IDirectFBVideoProvider_GSTREAMER_EnableEvents;
-     thiz->DisableEvents         = IDirectFBVideoProvider_GSTREAMER_DisableEvents;
-     thiz->DetachEventBuffer     = IDirectFBVideoProvider_GSTREAMER_DetachEventBuffer;
+     thiz->CreateEventBuffer     = IDirectFBVideoProvider_GStreamer_CreateEventBuffer;
+     thiz->AttachEventBuffer     = IDirectFBVideoProvider_GStreamer_AttachEventBuffer;
+     thiz->EnableEvents          = IDirectFBVideoProvider_GStreamer_EnableEvents;
+     thiz->DisableEvents         = IDirectFBVideoProvider_GStreamer_DisableEvents;
+     thiz->DetachEventBuffer     = IDirectFBVideoProvider_GStreamer_DetachEventBuffer;
 
      return DFB_OK;
 

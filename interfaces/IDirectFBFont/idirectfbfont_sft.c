@@ -34,7 +34,7 @@ static DFBResult Construct( IDirectFBFont              *thiz,
 
 #include <direct/interface_implementation.h>
 
-DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBFont, SCHRIFT )
+DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBFont, Schrift )
 
 /**********************************************************************************************************************/
 
@@ -172,7 +172,7 @@ render_glyph( CoreFont      *thiz,
 /**********************************************************************************************************************/
 
 static void
-IDirectFBFont_SCHRIFT_Destruct( IDirectFBFont *thiz )
+IDirectFBFont_Schrift_Destruct( IDirectFBFont *thiz )
 {
      SFT *sft = ((IDirectFBFont_data *) thiz->priv)->font->impl_data;
 
@@ -186,14 +186,14 @@ IDirectFBFont_SCHRIFT_Destruct( IDirectFBFont *thiz )
 }
 
 static DirectResult
-IDirectFBFont_SCHRIFT_Release( IDirectFBFont *thiz )
+IDirectFBFont_Schrift_Release( IDirectFBFont *thiz )
 {
      DIRECT_INTERFACE_GET_DATA(IDirectFBFont)
 
      D_DEBUG_AT( Font_SCHRIFT, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
-          IDirectFBFont_SCHRIFT_Destruct( thiz );
+          IDirectFBFont_Schrift_Destruct( thiz );
 
      return DFB_OK;
 }
@@ -285,7 +285,7 @@ Construct( IDirectFBFont              *thiz,
 
      IDirectFBFont_Construct( thiz, font );
 
-     thiz->Release = IDirectFBFont_SCHRIFT_Release;
+     thiz->Release = IDirectFBFont_Schrift_Release;
 
      return DFB_OK;
 

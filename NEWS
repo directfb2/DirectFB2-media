@@ -2,8 +2,12 @@
 -----
 
 Initial version using the Meson build system and containing:
-  - FFmpeg video provider
+  - FFmpeg image provider and video provider
   - FreeType2 font provider
   - GStreamer video provider
   - JPEG image provider
   - PNG image provider
+  - Schrift font provider
+  - STB font provider and image provider
+  - TIFF image provider
+  - YUV image provider

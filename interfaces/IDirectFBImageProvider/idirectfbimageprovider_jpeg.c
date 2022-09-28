@@ -44,9 +44,9 @@ typedef struct {
 
      IDirectFBDataBuffer   *buffer;
 
-     DFBSurfaceDescription  desc;
-
      u32                   *image;
+
+     DFBSurfaceDescription  desc;
 
      DIRenderCallback       render_callback;
      void                  *render_callback_context;
@@ -394,6 +394,7 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
                if (data->image) {
                     dfb_scale_linear_32( data->image, data->desc.width, data->desc.height,
                                          lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
+
                     dfb_surface_unlock_buffer( dst_data->surface, &lock );
 
                     if (data->render_callback) {
@@ -425,7 +426,7 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
           else if (rect.x == 0 && rect.y == 0) {
                cinfo.scale_num = 1;
                jpeg_calc_output_dimensions( &cinfo );
-               while (cinfo.scale_num < 16 && cinfo.output_width  < rect.w && cinfo.output_height < rect.h) {
+               while (cinfo.scale_num < 16 && cinfo.output_width < rect.w && cinfo.output_height < rect.h) {
                     ++cinfo.scale_num;
                     jpeg_calc_output_dimensions( &cinfo );
                }
@@ -463,7 +464,6 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
 
           /* Allocate image data. */
           data->image = D_CALLOC( data->desc.height, data->desc.width * 4 );
-
           if (!data->image) {
                dfb_surface_unlock_buffer( dst_data->surface, &lock );
                return D_OOM();

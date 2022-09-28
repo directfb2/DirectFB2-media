@@ -16,7 +16,7 @@
 
 option('ffmpeg',
        type: 'boolean',
-       description: 'FFmpeg video provider')
+       description: 'FFmpeg image provider and video provider')
 
 option('ft2',
        type: 'boolean',
