@@ -1,3 +1,24 @@
+commit 702ba6193a3aa107203827336570342465b0396e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun Oct 2 08:43:00 2022 +0200
+
+    ImageProvider/YUV: Add support for bitdepth > 8b
+
+commit 8eaf24d940d5247632ea3402bc56409f6f1d9b0b
+Merge: 200e0af 2fb5e5b
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Sep 28 21:39:01 2022 +0200
+
+    Merge pull request #20 from caramelli/master
+    
+    Add FFmpeg image provider
+
+commit 2fb5e5b4c45571218252d70f1877b7202d5c9917
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Sep 28 21:36:38 2022 +0200
+
+    Update ChangeLog
+
 commit b961532deb3828604e98ffab5dac371014d6f8ce
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Sep 28 21:35:04 2022 +0200
