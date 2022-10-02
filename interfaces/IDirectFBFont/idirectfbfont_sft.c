@@ -174,7 +174,7 @@ render_glyph( CoreFont      *thiz,
 static void
 IDirectFBFont_Schrift_Destruct( IDirectFBFont *thiz )
 {
-     SFT *sft = ((IDirectFBFont_data *) thiz->priv)->font->impl_data;
+     SFT *sft = ((IDirectFBFont_data*) thiz->priv)->font->impl_data;
 
      D_DEBUG_AT( Font_SCHRIFT, "%s( %p )\n", __FUNCTION__, thiz );
 

@@ -769,7 +769,7 @@ release_freetype()
 static void
 IDirectFBFont_FT2_Destruct( IDirectFBFont *thiz )
 {
-     FT2ImplData *data = ((IDirectFBFont_data *) thiz->priv)->font->impl_data;
+     FT2ImplData *data = ((IDirectFBFont_data*) thiz->priv)->font->impl_data;
 
      D_DEBUG_AT( Font_FT2, "%s( %p )\n", __FUNCTION__, thiz );
 
