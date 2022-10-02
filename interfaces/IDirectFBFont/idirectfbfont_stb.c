@@ -181,7 +181,7 @@ render_glyph( CoreFont      *thiz,
 static void
 IDirectFBFont_STB_Destruct( IDirectFBFont *thiz )
 {
-     stbtt_fontinfo *fontinfo = ((IDirectFBFont_data *) thiz->priv)->font->impl_data;
+     stbtt_fontinfo *fontinfo = ((IDirectFBFont_data*) thiz->priv)->font->impl_data;
 
      D_DEBUG_AT( Font_STB, "%s( %p )\n", __FUNCTION__, thiz );
 

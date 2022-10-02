@@ -37,11 +37,11 @@ static void print_usage()
      int i = 0;
 
      fprintf( stderr, "C code generation utility for DirectFB surfaces\n\n" );
-     fprintf( stderr, "Usage: directfb-csource [options] image\n\n");
-     fprintf( stderr, "  --format=<pixelformat>    Choose the pixel format (default ARGB or RGB32).\n");
-     fprintf( stderr, "  --transparent=<AARRGGBB>  Set completely transparent pixels to this color value.\n");
+     fprintf( stderr, "Usage: directfb-csource [options] image\n\n" );
+     fprintf( stderr, "  --format=<pixelformat>    Choose the pixel format (default ARGB or RGB32).\n" );
      fprintf( stderr, "  --size=<width>x<height>   Set image size (for raw input image).\n" );
-     fprintf( stderr, "  --name=<identifer>        Specifies the identifier name for the generated variables.\n");
+     fprintf( stderr, "  --transparent=<AARRGGBB>  Set completely transparent pixels to this color value.\n" );
+     fprintf( stderr, "  --name=<identifer>        Specifies the identifier name for the generated variables.\n" );
      fprintf( stderr, "  --help                    Show this help message.\n\n");
      fprintf( stderr, "Supported pixel formats:\n\n" );
      while (format_names[i].format != DSPF_UNKNOWN) {
@@ -76,6 +76,16 @@ static DFBBoolean parse_format( const char *arg )
      return DFB_FALSE;
 }
 
+static DFBBoolean parse_size( const char *arg )
+{
+     if (sscanf( arg, "%dx%d", &width, &height ) == 2)
+         return DFB_TRUE;
+
+     fprintf( stderr, "Invalid size specified!\n" );
+
+     return DFB_FALSE;
+}
+
 static DFBBoolean parse_transparent( const char *arg )
 {
      char *error;
@@ -99,16 +109,6 @@ static DFBBoolean parse_transparent( const char *arg )
      return DFB_TRUE;
 }
 
-static DFBBoolean parse_size( const char *arg )
-{
-     if (sscanf( arg, "%dx%d", &width, &height ) == 2)
-         return DFB_TRUE;
-
-     fprintf( stderr, "Invalid size specified!\n" );
-
-     return DFB_FALSE;
-}
-
 static DFBBoolean parse_command_line( int argc, char *argv[] )
 {
      int n;
@@ -129,15 +129,15 @@ static DFBBoolean parse_command_line( int argc, char *argv[] )
                     continue;
                }
 
-               if (strncmp( arg, "transparent=", 12 ) == 0) {
-                    if (!parse_transparent( arg + 12 ))
+               if (strncmp( arg, "size=", 5 ) == 0) {
+                    if (!parse_size( arg + 5 ))
                          return DFB_FALSE;
 
                     continue;
                }
 
-               if (strncmp( arg, "size=", 5 ) == 0) {
-                    if (!parse_size( arg + 5 ))
+               if (strncmp( arg, "transparent=", 12 ) == 0) {
+                    if (!parse_transparent( arg + 12 ))
                          return DFB_FALSE;
 
                     continue;
