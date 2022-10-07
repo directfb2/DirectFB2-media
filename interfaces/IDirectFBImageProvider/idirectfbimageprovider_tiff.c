@@ -56,10 +56,10 @@ readTIFF( thandle_t  handle,
           void      *buf,
           tmsize_t   size )
 {
-     unsigned int                      len;
-     IDirectFBImageProvider_TIFF_data *data = handle;
+     unsigned int         len    = 0;
+     IDirectFBDataBuffer *buffer = handle;
 
-     data->buffer->GetData( data->buffer, size, buf, &len );
+     buffer->GetData( buffer, size, buf, &len );
 
      return len;
 }
@@ -77,9 +77,9 @@ seekTIFF( thandle_t handle,
           toff_t    off,
           int       whence )
 {
-     IDirectFBImageProvider_TIFF_data *data = handle;
+     IDirectFBDataBuffer *buffer = handle;
 
-     data->buffer->SeekTo( data->buffer, off );
+     buffer->SeekTo( buffer, off );
 
      return off;
 }
@@ -93,10 +93,10 @@ closeTIFF( thandle_t handle )
 static toff_t
 sizeTIFF( thandle_t handle )
 {
-     unsigned int                      length;
-     IDirectFBImageProvider_TIFF_data *data = handle;
+     unsigned int         length;
+     IDirectFBDataBuffer *buffer = handle;
 
-     data->buffer->GetLength( data->buffer, &length );
+     buffer->GetLength( buffer, &length );
 
      return length;
 }
@@ -300,7 +300,8 @@ Construct( IDirectFBImageProvider *thiz,
 
      data->idirectfb = idirectfb;
 
-     data->tiff = TIFFClientOpen( "TIFF", "rM", data, readTIFF, writeTIFF, seekTIFF, closeTIFF, sizeTIFF, NULL, NULL );
+     data->tiff = TIFFClientOpen( "TIFF", "rM", data->buffer,
+                                  readTIFF, writeTIFF, seekTIFF, closeTIFF, sizeTIFF, NULL, NULL );
      if (!data->tiff)
           goto error;
 

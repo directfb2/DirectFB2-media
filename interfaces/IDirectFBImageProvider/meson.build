@@ -14,6 +14,14 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
+if enable_bmp
+  library('idirectfbimageprovider_bmp',
+          'idirectfbimageprovider_bmp.c',
+          dependencies: directfb_dep,
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
+
 if enable_ffmpeg
   library('idirectfbimageprovider_ffmpeg',
           'idirectfbimageprovider_ffmpeg.c',

@@ -60,10 +60,10 @@ readSTB( void *user,
          char *buf,
          int   size )
 {
-     unsigned int                     len;
-     IDirectFBImageProvider_STB_data *data = user;
+     unsigned int         len    = 0;
+     IDirectFBDataBuffer *buffer = user;
 
-     data->buffer->GetData( data->buffer, size, buf, &len );
+     buffer->GetData( buffer, size, buf, &len );
 
      return len;
 }
@@ -72,19 +72,19 @@ static void
 skipSTB( void *user,
          int   n )
 {
-     unsigned int                     offset;
-     IDirectFBImageProvider_STB_data *data = user;
+     unsigned int         offset;
+     IDirectFBDataBuffer *buffer = user;
 
-     data->buffer->GetPosition( data->buffer, &offset );
-     data->buffer->SeekTo( data->buffer, offset + n );
+     buffer->GetPosition( buffer, &offset );
+     buffer->SeekTo( buffer, offset + n );
 }
 
 static int
 eofSTB( void *user )
 {
-     IDirectFBImageProvider_STB_data *data = user;
+     IDirectFBDataBuffer *buffer = user;
 
-     return data->buffer->HasData( data->buffer ) ? 1 : 0;
+     return buffer->HasData( buffer ) ? 1 : 0;
 }
 
 /**********************************************************************************************************************/
@@ -304,7 +304,7 @@ Construct( IDirectFBImageProvider *thiz,
      callbacks.skip = skipSTB;
      callbacks.eof  = eofSTB;
 
-     data->image = stbi_load_from_callbacks( &callbacks, data, &width, &height, NULL, 4 );
+     data->image = stbi_load_from_callbacks( &callbacks, data->buffer, &width, &height, NULL, 4 );
      if (!data->image)
           goto error;
 

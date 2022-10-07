@@ -537,6 +537,7 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
                jpeg_abort_decompress( &cinfo );
                D_FREE( data->image );
                data->image = NULL;
+               ret = DFB_INTERRUPTED;
           }
           else {
                jpeg_finish_decompress( &cinfo );
@@ -556,9 +557,6 @@ IDirectFBImageProvider_JPEG_RenderTo( IDirectFBImageProvider *thiz,
      }
 
      dfb_surface_unlock_buffer( dst_data->surface, &lock );
-
-     if (cb_result != DIRCR_OK)
-          return DFB_INTERRUPTED;
 
      return DFB_OK;
 }
