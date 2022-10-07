@@ -60,18 +60,18 @@ typedef struct {
 static int
 av_read_callback( void    *opaque,
                   uint8_t *buf,
-                  int      buf_size)
+                  int      size )
 {
-     DFBResult                           ret;
-     unsigned int                        len  = 0;
-     IDirectFBImageProvider_FFmpeg_data *data = opaque;
+     DFBResult            ret;
+     unsigned int         len    = 0;
+     IDirectFBDataBuffer *buffer = opaque;
 
-     if (!buf || buf_size < 0)
+     if (!buf || size < 0)
           return -1;
 
-     if (buf_size) {
-          data->buffer->WaitForData( data->buffer, buf_size );
-          ret = data->buffer->GetData( data->buffer, buf_size, buf, &len );
+     if (size) {
+          buffer->WaitForData( buffer, size );
+          ret = buffer->GetData( buffer, size, buf, &len );
           if (ret && ret != DFB_EOF)
                return -1;
      }
@@ -337,7 +337,7 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
-     data->io_ctx = avio_alloc_context( data->io_buf, len, 0, data, av_read_callback, NULL, NULL );
+     data->io_ctx = avio_alloc_context( data->io_buf, len, 0, data->buffer, av_read_callback, NULL, NULL );
      if (!data->io_ctx) {
           av_free( data->io_buf );
           ret = D_OOM();

@@ -1,3 +1,24 @@
+commit 43185b1ceec18a4aaf5b72fd81a79170b7aa7cea
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Oct 7 18:34:47 2022 +0200
+
+    Add BMP image provider
+
+commit c39180c12d283ea2d9e4dec6dc38b0aa6aa8391b
+Merge: 8eaf24d be62ef8
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sun Oct 2 08:44:57 2022 +0200
+
+    Merge pull request #21 from caramelli/master
+    
+    ImageProvider/YUV: Add support for bitdepth > 8b
+
+commit be62ef82c24c1b53ea09112f72f6762d1e5d7bad
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun Oct 2 08:43:09 2022 +0200
+
+    Update ChangeLog
+
 commit 702ba6193a3aa107203827336570342465b0396e
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sun Oct 2 08:43:00 2022 +0200

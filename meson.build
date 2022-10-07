@@ -43,6 +43,7 @@ config_inc = include_directories('.')
 
 fs = import('fs')
 
+enable_bmp          = get_option('bmp')
 enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')

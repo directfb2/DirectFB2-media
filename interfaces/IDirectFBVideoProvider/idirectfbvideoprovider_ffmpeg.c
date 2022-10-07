@@ -179,18 +179,18 @@ get_stream_clock( IDirectFBVideoProvider_FFmpeg_data *data )
 static int
 av_read_callback( void    *opaque,
                   uint8_t *buf,
-                  int      buf_size )
+                  int      size )
 {
-     DFBResult                           ret;
-     unsigned int                        len  = 0;
-     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
+     DFBResult            ret;
+     unsigned int         len    = 0;
+     IDirectFBDataBuffer *buffer = opaque;
 
-     if (!buf || buf_size < 0)
+     if (!buf || size < 0)
           return -1;
 
-     if (buf_size) {
-          data->buffer->WaitForData( data->buffer, buf_size );
-          ret = data->buffer->GetData( data->buffer, buf_size, buf, &len );
+     if (size) {
+          buffer->WaitForData( buffer, size );
+          ret = buffer->GetData( buffer, size, buf, &len );
           if (ret && ret != DFB_EOF)
                return -1;
      }
@@ -203,28 +203,28 @@ av_seek_callback( void    *opaque,
                   int64_t  offset,
                   int      whence )
 {
-     DFBResult                           ret;
-     unsigned int                        pos;
-     IDirectFBVideoProvider_FFmpeg_data *data = opaque;
+     DFBResult            ret;
+     unsigned int         pos;
+     IDirectFBDataBuffer *buffer = opaque;
 
      switch (whence) {
           case SEEK_SET:
-               ret = data->buffer->SeekTo( data->buffer, offset );
+               ret = buffer->SeekTo( buffer, offset );
                break;
           case SEEK_CUR:
-               ret = data->buffer->GetPosition( data->buffer, &pos );
+               ret = buffer->GetPosition( buffer, &pos );
                if (ret == DFB_OK) {
                     if (!offset)
                          return pos;
-                    ret = data->buffer->SeekTo( data->buffer, pos + offset );
+                    ret = buffer->SeekTo( buffer, pos + offset );
                }
                break;
           case SEEK_END:
-               ret = data->buffer->GetLength( data->buffer, &pos );
+               ret = buffer->GetLength( buffer, &pos );
                if (ret == DFB_OK) {
                     if (offset < 0)
                          return pos;
-                    ret = data->buffer->SeekTo( data->buffer, pos - offset );
+                    ret = buffer->SeekTo( buffer, pos - offset );
                }
                break;
           default:
@@ -235,7 +235,7 @@ av_seek_callback( void    *opaque,
      if (ret != DFB_OK)
           return -1;
 
-     data->buffer->GetPosition( data->buffer, &pos );
+     buffer->GetPosition( buffer, &pos );
 
      return pos;
 }
@@ -1466,7 +1466,7 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
-     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data,
+     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data->buffer,
                                         av_read_callback, NULL, data->seekable ? av_seek_callback : NULL );
      if (!data->io_ctx) {
           av_free( data->io_buf );

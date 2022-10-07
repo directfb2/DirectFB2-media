@@ -55,13 +55,8 @@ typedef struct {
      IDirectFBDataBuffer   *buffer;
 
      int                    stage;
-
      png_structp            png_ptr;
      png_infop              info_ptr;
-     void                  *image;
-
-     DFBSurfaceDescription  desc;
-
      int                    bpp;
      int                    color_type;
      u32                    color_key;
@@ -69,6 +64,9 @@ typedef struct {
      int                    pitch;
      u32                    palette[256];
      DFBColor               colors[256];
+     void                  *image;
+
+     DFBSurfaceDescription  desc;
 
      DIRenderCallback       render_callback;
      void                  *render_callback_context;
@@ -844,11 +842,11 @@ png_row_callback( png_structp png_read_ptr,
          png_progressive_combine_row( data->png_ptr, data->image + row_num * data->pitch, new_row );
 
      if (data->render_callback) {
-          DIRenderCallbackResult res;
+          DIRenderCallbackResult cb_result;
           DFBRectangle           r = { 0, row_num, data->desc.width, 1 };
 
-          res = data->render_callback( &r, data->render_callback_context );
-          if (res != DIRCR_OK) {
+          cb_result = data->render_callback( &r, data->render_callback_context );
+          if (cb_result != DIRCR_OK) {
                /* Set abort stage. */
                data->stage = STAGE_ABORT;
           }

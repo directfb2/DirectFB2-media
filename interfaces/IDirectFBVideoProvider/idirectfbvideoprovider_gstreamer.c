@@ -1006,7 +1006,7 @@ Construct( IDirectFBVideoProvider *thiz,
           if (*buffer_data->filename == '/')
                g_snprintf( uri, sizeof(uri), "file://%s", buffer_data->filename );
           else
-               g_snprintf( uri, sizeof(uri), "file://%s/%s", get_current_dir_name(), buffer_data->filename );
+               g_snprintf( uri, sizeof(uri), "file://%s/%s", g_get_current_dir(), buffer_data->filename );
      }
 
      if (!gst_init_check( NULL, NULL, &err )) {
