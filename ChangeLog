@@ -1,3 +1,24 @@
+commit 97902a20ecd373e778e1ff1bfc942dde909be537
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Oct 14 13:53:43 2022 +0200
+
+    ImageProvider/YUV: Add YUV_FRAME environment variable
+
+commit dee463491c0e529638ad1554d41c41eabe6a1572
+Merge: c39180c 372d2ff
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Oct 7 18:35:41 2022 +0200
+
+    Merge pull request #22 from caramelli/master
+    
+    Add BMP image provider
+
+commit 372d2ff6e406b2a0a6115f0d85dbc4605d8470e1
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Oct 7 18:35:00 2022 +0200
+
+    Update ChangeLog
+
 commit 43185b1ceec18a4aaf5b72fd81a79170b7aa7cea
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Oct 7 18:34:47 2022 +0200

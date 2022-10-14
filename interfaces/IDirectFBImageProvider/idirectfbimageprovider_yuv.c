@@ -44,6 +44,7 @@ typedef struct {
 
      void                  *ptr;
      int                    len;
+     off_t                  offset;
      u8                    *image;
 
      DFBSurfaceDescription  desc;
@@ -62,7 +63,7 @@ IDirectFBImageProvider_YUV_Destruct( IDirectFBImageProvider *thiz )
      D_DEBUG_AT( ImageProvider_YUV, "%s( %p )\n", __FUNCTION__, thiz );
 
      /* Deallocate image data. */
-     if (data->image != data->ptr)
+     if (data->image != data->ptr + data->offset)
           D_FREE( data->image );
 
      direct_file_unmap( data->ptr, data->len );
@@ -233,6 +234,7 @@ Construct( IDirectFBImageProvider *thiz,
            IDirectFB              *idirectfb )
 {
      DFBResult                 ret;
+     int                       frame_size;
      char                     *basename;
      DirectFile                fd;
      DirectFileInfo            info;
@@ -374,6 +376,15 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
+     frame_size = DFB_BYTES_PER_LINE( format, width ) * DFB_PLANE_MULTIPLY( format, height );
+     if (bitdepth > 8)
+          frame_size *= 2;
+
+     if (frame_size > info.size) {
+          D_ERROR( "ImageProvider/YUV: Invalid file size!\n" );
+          goto error;
+     }
+
      /* Memory-mapped file. */
      ret = direct_file_map( &fd, NULL, 0, info.size, DFP_READ, &ptr );
      if (ret) {
@@ -381,9 +392,21 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
+     /* YUV frame. */
+     if (getenv( "YUV_FRAME" )) {
+          data->offset = frame_size * atoi( getenv( "YUV_FRAME" ) );
+          if (bitdepth > 8)
+               data->offset *= 2;
+
+          if ((long) ((info.size - frame_size) - data->offset) < 0) {
+               D_ERROR( "ImageProvider/YUV: Invalid frame!\n" );
+               goto error;
+          }
+     }
+
      if (bitdepth > 8) {
           int  i;
-          u16 *s = ptr;
+          u16 *s = ptr + data->offset;
 
           /* Allocate image data. */
           data->image = D_MALLOC( info.size >> 1 );
@@ -393,12 +416,12 @@ Construct( IDirectFBImageProvider *thiz,
           }
 
           for (i = 0; i < (info.size >> 1); i++) {
-               data->image[i] = (*s + (bitdepth - 7)) >> (bitdepth - 8);
+               data->image[i] = (*s + (1 << (bitdepth - 9))) >> (bitdepth - 8);
                s++;
           }
      }
      else
-          data->image = ptr;
+          data->image = ptr + data->offset;
 
      direct_file_close( &fd );
 
@@ -409,7 +432,7 @@ Construct( IDirectFBImageProvider *thiz,
      data->desc.width                 = width;
      data->desc.height                = height;
      data->desc.pixelformat           = format;
-     data->desc.preallocated[0].data  = ptr;
+     data->desc.preallocated[0].data  = ptr + data->offset;
      data->desc.preallocated[0].pitch = width;
      data->desc.colorspace            = colorspace;
 
