@@ -1,3 +1,24 @@
+commit 4ae4da592b86205c8a11816dd3501a78bf3b2d24
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Oct 17 17:49:29 2022 +0200
+
+    Add LodePNG image provider
+
+commit f4426ff36a71b9aa1e675b7610f56c0f5dcebede
+Merge: dee4634 42cd963
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Oct 14 13:55:00 2022 +0200
+
+    Merge pull request #23 from caramelli/master
+    
+    ImageProvider/YUV: Add YUV_FRAME environment variable
+
+commit 42cd963a5424dd1cebed273688dad6f8e2b0748b
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Oct 14 13:54:18 2022 +0200
+
+    Update ChangeLog
+
 commit 97902a20ecd373e778e1ff1bfc942dde909be537
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Oct 14 13:53:43 2022 +0200
