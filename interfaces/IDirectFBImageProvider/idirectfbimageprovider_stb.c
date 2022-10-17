@@ -172,8 +172,7 @@ IDirectFBImageProvider_STB_RenderTo( IDirectFBImageProvider *thiz,
      DFBRectangle           rect;
      DFBRegion              clip;
      DFBRegion              old_clip;
-     int                    pitch;
-     void                  *ptr;
+     DFBSurfaceDescription  desc;
      IDirectFBSurface      *source;
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_STB )
@@ -205,15 +204,15 @@ IDirectFBImageProvider_STB_RenderTo( IDirectFBImageProvider *thiz,
      else
           clip = DFB_REGION_INIT_FROM_RECTANGLE( &rect );
 
-     ret = data->idirectfb->CreateSurface( data->idirectfb, &data->desc, &source );
+     desc = data->desc;
+
+     desc.flags                 |= DSDESC_PREALLOCATED;
+     desc.preallocated[0].data   = data->image;
+     desc.preallocated[0].pitch  = data->desc.width * 4;
+
+     ret = data->idirectfb->CreateSurface( data->idirectfb, &desc, &source );
      if (ret)
           return ret;
-
-     source->Lock( source, DSLF_WRITE, &ptr, &pitch );
-
-     direct_memcpy( ptr, data->image, data->desc.width * data->desc.height * 4 );
-
-     source->Unlock( source );
 
      destination->GetClip( destination, &old_clip );
 

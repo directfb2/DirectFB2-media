@@ -386,7 +386,7 @@ IDirectFBImageProvider_PNG_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     /* Check PNG signature. */
+     /* Check the signature. */
      if (!png_sig_cmp( ctx->header, 0, 8 ))
           return DFB_OK;
 

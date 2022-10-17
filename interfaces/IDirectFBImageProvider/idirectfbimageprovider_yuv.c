@@ -17,7 +17,6 @@
 */
 
 #include <direct/filesystem.h>
-#include <directfb_strings.h>
 #include <display/idirectfbsurface.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
@@ -138,8 +137,8 @@ IDirectFBImageProvider_YUV_RenderTo( IDirectFBImageProvider *thiz,
      DFBRectangle           rect;
      DFBRegion              clip;
      DFBRegion              old_clip;
-     IDirectFBSurface      *source;
      DFBSurfaceDescription  desc;
+     IDirectFBSurface      *source;
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_YUV )
 
@@ -254,6 +253,11 @@ Construct( IDirectFBImageProvider *thiz,
      data->idirectfb = idirectfb;
 
      /* Check for valid filename. */
+     if (!buffer_data->filename) {
+          DIRECT_DEALLOCATE_INTERFACE( thiz );
+          return DFB_UNSUPPORTED;
+     }
+
      basename = strrchr( buffer_data->filename, '/' );
      if (basename)
           basename++;

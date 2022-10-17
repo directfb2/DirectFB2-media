@@ -34,7 +34,7 @@ endif
 if enable_stb_truetype != ''
   library('idirectfbfont_stb',
           'idirectfbfont_stb.c',
-          c_args: ['-DSTB_TRUETYPE_H="@0@"'.format(enable_stb_truetype)],
+          c_args: '-DSTB_TRUETYPE_H="@0@"'.format(enable_stb_truetype),
           dependencies: [directfb_dep, stb_truetype_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
