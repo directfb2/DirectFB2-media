@@ -38,6 +38,11 @@ option('jpeg',
        type: 'boolean',
        description: 'JPEG image provider')
 
+option('lodepng',
+       type: 'string',
+       value: 'lodepng',
+       description: 'LodePNG image provider')
+
 option('png',
        type: 'boolean',
        description: 'PNG image provider')

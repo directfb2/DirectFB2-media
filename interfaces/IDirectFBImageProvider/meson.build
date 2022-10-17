@@ -39,6 +39,15 @@ if enable_jpeg
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
 
+if enable_lodepng != ''
+  library('idirectfbimageprovider_lodepng',
+          'idirectfbimageprovider_lodepng.c',
+          c_args: '-DLODEPNG_C="lodepng.cpp"',
+          dependencies: [directfb_dep, lodepng_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
+
 if enable_png
   library('idirectfbimageprovider_png',
           'idirectfbimageprovider_png.c',
@@ -51,7 +60,7 @@ endif
 if enable_stb_image != ''
   library('idirectfbimageprovider_stb',
           'idirectfbimageprovider_stb.c',
-          c_args: ['-DSTB_IMAGE_H="@0@"'.format(enable_stb_image)],
+          c_args: '-DSTB_IMAGE_H="@0@"'.format(enable_stb_image),
           dependencies: directfb_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))

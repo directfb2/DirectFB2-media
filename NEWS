@@ -7,6 +7,7 @@ Initial version using the Meson build system and containing:
   - FreeType2 font provider
   - GStreamer video provider
   - JPEG image provider
+  - LodePNG image provider
   - PNG image provider
   - Schrift font provider
   - STB font provider and image provider

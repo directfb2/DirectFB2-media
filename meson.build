@@ -48,6 +48,7 @@ enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
 enable_jpeg         = get_option('jpeg')
+enable_lodepng      = get_option('lodepng')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
@@ -110,6 +111,15 @@ if enable_jpeg
     else
       enable_jpeg = false
     endif
+  endif
+endif
+
+if enable_lodepng != ''
+  if not fs.is_dir(enable_lodepng)
+    warning('LodePNG image provider will not be built.')
+    enable_lodepng = ''
+  else
+    lodepng_dep = declare_dependency(include_directories: include_directories(enable_lodepng))
   endif
 endif
 
