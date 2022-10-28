@@ -66,12 +66,10 @@ typedef struct {
      int                     peekoffset;
 } buffer_source_mgr;
 
-typedef buffer_source_mgr * buffer_src_ptr;
-
 static void
 buffer_init_source( j_decompress_ptr cinfo )
 {
-     buffer_src_ptr       src    = (buffer_src_ptr) cinfo->src;
+     buffer_source_mgr   *src    = (buffer_source_mgr*) cinfo->src;
      IDirectFBDataBuffer *buffer = src->buffer;
 
      buffer->SeekTo( buffer, 0 );
@@ -80,19 +78,19 @@ buffer_init_source( j_decompress_ptr cinfo )
 static boolean
 buffer_fill_input_buffer( j_decompress_ptr cinfo )
 {
-     DFBResult            ret;
-     unsigned int         nbytes = 0;
-     buffer_src_ptr       src    = (buffer_src_ptr) cinfo->src;
-     IDirectFBDataBuffer *buffer = src->buffer;
+     DFBResult          ret;
+     unsigned int       nbytes;
+     buffer_source_mgr *src = (buffer_source_mgr*) cinfo->src;
 
-     buffer->WaitForDataWithTimeout( buffer, JPEG_PROG_BUF_SIZE, 1, 0 );
+     src->buffer->WaitForDataWithTimeout( src->buffer, JPEG_PROG_BUF_SIZE, 1, 0 );
 
      if (src->peekonly) {
-          ret = buffer->PeekData( buffer, JPEG_PROG_BUF_SIZE, src->peekoffset, src->data, &nbytes );
-          src->peekoffset += MAX( nbytes, 0 );
+          ret = src->buffer->PeekData( src->buffer, JPEG_PROG_BUF_SIZE, src->peekoffset, src->data, &nbytes );
+          if (ret == DFB_OK)
+               src->peekoffset += nbytes;
      }
      else {
-          ret = buffer->GetData( buffer, JPEG_PROG_BUF_SIZE, src->data, &nbytes );
+          ret = src->buffer->GetData( src->buffer, JPEG_PROG_BUF_SIZE, src->data, &nbytes );
      }
 
      if (ret || nbytes <= 0) {
@@ -112,7 +110,7 @@ static void
 buffer_skip_input_data( j_decompress_ptr cinfo,
                         long             num_bytes )
 {
-     buffer_src_ptr src = (buffer_src_ptr) cinfo->src;
+     buffer_source_mgr *src = (buffer_source_mgr*) cinfo->src;
 
      if (num_bytes > 0) {
           while (num_bytes > src->pub.bytes_in_buffer) {
@@ -135,11 +133,11 @@ jpeg_buffer_src( j_decompress_ptr     cinfo,
                  IDirectFBDataBuffer *buffer,
                  int                  peekonly )
 {
-     buffer_src_ptr src;
+     buffer_source_mgr *src;
 
      cinfo->src = cinfo->mem->alloc_small( (j_common_ptr) cinfo, JPOOL_PERMANENT, sizeof(buffer_source_mgr) );
 
-     src = (buffer_src_ptr) cinfo->src;
+     src = (buffer_source_mgr*) cinfo->src;
 
      src->data = cinfo->mem->alloc_small( (j_common_ptr) cinfo, JPOOL_PERMANENT, JPEG_PROG_BUF_SIZE * sizeof(JOCTET) );
 
