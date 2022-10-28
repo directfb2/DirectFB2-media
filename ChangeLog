@@ -1,3 +1,24 @@
+commit 910d36c7684f515816feb5aef423386dcdbbc360
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Oct 28 10:44:26 2022 +0200
+
+    Add WebP image provider
+
+commit 4a178510903938d19b4c93f328aaa5623a39c828
+Merge: f4426ff c701aff
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Mon Oct 17 17:58:02 2022 +0200
+
+    Merge pull request #24 from caramelli/master
+    
+    Add LodePNG image provider
+
+commit c701afff90c05222fb652614f197803c10fea6c6
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Oct 17 17:49:41 2022 +0200
+
+    Update ChangeLog
+
 commit 4ae4da592b86205c8a11816dd3501a78bf3b2d24
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Mon Oct 17 17:49:29 2022 +0200
