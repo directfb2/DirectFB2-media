@@ -69,6 +69,10 @@ option('tools',
        type: 'boolean',
        description: 'Compile tools')
 
+option('webp',
+       type: 'boolean',
+       description: 'WebP image provider')
+
 option('yuv',
        type: 'boolean',
        description: 'YUV image provider')

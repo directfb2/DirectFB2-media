@@ -15,6 +15,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 project('DirectFB2-media', 'c',
+        version: '2.0.0',
         meson_version: '>= 0.53')
 
 directfb_dep = dependency('directfb-internal')
@@ -54,6 +55,7 @@ enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
 enable_tiff         = get_option('tiff')
+enable_webp         = get_option('webp')
 enable_yuv          = get_option('yuv')
 
 if enable_ffmpeg
@@ -167,6 +169,15 @@ if enable_tiff
   if not tiff_dep.found()
     warning('TIFF image provider will not be built.')
     enable_tiff = false
+  endif
+endif
+
+if enable_webp
+  webp_dep = dependency('libwebp', required: false)
+
+  if not webp_dep.found()
+    warning('WebP image provider will not be built.')
+    enable_webp = false
   endif
 endif
 

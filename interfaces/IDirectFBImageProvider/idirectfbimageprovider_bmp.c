@@ -62,7 +62,7 @@ fetch_data( IDirectFBDataBuffer *buffer,
      DFBResult ret;
 
      while (size > 0) {
-          unsigned int len = 0;
+          unsigned int len;
 
           ret = buffer->WaitForData( buffer, size );
           if (ret == DFB_OK)
@@ -437,7 +437,7 @@ Construct( IDirectFBImageProvider *thiz,
      /* 4 bytes: HeaderSize */
      bihsize = buf[14] | (buf[15] << 8) | (buf[16] << 16) | (buf[17] << 24);
      if (bihsize < 40) {
-          D_ERROR( "ImageProvider/BMP: Invalid header size %d!\n", bihsize );
+          D_ERROR( "ImageProvider/BMP: Invalid header size %u!\n", bihsize );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -461,7 +461,7 @@ Construct( IDirectFBImageProvider *thiz,
      /* 2 bytes: Planes */
      tmp = buf[26] | (buf[27] << 8);
      if (tmp != 1) {
-          D_ERROR( "ImageProvider/BMP: Unsupported number of planes %d!\n", tmp );
+          D_ERROR( "ImageProvider/BMP: Unsupported number of planes %u!\n", tmp );
           ret = DFB_UNSUPPORTED;
           goto error;
      }
@@ -490,7 +490,7 @@ Construct( IDirectFBImageProvider *thiz,
           case 0:
                break;
           default:
-               D_ERROR( "ImageProvider/BMP: Unsupported compression %d!\n", tmp );
+               D_ERROR( "ImageProvider/BMP: Unsupported compression %u!\n", tmp );
                ret = DFB_UNSUPPORTED;
                goto error;
      }
