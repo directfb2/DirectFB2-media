@@ -866,6 +866,8 @@ IDirectFBVideoProvider_FFmpeg_GetStreamDescription( IDirectFBVideoProvider *thiz
      if (!ret_desc)
           return DFB_INVARG;
 
+     memset( ret_desc, 0, sizeof(DFBStreamDescription) );
+
      ret_desc->caps = DVSCAPS_VIDEO;
 
      snprintf( ret_desc->video.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->video.codec->name );
@@ -1079,6 +1081,7 @@ IDirectFBVideoProvider_FFmpeg_GetPos( IDirectFBVideoProvider *thiz,
           return DFB_INVARG;
 
      position = get_stream_clock( data ) - data->start_time;
+
      *ret_seconds = (position < 0) ? 0.0 : (double) position / AV_TIME_BASE;
 
      return DFB_OK;

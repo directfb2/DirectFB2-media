@@ -8,6 +8,7 @@ Initial version using the Meson build system and containing:
   - GStreamer video provider
   - JPEG image provider
   - LodePNG image provider
+  - MNG video provider
   - PNG image provider
   - Schrift font provider
   - STB font provider and image provider

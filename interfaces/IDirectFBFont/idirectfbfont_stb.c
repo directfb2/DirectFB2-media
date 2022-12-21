@@ -193,7 +193,7 @@ IDirectFBFont_STB_Destruct( IDirectFBFont *thiz )
 static DirectResult
 IDirectFBFont_STB_Release( IDirectFBFont *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA(IDirectFBFont)
+     DIRECT_INTERFACE_GET_DATA( IDirectFBFont )
 
      D_DEBUG_AT( Font_STB, "%s( %p )\n", __FUNCTION__, thiz );
 
