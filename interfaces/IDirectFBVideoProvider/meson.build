@@ -31,3 +31,11 @@ if enable_gstreamer
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
 endif
+
+if enable_mng
+  library('idirectfbvideoprovider_mng',
+          'idirectfbvideoprovider_mng.c',
+          dependencies: [directfb_dep, mng_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+endif

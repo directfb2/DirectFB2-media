@@ -83,8 +83,8 @@ typedef struct {
      DirectMutex                    video_lock;
      DirectWaitQueue                video_cond;
 
-     bool                           seeked;
-     gint64                         seek_time;
+     bool                           video_seeked;
+     gint64                         video_seek_time;
 
      IDirectFBSurface              *video_dest;
 
@@ -366,13 +366,13 @@ GStreamerVideo( DirectThread *self,
 
           direct_mutex_lock( &data->video_lock );
 
-          if (data->seeked) {
-               gst_element_seek_simple( data->pipeline, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, data->seek_time);
+          if (data->video_seeked) {
+               gst_element_seek_simple( data->pipeline, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, data->video_seek_time );
 
                if (data->status == DVSTATE_FINISHED)
                     data->status = DVSTATE_PLAY;
 
-               data->seeked = false;
+               data->video_seeked = false;
 
                direct_mutex_unlock( &data->video_lock );
                continue;
@@ -380,8 +380,8 @@ GStreamerVideo( DirectThread *self,
 
           if (!buffer) {
                if (data->flags & DVPLAY_LOOPING) {
-                    data->seeked    = true;
-                    data->seek_time = 0;
+                    data->video_seeked    = true;
+                    data->video_seek_time = 0;
                }
                else {
                     if (data->status != DVSTATE_FINISHED && data->status != DVSTATE_STOP) {
@@ -554,6 +554,8 @@ IDirectFBVideoProvider_GStreamer_GetStreamDescription( IDirectFBVideoProvider *t
      if (!ret_desc)
           return DFB_INVARG;
 
+     memset( ret_desc, 0, sizeof(DFBStreamDescription) );
+
      ret_desc->caps = DVSCAPS_VIDEO;
 
      ret_desc->video.framerate = data->rate;
@@ -680,8 +682,8 @@ IDirectFBVideoProvider_GStreamer_SeekTo( IDirectFBVideoProvider *thiz,
 
      direct_mutex_lock( &data->video_lock );
 
-     data->seeked    = true;
-     data->seek_time = seconds * GST_SECOND;
+     data->video_seeked    = true;
+     data->video_seek_time = seconds * GST_SECOND;
 
      direct_mutex_unlock( &data->video_lock );
 

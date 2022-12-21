@@ -50,6 +50,7 @@ enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
 enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
+enable_mng          = get_option('mng')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
@@ -122,6 +123,15 @@ if enable_lodepng != ''
     enable_lodepng = ''
   else
     lodepng_dep = declare_dependency(include_directories: include_directories(enable_lodepng))
+  endif
+endif
+
+if enable_mng
+  mng_dep = dependency('libmng', required: false)
+
+  if not mng_dep.found()
+    warning('MNG video provider will not be built.')
+    enable_mng = false
   endif
 endif
 

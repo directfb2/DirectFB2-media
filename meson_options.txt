@@ -43,6 +43,10 @@ option('lodepng',
        value: 'lodepng',
        description: 'LodePNG image provider')
 
+option('mng',
+       type: 'boolean',
+       description: 'MNG video provider')
+
 option('png',
        type: 'boolean',
        description: 'PNG image provider')
