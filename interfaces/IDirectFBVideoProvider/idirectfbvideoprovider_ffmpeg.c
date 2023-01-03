@@ -22,7 +22,6 @@
 #include <display/idirectfbsurface.h>
 #ifdef HAVE_FUSIONSOUND
 #include <fusionsound.h>
-#include <fusionsound_limits.h>
 #endif
 #include <libavformat/avformat.h>
 #ifdef HAVE_FUSIONSOUND
