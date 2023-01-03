@@ -22,7 +22,6 @@
 #include <display/idirectfbsurface.h>
 #ifdef HAVE_FUSIONSOUND
 #include <fusionsound.h>
-#include <fusionsound_limits.h>
 #endif
 #include <gst/app/gstappsink.h>
 #include <media/idirectfbdatabuffer.h>
@@ -1250,6 +1249,8 @@ error:
 
      if (data->pipeline)
           gst_object_unref( data->pipeline );
+
+     gst_deinit();
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 

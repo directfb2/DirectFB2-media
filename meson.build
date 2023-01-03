@@ -30,7 +30,7 @@ enable_fusionsound = get_option('fusionsound')
 
 fusionsound_dep = []
 if enable_fusionsound
-  fusionsound_dep = dependency('fusionsound', required: false)
+  fusionsound_dep = dependency('fusionsound-internal', required: false)
   if fusionsound_dep.found()
     config_h.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
   else
@@ -50,6 +50,7 @@ enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
 enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
+enable_mad          = get_option('mad') and enable_fusionsound
 enable_mng          = get_option('mng')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
@@ -112,6 +113,7 @@ if enable_jpeg
         enable_jpeg = false
       endif
     else
+      warning('JPEG image provider will not be built.')
       enable_jpeg = false
     endif
   endif
@@ -123,6 +125,24 @@ if enable_lodepng != ''
     enable_lodepng = ''
   else
     lodepng_dep = declare_dependency(include_directories: include_directories(enable_lodepng))
+  endif
+endif
+
+if enable_mad
+  mad_dep = dependency('mad', required: false)
+
+  if not mad_dep.found()
+    if meson.get_compiler('c').has_header('mad.h')
+      mad_dep = meson.get_compiler('c').find_library('mad', required: false)
+
+      if not mad_dep.found()
+        warning('MAD music provider will not be built.')
+        enable_mad = false
+      endif
+    else
+      warning('MAD music provider will not be built.')
+      enable_mad = false
+    endif
   endif
 endif
 
@@ -153,6 +173,7 @@ if enable_sft
       enable_sft = false
     endif
   else
+    warning('Schrift font provider will not be built.')
     enable_sft = false
   endif
 endif
@@ -194,6 +215,9 @@ endif
 subdir('interfaces/IDirectFBFont')
 subdir('interfaces/IDirectFBImageProvider')
 subdir('interfaces/IDirectFBVideoProvider')
+if enable_fusionsound
+  subdir('interfaces/IFusionSoundMusicProvider')
+endif
 
 if get_option('tools')
   subdir('tools')

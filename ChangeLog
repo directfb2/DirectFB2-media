@@ -1,3 +1,24 @@
+commit 7ffa2f6d6e4c43fa4506071071e3cfc149521720
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 3 06:13:07 2023 +0100
+
+    Add MAD music provider
+
+commit e45bb724b6a8ab9a4f55bd924522fca97c5f900c
+Merge: e8ac598 2b99610
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Dec 21 14:02:11 2022 +0100
+
+    Merge pull request #26 from caramelli/master
+    
+    Add MNG video provider
+
+commit 2b99610a024b409442fffb38d6cbae67ab5b3c3c
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Dec 21 13:59:51 2022 +0100
+
+    Update ChangeLog
+
 commit bf7fd79b7cd6645871ac599281fe85506bc30126
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Dec 21 13:59:34 2022 +0100
