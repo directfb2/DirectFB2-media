@@ -543,7 +543,7 @@ typedef struct {
      bool pad;
 } CSourceData;
 
-static inline void save_uchar( CSourceData *csource, unsigned char d )
+static __inline__ void save_uchar( CSourceData *csource, unsigned char d )
 {
      if (csource->pos > 70) {
           fprintf( stdout, "\"\n  \"" );

@@ -22,3 +22,12 @@ if enable_mad
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
 endif
+
+if enable_vorbis
+  library('ifusionsoundmusicprovider_vorbis',
+          'ifusionsoundmusicprovider_vorbis.c',
+          include_directories: config_inc,
+          dependencies: [fusionsound_dep, vorbis_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+endif
