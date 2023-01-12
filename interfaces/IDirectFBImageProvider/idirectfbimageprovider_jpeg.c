@@ -169,7 +169,7 @@ jpeg_panic( j_common_ptr cinfo )
 
 /**********************************************************************************************************************/
 
-static inline void
+static __inline__ void
 copy_line32( u32      *argb,
              const u8 *rgb,
              int       width )
@@ -181,7 +181,7 @@ copy_line32( u32      *argb,
      }
 }
 
-static inline void
+static __inline__ void
 copy_line_nv16( u16      *yy,
                 u16      *cbcr,
                 const u8 *src_ycbcr,
@@ -214,7 +214,7 @@ copy_line_nv16( u16      *yy,
      }
 }
 
-static inline void
+static __inline__ void
 copy_line_uyvy( u32      *uyvy,
                 const u8 *src_ycbcr,
                 int       width )

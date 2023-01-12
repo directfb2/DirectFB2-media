@@ -135,7 +135,7 @@ typedef struct {
 #endif
 } __attribute__((packed)) s24;
 
-static inline u8
+static __inline__ u8
 FtoU8( mad_fixed_t sample )
 {
      /* round */
@@ -151,7 +151,7 @@ FtoU8( mad_fixed_t sample )
      return (sample >> (MAD_F_FRACBITS - 7)) + 128;
 }
 
-static inline s16
+static __inline__ s16
 FtoS16( mad_fixed_t sample )
 {
      /* round */
@@ -167,7 +167,7 @@ FtoS16( mad_fixed_t sample )
      return sample >> (MAD_F_FRACBITS - 15);
 }
 
-static inline s24
+static __inline__ s24
 FtoS24( mad_fixed_t sample )
 {
      /* round */
@@ -185,7 +185,7 @@ FtoS24( mad_fixed_t sample )
      return (s24) { a:sample, b:sample >> 8, c:sample >> 16 };
 }
 
-static inline s32
+static __inline__ s32
 FtoS32( mad_fixed_t sample )
 {
      /* clip */
@@ -198,7 +198,7 @@ FtoS32( mad_fixed_t sample )
      return sample << (31 - MAD_F_FRACBITS);
 }
 
-static inline float
+static __inline__ float
 FtoF32( mad_fixed_t sample )
 {
      /* clip */
@@ -263,7 +263,8 @@ do {                                                                    \
                          if (FS_MODE_HAS_CENTER( mode )) {              \
                               d[0] = d[1] = d[2] = CONV( left[i] );     \
                               d += 3;                                   \
-                         } else {                                       \
+                         }                                              \
+                         else {                                         \
                               d[0] = d[1] = CONV( left[i] );            \
                               d += 2;                                   \
                          }                                              \
@@ -759,6 +760,25 @@ IFusionSoundMusicProvider_MAD_PlayToStream( IFusionSoundMusicProvider *thiz,
      if (desc.channels > 6)
           return DR_UNSUPPORTED;
 
+     switch (desc.channelmode) {
+          case FSCM_MONO:
+          case FSCM_STEREO:
+          case FSCM_STEREO21:
+          case FSCM_STEREO30:
+          case FSCM_STEREO31:
+          case FSCM_SURROUND30:
+          case FSCM_SURROUND31:
+          case FSCM_SURROUND40_2F2R:
+          case FSCM_SURROUND41_2F2R:
+          case FSCM_SURROUND40_3F1R:
+          case FSCM_SURROUND41_3F1R:
+          case FSCM_SURROUND50:
+          case FSCM_SURROUND51:
+               break;
+          default:
+               return DR_UNSUPPORTED;
+     }
+
      direct_mutex_lock( &data->lock );
 
      MAD_Stop( data, false );
@@ -836,6 +856,25 @@ IFusionSoundMusicProvider_MAD_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      if (desc.channels > 6)
           return DR_UNSUPPORTED;
+
+     switch (desc.channelmode) {
+          case FSCM_MONO:
+          case FSCM_STEREO:
+          case FSCM_STEREO21:
+          case FSCM_STEREO30:
+          case FSCM_STEREO31:
+          case FSCM_SURROUND30:
+          case FSCM_SURROUND31:
+          case FSCM_SURROUND40_2F2R:
+          case FSCM_SURROUND41_2F2R:
+          case FSCM_SURROUND40_3F1R:
+          case FSCM_SURROUND41_3F1R:
+          case FSCM_SURROUND50:
+          case FSCM_SURROUND51:
+               break;
+          default:
+               return DR_UNSUPPORTED;
+     }
 
      direct_mutex_lock( &data->lock );
 
@@ -917,7 +956,7 @@ static DirectResult
 IFusionSoundMusicProvider_MAD_SeekTo( IFusionSoundMusicProvider *thiz,
                                       double                     seconds )
 {
-     DirectResult ret  = DR_FAILURE;
+     DirectResult ret = DR_FAILURE;
      unsigned int offset;
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_MAD )
@@ -1181,7 +1220,6 @@ Construct( IFusionSoundMusicProvider *thiz,
           }
 
           data->desc.bitrate = size * 8 / ((double) data->frames / data->samplerate);
-
      }
      else {
           snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "MPEG-%s Layer %d", version,

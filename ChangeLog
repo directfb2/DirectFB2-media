@@ -1,3 +1,24 @@
+commit 51f5eb7d5fc0a790dd8bde429033139e57e514f0
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 12 11:17:17 2023 +0100
+
+    Add Vorbis music provider
+
+commit cf8446f0343e4c51251f60f285529e5277a32dc1
+Merge: e45bb72 cc5f5c5
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jan 3 06:13:44 2023 +0100
+
+    Merge pull request #27 from caramelli/master
+    
+    Add MAD music provider
+
+commit cc5f5c5953ca0fde165c968775f5b3aba7ed2e2b
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jan 3 06:13:19 2023 +0100
+
+    Update ChangeLog
+
 commit 7ffa2f6d6e4c43fa4506071071e3cfc149521720
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Jan 3 06:13:07 2023 +0100

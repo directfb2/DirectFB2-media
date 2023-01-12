@@ -77,6 +77,10 @@ option('tools',
        type: 'boolean',
        description: 'Compile tools')
 
+option('vorbis',
+       type: 'boolean',
+       description: 'Vorbis music provider')
+
 option('webp',
        type: 'boolean',
        description: 'WebP image provider')

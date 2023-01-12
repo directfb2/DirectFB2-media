@@ -161,7 +161,7 @@ typedef struct {
 
 /**********************************************************************************************************************/
 
-static inline s64
+static __inline__ s64
 get_stream_clock( IDirectFBVideoProvider_FFmpeg_data *data )
 {
 #ifdef HAVE_FUSIONSOUND
@@ -706,7 +706,7 @@ FFmpegAudio( DirectThread *thread,
                uint8_t *out[] = { buf };
 
                swr_convert( swr_ctx, out, sizeof(buf) / bytespersample,
-                            (void *) data->audio.src_frame->data, data->audio.src_frame->nb_samples );
+                            (void*) data->audio.src_frame->data, data->audio.src_frame->nb_samples );
 
                data->audio.stream->Write( data->audio.stream, buf, size );
           }

@@ -57,6 +57,7 @@ enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
 enable_tiff         = get_option('tiff')
+enable_vorbis       = get_option('vorbis') and enable_fusionsound
 enable_webp         = get_option('webp')
 enable_yuv          = get_option('yuv')
 
@@ -201,6 +202,19 @@ if enable_tiff
     warning('TIFF image provider will not be built.')
     enable_tiff = false
   endif
+endif
+
+if enable_vorbis
+  vorbis_dep = [dependency('vorbisfile', required: false),
+                meson.get_compiler('c').find_library('m', required: false)]
+
+  foreach dep : vorbis_dep
+    if not dep.found()
+      warning('Vorbis music provider will not be built.')
+      enable_vorbis = false
+      break
+    endif
+  endforeach
 endif
 
 if enable_webp

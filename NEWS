@@ -14,5 +14,6 @@ Initial version using the Meson build system and containing:
   - Schrift font provider
   - STB font provider and image provider
   - TIFF image provider
+  - Vorbis music provider
   - WebP image provider
   - YUV image provider
