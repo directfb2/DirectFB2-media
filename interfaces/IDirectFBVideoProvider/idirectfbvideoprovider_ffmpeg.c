@@ -167,8 +167,10 @@ get_stream_clock( IDirectFBVideoProvider_FFmpeg_data *data )
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.stream && data->audio.pts != -1) {
           int delay = 0;
+
           data->audio.stream->GetPresentationDelay( data->audio.stream, &delay );
-          return data->audio.pts - delay * 1000;
+
+          return data->audio.pts - delay * 1000ll;
      }
 #endif
 
@@ -657,7 +659,7 @@ FFmpegAudio( DirectThread *thread,
           u8       *pkt_data;
           int       pkt_size;
           int       got_frame;
-          int       size = 0;
+          int       length = 0;
 
           direct_mutex_lock( &data->audio.lock );
 
@@ -688,27 +690,26 @@ FFmpegAudio( DirectThread *thread,
                pkt_data += decoded;
                pkt_size -= decoded;
 
-               size += data->audio.src_frame->nb_samples;
+               length += data->audio.src_frame->nb_samples;
           }
 
           if (pkt.pts != AV_NOPTS_VALUE) {
                data->audio.pts = av_rescale_q( pkt.pts, data->audio.st->time_base, AV_TIME_BASE_Q );
           }
-          else if (size && data->audio.pts != -1) {
-               data->audio.pts += (s64) size * AV_TIME_BASE / data->audio.ctx->sample_rate;
+          else if (length && data->audio.pts != -1) {
+               data->audio.pts += (s64) length * AV_TIME_BASE / data->audio.ctx->sample_rate;
           }
 
           av_free_packet( &pkt );
 
           direct_mutex_unlock( &data->audio.lock );
 
-          if (size) {
+          if (length) {
                uint8_t *out[] = { buf };
 
-               swr_convert( swr_ctx, out, sizeof(buf) / bytespersample,
-                            (void*) data->audio.src_frame->data, data->audio.src_frame->nb_samples );
+               swr_convert( swr_ctx, out, data->audio.ctx->sample_rate, (void*) data->audio.src_frame->data, length );
 
-               data->audio.stream->Write( data->audio.stream, buf, size );
+               data->audio.stream->Write( data->audio.stream, buf, length );
           }
           else
                usleep( 1000 );
@@ -1468,8 +1469,8 @@ Construct( IDirectFBVideoProvider *thiz,
           goto error;
      }
 
-     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data->buffer,
-                                        av_read_callback, NULL, data->seekable ? av_seek_callback : NULL );
+     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data->buffer, av_read_callback,
+                                        NULL, data->seekable ? av_seek_callback : NULL );
      if (!data->io_ctx) {
           av_free( data->io_buf );
           ret = D_OOM();

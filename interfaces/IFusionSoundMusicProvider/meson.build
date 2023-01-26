@@ -14,6 +14,14 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
+if enable_ffmpeg
+  library('ifusionsoundmusicprovider_ffmpeg',
+          'ifusionsoundmusicprovider_ffmpeg.c',
+          dependencies: [fusionsound_dep, ffmpeg_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+endif
+
 if enable_mad
   library('ifusionsoundmusicprovider_mad',
           'ifusionsoundmusicprovider_mad.c',
