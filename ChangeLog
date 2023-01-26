@@ -1,3 +1,24 @@
+commit 9c925384db3db2e338240fbc0403d24b30edc86b
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 26 18:00:56 2023 +0100
+
+    Add FFmpeg music provider
+
+commit f71d1857a3dd83c8ce32c6dfd21b00ccc4f470d6
+Merge: cf8446f 21539b5
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Thu Jan 12 11:20:41 2023 +0100
+
+    Merge pull request #28 from caramelli/master
+    
+    Add Vorbis music provider
+
+commit 21539b50eb86fd6549991e3cb05b7d46610ecbf4
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 12 11:18:09 2023 +0100
+
+    Update ChangeLog
+
 commit 51f5eb7d5fc0a790dd8bde429033139e57e514f0
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Thu Jan 12 11:17:17 2023 +0100
