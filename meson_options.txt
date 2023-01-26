@@ -20,7 +20,7 @@ option('bmp',
 
 option('ffmpeg',
        type: 'boolean',
-       description: 'FFmpeg image provider and video provider')
+       description: 'FFmpeg image provider, music provider and video provider')
 
 option('ft2',
        type: 'boolean',

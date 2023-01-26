@@ -71,7 +71,6 @@ typedef struct {
           IFusionSoundBuffer      *buffer;
           FSSampleFormat           sampleformat;
           FSChannelMode            mode;
-          int                      length;
      } dest;
 
      FMBufferCallback              buffer_callback;
@@ -374,7 +373,7 @@ MAD_Stop( IFusionSoundMusicProvider_MAD_data *data,
 
      if (data->buf) {
           D_FREE( data->buf );
-          data->buf  = NULL;
+          data->buf = NULL;
      }
 
      if (data->dest.stream) {
@@ -447,7 +446,6 @@ MADStream( DirectThread *thread,
 
           mad_stream_buffer( &data->st, data->buf, len + offset );
 
-          /* Converting to output format. */
           while (data->status == FMSTATE_PLAY && !data->seeked) {
                unsigned int pos = 0;
 
@@ -459,9 +457,11 @@ MADStream( DirectThread *thread,
 
                mad_synth_frame( &data->synth, &data->frame );
 
+               /* Converting to output format. */
                while (pos < data->synth.pcm.length) {
-                    void *dst;
-                    int   frames;
+                    int          frames;
+                    mad_fixed_t *left, *right;
+                    void        *dst;
 
                     if (data->dest.stream->Access( data->dest.stream, &dst, &frames ))
                          break;
@@ -469,8 +469,11 @@ MADStream( DirectThread *thread,
                     if (frames > data->synth.pcm.length - pos)
                          frames = data->synth.pcm.length - pos;
 
-                    mad_mix_audio( data->synth.pcm.samples[0] + pos, data->synth.pcm.samples[1] + pos, dst, frames,
-                                   data->dest.sampleformat, data->synth.pcm.channels, data->dest.mode );
+                    left  = data->synth.pcm.samples[0] + pos;
+                    right = data->synth.pcm.samples[1] + pos;
+
+                    mad_mix_audio( left, right, dst, frames, data->dest.sampleformat,
+                                   data->synth.pcm.channels, data->dest.mode );
 
                     data->dest.stream->Commit( data->dest.stream, frames );
 
@@ -486,10 +489,10 @@ static void *
 MADBuffer( DirectThread *thread,
            void         *arg )
 {
-     IFusionSoundMusicProvider_MAD_data *data      = arg;
-     int                                 written   = 0;
-     int                                 blocksize = FS_CHANNELS_FOR_MODE( data->dest.mode ) *
-                                                     FS_BYTES_PER_SAMPLE( data->dest.sampleformat );
+     IFusionSoundMusicProvider_MAD_data *data           = arg;
+     int                                 pos            = 0;
+     int                                 bytespersample = FS_CHANNELS_FOR_MODE( data->dest.mode ) *
+                                                          FS_BYTES_PER_SAMPLE( data->dest.sampleformat );
 
      data->st.next_frame = NULL;
 
@@ -530,8 +533,8 @@ MADBuffer( DirectThread *thread,
                     else {
                          data->finished = true;
                          data->status = FMSTATE_FINISHED;
-                         if (data->buffer_callback && written) {
-                              if (data->buffer_callback( written, data->buffer_callback_context ))
+                         if (data->buffer_callback && pos) {
+                              if (data->buffer_callback( pos, data->buffer_callback_context ))
                                    data->status = FMSTATE_STOP;
                          }
                          direct_waitqueue_broadcast( &data->cond );
@@ -545,11 +548,10 @@ MADBuffer( DirectThread *thread,
 
           mad_stream_buffer( &data->st, data->buf, len + offset );
 
-          /* Converting to output format. */
           while (data->status == FMSTATE_PLAY && !data->seeked) {
-               mad_fixed_t *left, *right;
                int          length;
                int          frames;
+               mad_fixed_t *left, *right;
                char        *dst;
 
                if (mad_frame_decode( &data->frame, &data->st ) == -1) {
@@ -570,28 +572,29 @@ MADBuffer( DirectThread *thread,
                right  = data->synth.pcm.samples[1];
                length = data->synth.pcm.length;
 
+               /* Converting to output format. */
                do {
-                    len = MIN( frames - written, length );
+                    len = MIN( frames - pos, length );
 
-                    mad_mix_audio( left, right, &dst[written*blocksize], len,
-                                   data->dest.sampleformat, data->synth.pcm.channels, data->dest.mode );
+                    mad_mix_audio( left, right, &dst[pos*bytespersample], len, data->dest.sampleformat,
+                                   data->synth.pcm.channels, data->dest.mode );
 
-                    left    += len;
-                    right   += len;
-                    length  -= len;
-                    written += len;
+                    left   += len;
+                    right  += len;
+                    length -= len;
+                    pos    += len;
 
-                    if (written >= frames) {
+                    if (pos >= frames) {
                          if (data->buffer_callback) {
                               data->dest.buffer->Unlock( data->dest.buffer );
-                              if (data->buffer_callback( written, data->buffer_callback_context )) {
+                              if (data->buffer_callback( pos, data->buffer_callback_context )) {
                                    data->status = FMSTATE_STOP;
                                    direct_waitqueue_broadcast( &data->cond );
                                    break;
                               }
-                              data->dest.buffer->Lock( data->dest.buffer, (void*) &dst, &frames, 0 );
+                              data->dest.buffer->Lock( data->dest.buffer, (void*) &dst, &frames, NULL );
                          }
-                         written = 0;
+                         pos = 0;
                     }
                } while (length > 0);
 
@@ -801,7 +804,6 @@ IFusionSoundMusicProvider_MAD_PlayToStream( IFusionSoundMusicProvider *thiz,
      data->dest.stream       = destination;
      data->dest.sampleformat = desc.sampleformat;
      data->dest.mode         = desc.channelmode;
-     data->dest.length       = desc.buffersize;
 
      if (data->finished) {
           direct_stream_seek( data->stream, 0 );
@@ -898,7 +900,6 @@ IFusionSoundMusicProvider_MAD_PlayToBuffer( IFusionSoundMusicProvider *thiz,
      data->dest.buffer             = destination;
      data->dest.sampleformat       = desc.sampleformat;
      data->dest.mode               = desc.channelmode;
-     data->dest.length             = desc.length;
      data->buffer_callback         = callback;
      data->buffer_callback_context = ctx;
 
@@ -1058,7 +1059,7 @@ IFusionSoundMusicProvider_MAD_WaitStatus( IFusionSoundMusicProvider *thiz,
      if (timeout) {
           long long s;
 
-          s = direct_clock_get_abs_micros() + timeout * 1000;
+          s = direct_clock_get_abs_micros() + timeout * 1000ll;
 
           while (direct_mutex_trylock( &data->lock )) {
                usleep( 1000 );
@@ -1067,7 +1068,7 @@ IFusionSoundMusicProvider_MAD_WaitStatus( IFusionSoundMusicProvider *thiz,
           }
 
           while (!(data->status & mask)) {
-               ret = direct_waitqueue_wait_timeout( &data->cond, &data->lock, timeout * 1000 );
+               ret = direct_waitqueue_wait_timeout( &data->cond, &data->lock, timeout * 1000ll );
                if (ret) {
                     direct_mutex_unlock( &data->lock );
                     return DR_TIMEOUT;
@@ -1200,7 +1201,7 @@ Construct( IFusionSoundMusicProvider *thiz,
      }
 
      if (data->frames) {
-          snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "MPEG-%s Layer %d (VBR)", version,
+          snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "MPEG-%s Layer %u (VBR)", version,
                     data->frame.header.layer );
 
           switch (data->frame.header.layer) {
@@ -1222,13 +1223,17 @@ Construct( IFusionSoundMusicProvider *thiz,
           data->desc.bitrate = size * 8 / ((double) data->frames / data->samplerate);
      }
      else {
-          snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "MPEG-%s Layer %d", version,
+          double frames;
+
+          snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "MPEG-%s Layer %u", version,
                     data->frame.header.layer );
 
           if (data->frame.header.bitrate < 8000)
                data->frame.header.bitrate = 8000;
 
-          data->frames = D_ICEIL( (size * 8 / (double) data->frame.header.bitrate) * data->samplerate );
+          frames = (size * 8 / (double) data->frame.header.bitrate) * data->samplerate;
+          data->frames  = frames;
+          data->frames += (data->frames < frames);
 
           data->desc.bitrate = data->frame.header.bitrate;
      }

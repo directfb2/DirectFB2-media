@@ -67,7 +67,7 @@ typedef struct {
           IFusionSoundBuffer      *buffer;
           FSSampleFormat           sampleformat;
           FSChannelMode            mode;
-          int                      length;
+          int                      buffersize;
      } dest;
 
      FMBufferCallback              buffer_callback;
@@ -141,7 +141,7 @@ do {                                                                            
           for (n = 0; n < s_n; n++) {                                              \
                float *s = src[n] + pos;                                            \
                TYPE  *d = &((TYPE*) dst)[n];                                       \
-               for (i = len; i; i--) {                                             \
+               for (i = frames; i; i--) {                                          \
                     *d = CONV( *s );                                               \
                     d += d_n;                                                      \
                     s++;                                                           \
@@ -152,7 +152,7 @@ do {                                                                            
                        /* L  C  R Rl Rr LFE */                                     \
           float  c[6] = { 0, 0, 0, 0, 0,  0 };                                     \
           TYPE  *d    = (TYPE*) dst;                                               \
-          for (i = pos; i < pos + len; i++) {                                      \
+          for (i = pos; i < pos + frames; i++) {                                   \
                float s;                                                            \
                switch (s_n) {                                                      \
                     case 1:                                                        \
@@ -244,7 +244,7 @@ static void
 vorbis_mix_audio( float          **src,
                   void            *dst,
                   int              pos,
-                  int              len,
+                  int              frames,
                   FSSampleFormat   f,
                   int              channels,
                   FSChannelMode    mode )
@@ -364,6 +364,12 @@ ov_seek_func( void        *user,
      return direct_stream_offset( stream );
 }
 
+static int
+ov_close_func( void *user )
+{
+     return 0;
+}
+
 static long
 ov_tell_func( void *user )
 {
@@ -409,17 +415,16 @@ Vorbis_Stop( IFusionSoundMusicProvider_Vorbis_data *data,
 }
 
 static void *
-VorbisStream( DirectThread *thread, void *ctx )
+VorbisStream( DirectThread *thread,
+              void         *arg )
 {
-     IFusionSoundMusicProvider_Vorbis_data *data =
-          (IFusionSoundMusicProvider_Vorbis_data*) ctx;
-
-     float **src;
-     int     section = 0;
+     IFusionSoundMusicProvider_Vorbis_data *data = arg;
 
      while (data->status == FMSTATE_PLAY) {
-          int length;
-          int pos = 0;
+          int     section;
+          long    length;
+          float **src;
+          int     pos = 0;
 
           direct_mutex_lock( &data->lock );
 
@@ -433,7 +438,7 @@ VorbisStream( DirectThread *thread, void *ctx )
                data->seeked = false;
           }
 
-          length = ov_read_float( &data->vf, &src, data->dest.length, &section );
+          length = ov_read_float( &data->vf, &src, data->dest.buffersize, &section );
           if (length == 0) {
                if (data->flags & FMPLAY_LOOPING) {
                     if (direct_stream_remote( data->stream ))
@@ -450,22 +455,23 @@ VorbisStream( DirectThread *thread, void *ctx )
 
           direct_mutex_unlock( &data->lock );
 
+          /* Converting to output format. */
           while (pos < length) {
+               int   frames;
                void *dst;
-               int   len;
 
-               if (data->dest.stream->Access( data->dest.stream, &dst, &len ))
+               if (data->dest.stream->Access( data->dest.stream, &dst, &frames ))
                     break;
 
-               if (len > length-pos)
-                    len = length-pos;
+               if (frames > length - pos)
+                    frames = length - pos;
 
-               vorbis_mix_audio( src, dst, pos, len, data->dest.sampleformat,
+               vorbis_mix_audio( src, dst, pos, frames, data->dest.sampleformat,
                                  data->channels, data->dest.mode );
 
-               data->dest.stream->Commit( data->dest.stream, len );
+               data->dest.stream->Commit( data->dest.stream, frames );
 
-               pos += len;
+               pos += frames;
           }
      }
 
@@ -473,22 +479,19 @@ VorbisStream( DirectThread *thread, void *ctx )
 }
 
 static void *
-VorbisBuffer( DirectThread *thread, void *ctx )
+VorbisBuffer( DirectThread *thread,
+              void         *arg )
 {
-     IFusionSoundMusicProvider_Vorbis_data *data =
-          (IFusionSoundMusicProvider_Vorbis_data*) ctx;
-
-     IFusionSoundBuffer *buffer    = data->dest.buffer;
-     int                 section   = 0;
-     int                 blocksize = FS_CHANNELS_FOR_MODE(data->dest.mode) *
-                                     FS_BYTES_PER_SAMPLE(data->dest.sampleformat);
+     IFusionSoundMusicProvider_Vorbis_data *data           = arg;
+     int                                    bytespersample = FS_CHANNELS_FOR_MODE(data->dest.mode) *
+                                                             FS_BYTES_PER_SAMPLE(data->dest.sampleformat);
 
      while (data->status == FMSTATE_PLAY) {
-          float **src;
-          char   *dst;
-          long    len;
-          int     pos = 0;
-          int     size;
+          DirectResult  ret;
+          int           section;
+          int           frames;
+          char         *dst;
+          int           pos = 0;
 
           direct_mutex_lock( &data->lock );
 
@@ -497,16 +500,20 @@ VorbisBuffer( DirectThread *thread, void *ctx )
                break;
           }
 
-          if (buffer->Lock( buffer, (void*)&dst, &size, 0 ) != DR_OK) {
-               D_ERROR( "IFusionSoundMusicProvider_Vorbis: "
-                        "Couldn't lock buffer!\n" );
+          ret = data->dest.buffer->Lock( data->dest.buffer, (void*) &dst, &frames, NULL );
+          if (ret) {
+               D_DERROR( ret, "MusicProvider/VORBIS: Could not lock buffer!\n" );
                direct_mutex_unlock( &data->lock );
                break;
           }
 
           do {
-               len = ov_read_float( &data->vf, &src, size-pos, &section );
-               if (len == 0) {
+               long    length;
+               float **src;
+
+               length = ov_read_float( &data->vf, &src, frames - pos, &section );
+
+               if (length == 0) {
                     if (data->flags & FMPLAY_LOOPING) {
                          if (direct_stream_remote( data->stream ))
                               direct_stream_seek( data->stream, 0 );
@@ -521,21 +528,23 @@ VorbisBuffer( DirectThread *thread, void *ctx )
                     continue;
                }
 
-               if (len > 0) {
-                    int n;
-                    do {
-                         n = MIN( len, size-pos );
-                         vorbis_mix_audio( src, &dst[pos*blocksize], 0, n,
-                                           data->dest.sampleformat,
-                                           data->channels,
-                                           data->dest.mode );
-                         pos += n;
-                         len -= n;
-                    } while (n > 0);
-               }
-          } while (pos < size && data->status != FMSTATE_FINISHED);
+               /* Converting to output format. */
+               if (length > 0) {
+                    int len;
 
-          buffer->Unlock( buffer );
+                    do {
+                         len = MIN( frames - pos, length );
+
+                         vorbis_mix_audio( src, &dst[pos*bytespersample], 0, len, data->dest.sampleformat,
+                                           data->channels, data->dest.mode );
+
+                         length -= len;
+                         pos    += len;
+                    } while (len > 0);
+               }
+          } while (pos < frames && data->status != FMSTATE_FINISHED);
+
+          data->dest.buffer->Unlock( data->dest.buffer );
 
           direct_mutex_unlock( &data->lock );
 
@@ -744,7 +753,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
      data->dest.stream       = destination;
      data->dest.sampleformat = desc.sampleformat;
      data->dest.mode         = desc.channelmode;
-     data->dest.length       = desc.buffersize;
+     data->dest.buffersize   = desc.buffersize;
 
      if (data->finished) {
           if (direct_stream_remote( data->stream ))
@@ -841,7 +850,6 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
      data->dest.buffer             = destination;
      data->dest.sampleformat       = desc.sampleformat;
      data->dest.mode               = desc.channelmode;
-     data->dest.length             = desc.length;
      data->buffer_callback         = callback;
      data->buffer_callback_context = ctx;
 
@@ -1013,7 +1021,7 @@ IFusionSoundMusicProvider_Vorbis_WaitStatus( IFusionSoundMusicProvider *thiz,
      if (timeout) {
           long long s;
 
-          s = direct_clock_get_abs_micros() + timeout * 1000;
+          s = direct_clock_get_abs_micros() + timeout * 1000ll;
 
           while (direct_mutex_trylock( &data->lock )) {
                usleep( 1000 );
@@ -1022,7 +1030,7 @@ IFusionSoundMusicProvider_Vorbis_WaitStatus( IFusionSoundMusicProvider *thiz,
           }
 
           while (!(data->status & mask)) {
-               ret = direct_waitqueue_wait_timeout( &data->cond, &data->lock, timeout * 1000 );
+               ret = direct_waitqueue_wait_timeout( &data->cond, &data->lock, timeout * 1000ll );
                if (ret) {
                     direct_mutex_unlock( &data->lock );
                     return DR_TIMEOUT;
@@ -1093,6 +1101,7 @@ Construct( IFusionSoundMusicProvider *thiz,
 
      callbacks.read_func  = ov_read_func;
      callbacks.seek_func  = ov_seek_func;
+     callbacks.close_func = ov_close_func;
      callbacks.tell_func  = ov_tell_func;
 
      if (ov_open_callbacks( data->stream, &data->vf, NULL, 0, callbacks ) < 0) {
