@@ -20,7 +20,7 @@ project('DirectFB2-media', 'c',
 
 directfb_dep = dependency('directfb-internal')
 
-moduledir = directfb_dep.get_pkgconfig_variable('moduledir')
+moduledir = directfb_dep.get_variable(pkgconfig: 'moduledir')
 
 config_h = configuration_data()
 
@@ -56,6 +56,7 @@ enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
+enable_svg          = get_option('svg')
 enable_tiff         = get_option('tiff')
 enable_vorbis       = get_option('vorbis') and enable_fusionsound
 enable_webp         = get_option('webp')
@@ -192,6 +193,15 @@ if enable_stb_truetype != ''
   if not fs.is_file(enable_stb_truetype) or not stb_truetype_dep.found()
     warning('STB font provider will not be built.')
     enable_stb_truetype = ''
+  endif
+endif
+
+if enable_svg
+  svg_dep = dependency('libsvg-cairo', required: false)
+
+  if not svg_dep.found()
+    warning('SVG image provider will not be built.')
+    enable_svg = false
   endif
 endif
 

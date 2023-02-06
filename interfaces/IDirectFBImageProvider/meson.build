@@ -66,6 +66,14 @@ if enable_stb_image != ''
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
 
+if enable_svg
+  library('idirectfbimageprovider_svg',
+          'idirectfbimageprovider_svg.c',
+          dependencies: [directfb_dep, svg_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
+
 if enable_tiff
   library('idirectfbimageprovider_tiff',
           'idirectfbimageprovider_tiff.c',

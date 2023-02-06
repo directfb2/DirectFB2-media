@@ -1357,7 +1357,7 @@ IDirectFBVideoProvider_FFmpeg_DetachEventBuffer( IDirectFBVideoProvider *thiz,
 
 static DFBResult
 IDirectFBVideoProvider_FFmpeg_SetDestination( IDirectFBVideoProvider *thiz,
-                                              IDirectFBSurface       *dest,
+                                              IDirectFBSurface       *destination,
                                               const DFBRectangle     *dest_rect )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )

@@ -69,6 +69,10 @@ option('stb_truetype',
        value: 'stb_truetype.h',
        description: 'STB font provider')
 
+option('svg',
+       type: 'boolean',
+       description: 'SVG image provider')
+
 option('tiff',
        type: 'boolean',
        description: 'TIFF image provider')
