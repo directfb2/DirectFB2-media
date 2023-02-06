@@ -1,3 +1,24 @@
+commit bbf711b2d1fc1b15ff1e99be8b3e452fcc40d6b9
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Feb 6 12:25:22 2023 +0100
+
+    Add SVG image provider
+
+commit 4701575ae8988049972cf315820eca2cf3c89de7
+Merge: f71d185 539a3fd
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Thu Jan 26 18:12:48 2023 +0100
+
+    Merge pull request #29 from caramelli/master
+    
+    Add FFmpeg music provider
+
+commit 539a3fd4ab4c6fd30eb245504c83854f3cb845ee
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Jan 26 18:01:11 2023 +0100
+
+    Update ChangeLog
+
 commit 9c925384db3db2e338240fbc0403d24b30edc86b
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Thu Jan 26 18:00:56 2023 +0100
