@@ -13,6 +13,7 @@ Initial version using the Meson build system and containing:
   - PNG image provider
   - Schrift font provider
   - STB font provider and image provider
+  - SVG image provider
   - TIFF image provider
   - Vorbis music provider
   - WebP image provider
