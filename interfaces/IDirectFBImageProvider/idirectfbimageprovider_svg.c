@@ -156,10 +156,10 @@ IDirectFBImageProvider_SVG_RenderTo( IDirectFBImageProvider *thiz,
      DFBRectangle           rect;
      DFBRegion              clip;
      DFBRegion              old_clip;
+     int                    pitch;
      DFBSurfacePixelFormat  pixelformat;
      cairo_format_t         cairo_format;
      svg_cairo_status_t     status;
-     int                    pitch;
      void                  *ptr;
      IDirectFBSurface      *source;
      cairo_t               *cairo;

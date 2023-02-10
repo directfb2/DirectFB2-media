@@ -17,6 +17,7 @@
 if enable_bmp
   library('idirectfbimageprovider_bmp',
           'idirectfbimageprovider_bmp.c',
+          include_directories: config_inc,
           dependencies: directfb_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))

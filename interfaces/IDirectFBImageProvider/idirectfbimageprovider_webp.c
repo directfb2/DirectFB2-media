@@ -136,13 +136,13 @@ IDirectFBImageProvider_WebP_RenderTo( IDirectFBImageProvider *thiz,
      DFBRectangle           rect;
      DFBRegion              clip;
      DFBRegion              old_clip;
-     int                    pitch;
-     unsigned int           len;
      WebPDecoderConfig      config;
+     unsigned int           len;
      VP8StatusCode          status;
-     WebPIDecoder          *idec;
+     int                    pitch;
      void                  *ptr;
      IDirectFBSurface      *source;
+     WebPIDecoder          *idec;
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_WebP )
 

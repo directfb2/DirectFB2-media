@@ -23,7 +23,7 @@
 #include <media/idirectfbimageprovider.h>
 #include <misc/gfx_util.h>
 
-D_DEBUG_DOMAIN( ImageProvider_FFMPEG, "ImageProvider/FFMPEG", "FFmpeg Image Provider" );
+D_DEBUG_DOMAIN( ImageProvider_FFmpeg, "ImageProvider/FFmpeg", "FFmpeg Image Provider" );
 
 static DFBResult Probe    ( IDirectFBImageProvider_ProbeContext *ctx );
 
@@ -86,7 +86,7 @@ IDirectFBImageProvider_FFmpeg_Destruct( IDirectFBImageProvider *thiz )
 {
      IDirectFBImageProvider_FFmpeg_data *data = thiz->priv;
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      /* Deallocate image data. */
      D_FREE( data->image );
@@ -107,7 +107,7 @@ IDirectFBImageProvider_FFmpeg_AddRef( IDirectFBImageProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -119,7 +119,7 @@ IDirectFBImageProvider_FFmpeg_Release( IDirectFBImageProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IDirectFBImageProvider_FFmpeg_Destruct( thiz );
@@ -133,7 +133,7 @@ IDirectFBImageProvider_FFmpeg_GetSurfaceDescription( IDirectFBImageProvider *thi
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -149,7 +149,7 @@ IDirectFBImageProvider_FFmpeg_GetImageDescription( IDirectFBImageProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -169,9 +169,9 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      DFBRectangle           rect;
      DFBRegion              clip;
      CoreSurfaceBufferLock  lock;
+     AVPacket               pkt;
      unsigned int           len;
      uint8_t               *buf;
-     AVPacket               pkt;
      AVFrame               *frame;
      struct SwsContext     *sws_ctx;
      uint8_t               *dst[1];
@@ -180,7 +180,7 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -236,15 +236,15 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      } while (pkt.size && !got_picture);
 
      if (!got_picture) {
-          D_ERROR( "ImageProvider/FFMPEG: Couldn't decode picture!\n" );
+          D_ERROR( "ImageProvider/FFmpeg: Couldn't decode picture!\n" );
           av_free( frame );
           D_FREE( buf );
           return DFB_FAILURE;
      }
 
      sws_ctx = sws_getContext( data->codec_ctx->width, data->codec_ctx->height, data->codec_ctx->pix_fmt,
-                               data->codec_ctx->width, data->codec_ctx->height, PIX_FMT_BGRA, SWS_FAST_BILINEAR,
-                               NULL, NULL, NULL );
+                               data->codec_ctx->width, data->codec_ctx->height, PIX_FMT_BGRA,
+                               SWS_FAST_BILINEAR, NULL, NULL, NULL );
 
      dst[0]    = data->image;
      dstStride = data->desc.width * 4;
@@ -282,7 +282,7 @@ IDirectFBImageProvider_FFmpeg_SetRenderCallback( IDirectFBImageProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->render_callback         = callback;
      data->render_callback_context = ctx;
@@ -315,7 +315,7 @@ Construct( IDirectFBImageProvider *thiz,
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_FFmpeg )
 
-     D_DEBUG_AT( ImageProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref    = 1;
      data->buffer = buffer;
@@ -354,19 +354,19 @@ Construct( IDirectFBImageProvider *thiz,
      data->fmt_ctx->pb = data->io_ctx;
 
      if (avformat_open_input( &data->fmt_ctx, "", NULL, NULL ) < 0) {
-          D_ERROR( "ImageProvider/FFMPEG: Failed to open stream!\n" );
+          D_ERROR( "ImageProvider/FFmpeg: Failed to open stream!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
      if (avformat_find_stream_info( data->fmt_ctx, NULL ) < 0) {
-          D_ERROR( "ImageProvider/FFMPEG: Couldn't find stream info!\n" );
+          D_ERROR( "ImageProvider/FFmpeg: Couldn't find stream info!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
      if (data->fmt_ctx->nb_streams != 1 || data->fmt_ctx->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
-          D_ERROR( "ImageProvider/FFMPEG: Couldn't find video stream!\n" );
+          D_ERROR( "ImageProvider/FFmpeg: Couldn't find video stream!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -381,7 +381,7 @@ Construct( IDirectFBImageProvider *thiz,
      codec = avcodec_find_decoder( data->codec_ctx->codec_id );
 
      if (!codec || avcodec_open2( data->codec_ctx, codec, NULL ) < 0) {
-          D_ERROR( "ImageProvider/FFMPEG: Failed to open video codec!\n" );
+          D_ERROR( "ImageProvider/FFmpeg: Failed to open video codec!\n" );
           data->codec_ctx = NULL;
           ret = DFB_FAILURE;
           goto error;
