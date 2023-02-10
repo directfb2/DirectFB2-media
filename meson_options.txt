@@ -34,6 +34,10 @@ option('gstreamer',
        type: 'boolean',
        description: 'GStreamer video provider')
 
+option('jasper',
+       type: 'boolean',
+       description: 'JasPer image provider')
+
 option('jpeg',
        type: 'boolean',
        description: 'JPEG image provider')

@@ -48,6 +48,7 @@ enable_bmp          = get_option('bmp')
 enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
+enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad') and enable_fusionsound
@@ -101,6 +102,15 @@ if enable_gstreamer
   if not gstreamer_dep.found()
     warning('GStreamer video provider will not be built.')
     enable_gstreamer = false
+  endif
+endif
+
+if enable_jasper
+  jasper_dep = dependency('jasper', required: false)
+
+  if not jasper_dep.found()
+    warning('JasPer image provider will not be built.')
+    enable_jasper = false
   endif
 endif
 

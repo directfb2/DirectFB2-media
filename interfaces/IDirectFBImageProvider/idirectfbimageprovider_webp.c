@@ -289,8 +289,10 @@ Construct( IDirectFBImageProvider *thiz,
      if (ret)
           goto error;
 
-     if (WebPGetFeatures( buf, sizeof(buf), &features ) != VP8_STATUS_OK)
+     if (WebPGetFeatures( buf, sizeof(buf), &features ) != VP8_STATUS_OK) {
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      ret = data->buffer->PeekData( data->buffer, 4, 4, &data->image_size, &read );
      if (ret)
@@ -325,5 +327,5 @@ error:
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 
-     return DFB_FAILURE;
+     return ret;
 }
