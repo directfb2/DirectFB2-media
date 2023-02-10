@@ -6,6 +6,7 @@ Initial version using the Meson build system and containing:
   - FFmpeg image provider, music provider and video provider
   - FreeType2 font provider
   - GStreamer video provider
+  - JasPer image provider
   - JPEG image provider
   - LodePNG image provider
   - MAD music provider

@@ -291,9 +291,7 @@ IDirectFBImageProvider_BMP_RenderTo( IDirectFBImageProvider *thiz,
 
      if (!data->image) {
           int  y;
-          bool direct = (rect.w == data->desc.width  &&
-                         rect.h == data->desc.height &&
-                         data->render_callback);
+          bool direct = (rect.w == data->desc.width && rect.h == data->desc.height && data->render_callback);
 
           if (data->desc.pixelformat == DSPF_LUT8 && dst_data->surface->config.format == DSPF_LUT8) {
                IDirectFBPalette *palette;

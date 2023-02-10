@@ -31,6 +31,14 @@ if enable_ffmpeg
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 endif
 
+if enable_jasper
+  library('idirectfbimageprovider_jasper',
+          'idirectfbimageprovider_jasper.c',
+          dependencies: [directfb_dep, jasper_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+endif
+
 if enable_jpeg
   library('idirectfbimageprovider_jpeg',
           'idirectfbimageprovider_jpeg.c',
