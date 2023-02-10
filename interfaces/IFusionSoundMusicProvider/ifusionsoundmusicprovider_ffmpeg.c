@@ -22,7 +22,7 @@
 #include <libswresample/swresample.h>
 #include <media/ifusionsoundmusicprovider.h>
 
-D_DEBUG_DOMAIN( MusicProvider_FFMPEG, "MusicProvider/FFMPEG", "FFmpeg Music Provider" );
+D_DEBUG_DOMAIN( MusicProvider_FFmpeg, "MusicProvider/FFmpeg", "FFmpeg Music Provider" );
 
 static DirectResult Probe    ( IFusionSoundMusicProvider_ProbeContext *ctx );
 
@@ -93,7 +93,7 @@ av_read_callback( void    *opaque,
           return -1;
 
      while (size) {
-          unsigned int len = 0;
+          unsigned int len;
 
           direct_stream_wait( stream, size, NULL );
 
@@ -198,9 +198,10 @@ FFmpegStream( DirectThread *thread,
      u8                                     buf[bytespersample * data->samplerate];
 
      swr_ctx = swr_alloc_set_opts( NULL,
-                                   data->dest.ch_layout, data->dest.sample_fmt, data->samplerate,
-                                   data->codec_ctx->channel_layout, data->codec_ctx->sample_fmt, data->samplerate,
-                                   0, NULL );
+                                   data->dest.ch_layout, data->dest.sample_fmt,
+                                   data->samplerate,
+                                   data->codec_ctx->channel_layout, data->codec_ctx->sample_fmt,
+                                   data->samplerate, 0, NULL );
 
      swr_init( swr_ctx );
 
@@ -386,7 +387,7 @@ FFmpegBuffer( DirectThread *thread,
 
                ret = data->dest.buffer->Lock( data->dest.buffer, &dst, &frames, NULL );
                if (ret) {
-                    D_DERROR( ret, "MusicProvider/FFMPEG: Could not lock buffer!\n" );
+                    D_DERROR( ret, "MusicProvider/FFmpeg: Could not lock buffer!\n" );
                     break;
                }
 
@@ -431,7 +432,7 @@ IFusionSoundMusicProvider_FFmpeg_Destruct( IFusionSoundMusicProvider *thiz )
 {
      IFusionSoundMusicProvider_FFmpeg_data *data = thiz->priv;
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      FFmpeg_Stop( data, true );
 
@@ -452,7 +453,7 @@ IFusionSoundMusicProvider_FFmpeg_AddRef( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -464,7 +465,7 @@ IFusionSoundMusicProvider_FFmpeg_Release( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IFusionSoundMusicProvider_FFmpeg_Destruct( thiz );
@@ -478,7 +479,7 @@ IFusionSoundMusicProvider_FFmpeg_GetCapabilities( IFusionSoundMusicProvider   *t
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_caps)
           return DR_INVARG;
@@ -496,7 +497,7 @@ IFusionSoundMusicProvider_FFmpeg_GetTrackDescription( IFusionSoundMusicProvider 
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -512,7 +513,7 @@ IFusionSoundMusicProvider_FFmpeg_GetStreamDescription( IFusionSoundMusicProvider
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -532,7 +533,7 @@ IFusionSoundMusicProvider_FFmpeg_GetBufferDescription( IFusionSoundMusicProvider
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -559,7 +560,7 @@ IFusionSoundMusicProvider_FFmpeg_PlayToStream( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -675,7 +676,7 @@ IFusionSoundMusicProvider_FFmpeg_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -786,7 +787,7 @@ IFusionSoundMusicProvider_FFmpeg_Stop( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      direct_mutex_lock( &data->lock );
 
@@ -822,7 +823,7 @@ IFusionSoundMusicProvider_FFmpeg_SeekTo( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (seconds < 0.0)
           return DR_INVARG;
@@ -860,7 +861,7 @@ IFusionSoundMusicProvider_FFmpeg_GetPos( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
@@ -886,7 +887,7 @@ IFusionSoundMusicProvider_FFmpeg_GetLength( IFusionSoundMusicProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
@@ -907,7 +908,7 @@ IFusionSoundMusicProvider_FFmpeg_SetPlaybackFlags( IFusionSoundMusicProvider    
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (flags & ~FMPLAY_LOOPING)
           return DR_UNSUPPORTED;
@@ -929,7 +930,7 @@ IFusionSoundMusicProvider_FFmpeg_WaitStatus( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      if (!mask || mask & ~FMSTATE_ALL)
           return DR_INVARG;
@@ -975,6 +976,7 @@ Probe( IFusionSoundMusicProvider_ProbeContext *ctx )
 
      av_register_all();
 
+     memset( &pd, 0, sizeof(AVProbeData) );
      pd.filename = ctx->filename;
      pd.buf      = ctx->header;
      pd.buf_size = sizeof(ctx->header);
@@ -997,27 +999,28 @@ Construct( IFusionSoundMusicProvider *thiz,
      DirectResult   ret;
      int            i;
      AVProbeData    pd;
+     unsigned int   len;
+     unsigned char  buf[64];
      AVInputFormat *fmt;
      AVCodec       *codec;
-     unsigned char  buf[64];
-     unsigned int   len;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IFusionSoundMusicProvider_FFmpeg )
 
-     D_DEBUG_AT( MusicProvider_FFMPEG, "%s( %p )n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_FFmpeg, "%s( %p )n", __FUNCTION__, thiz );
 
      data->ref    = 1;
      data->stream = direct_stream_dup( stream );
 
      direct_stream_peek( stream, sizeof(buf), 0, &buf[0], &len );
 
+     memset( &pd, 0, sizeof(AVProbeData) );
      pd.filename = filename;
      pd.buf      = &buf[0];
      pd.buf_size = len;
 
      fmt = av_probe_input_format( &pd, 1 );
      if (!fmt) {
-          D_ERROR( "MusicProvider/FFMPEG: Failed to guess the file format!\n" );
+          D_ERROR( "MusicProvider/FFmpeg: Failed to guess the file format!\n" );
           ret = DR_INIT;
           goto error;
      }
@@ -1046,13 +1049,13 @@ Construct( IFusionSoundMusicProvider *thiz,
      data->fmt_ctx->pb = data->io_ctx;
 
      if (avformat_open_input( &data->fmt_ctx, pd.filename, fmt, NULL ) < 0) {
-          D_ERROR( "MusicProvider/FFMPEG: Failed to open stream!\n" );
+          D_ERROR( "MusicProvider/FFmpeg: Failed to open stream!\n" );
           ret = DR_FAILURE;
           goto error;
      }
 
      if (avformat_find_stream_info( data->fmt_ctx, NULL ) < 0) {
-          D_ERROR( "MusicProvider/FFMPEG: Couldn't find stream info!\n" );
+          D_ERROR( "MusicProvider/FFmpeg: Couldn't find stream info!\n" );
           ret = DR_FAILURE;
           goto error;
      }
@@ -1065,7 +1068,7 @@ Construct( IFusionSoundMusicProvider *thiz,
      }
 
      if (!data->st) {
-          D_ERROR( "MusicProvider/FFMPEG: Couldn't find audio stream!\n" );
+          D_ERROR( "MusicProvider/FFmpeg: Couldn't find audio stream!\n" );
           ret = DR_FAILURE;
           goto error;
      }
@@ -1075,7 +1078,7 @@ Construct( IFusionSoundMusicProvider *thiz,
      codec = avcodec_find_decoder( data->codec_ctx->codec_id );
 
      if (!codec || avcodec_open2( data->codec_ctx, codec, NULL ) < 0) {
-          D_ERROR( "MusicProvider/FFMPEG: Failed to open audio codec!\n" );
+          D_ERROR( "MusicProvider/FFmpeg: Failed to open audio codec!\n" );
           data->codec_ctx = NULL;
           ret = DR_FAILURE;
           goto error;

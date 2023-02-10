@@ -31,7 +31,7 @@
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbvideoprovider.h>
 
-D_DEBUG_DOMAIN( VideoProvider_FFMPEG, "VideoProvider/FFMPEG", "FFmpeg Video Provider" );
+D_DEBUG_DOMAIN( VideoProvider_FFmpeg, "VideoProvider/FFmpeg", "FFmpeg Video Provider" );
 
 static DFBResult Probe    ( IDirectFBVideoProvider_ProbeContext *ctx );
 
@@ -102,8 +102,7 @@ typedef struct {
           DirectWaitQueue           cond;
 
           AVStream                 *st;
-          AVCodecContext           *ctx;
-          AVCodec                  *codec;
+          AVCodecContext           *codec_ctx;
 
           PacketQueue               queue;
 
@@ -111,7 +110,7 @@ typedef struct {
 
           bool                      seeked;
 
-          AVFrame                  *src_frame;
+          AVFrame                  *frame;
 
           IDirectFBSurface         *dest;
           DFBRectangle              rect;
@@ -124,8 +123,7 @@ typedef struct {
           DirectWaitQueue           cond;
 
           AVStream                 *st;
-          AVCodecContext           *ctx;
-          AVCodec                  *codec;
+          AVCodecContext           *codec_ctx;
 
           PacketQueue               queue;
 
@@ -133,7 +131,7 @@ typedef struct {
 
           bool                      seeked;
 
-          AVFrame                  *src_frame;
+          AVFrame                  *frame;
 
           IFusionSound             *sound;
           IFusionSoundStream       *stream;
@@ -502,13 +500,13 @@ static void *
 FFmpegVideo( DirectThread *thread,
              void         *arg )
 {
+     long                                duration;
      DFBSurfacePixelFormat               pixelformat;
      enum AVPixelFormat                  pix_fmt;
+     AVPicture                           picture;
+     int                                 pitch;
+     void                               *ptr;
      struct SwsContext                  *sws_ctx;
-     AVFrame                            *dst_frame;
-     void                               *dest_ptr;
-     int                                 dest_pitch;
-     long                                duration;
      s64                                 firtspts = 0;
      unsigned int                        framecnt = 0;
      int                                 drop     = 0;
@@ -540,13 +538,12 @@ FFmpegVideo( DirectThread *thread,
                return NULL;
      }
 
-     sws_ctx = sws_getContext( data->video.ctx->width, data->video.ctx->height, data->video.ctx->pix_fmt,
-                               data->video.rect.w, data->video.rect.h, pix_fmt, SWS_FAST_BILINEAR, NULL, NULL, NULL );
+     sws_ctx = sws_getContext( data->video.codec_ctx->width, data->video.codec_ctx->height, data->video.codec_ctx->pix_fmt,
+                               data->video.rect.w, data->video.rect.h, pix_fmt,
+                               SWS_FAST_BILINEAR, NULL, NULL, NULL );
 
-     dst_frame = av_frame_alloc();
-
-     data->video.dest->Lock( data->video.dest, DSLF_WRITE, &dest_ptr, &dest_pitch );
-     avpicture_fill( (AVPicture*) dst_frame, dest_ptr, pix_fmt, data->video.ctx->width, data->video.ctx->height );
+     data->video.dest->Lock( data->video.dest, DSLF_WRITE, &ptr, &pitch );
+     avpicture_fill( &picture, ptr, pix_fmt, data->video.codec_ctx->width, data->video.codec_ctx->height );
      data->video.dest->Unlock( data->video.dest );
 
      duration = 1000000.0 / data->rate;
@@ -567,16 +564,16 @@ FFmpegVideo( DirectThread *thread,
           }
 
           if (data->video.seeked) {
-               avcodec_flush_buffers( data->video.ctx );
+               avcodec_flush_buffers( data->video.codec_ctx );
                data->video.seeked = false;
                framecnt = 0;
           }
 
-          avcodec_decode_video2( data->video.ctx, data->video.src_frame, &got_picture, &pkt );
+          avcodec_decode_video2( data->video.codec_ctx, data->video.frame, &got_picture, &pkt );
 
           if (got_picture && !drop) {
-               sws_scale( sws_ctx, (void*) data->video.src_frame->data, data->video.src_frame->linesize,
-                          0, data->video.ctx->height, dst_frame->data, dst_frame->linesize );
+               sws_scale( sws_ctx, (void*) data->video.frame->data, data->video.frame->linesize,
+                          0, data->video.codec_ctx->height, picture.data, picture.linesize );
 
                if (data->frame_callback)
                     data->frame_callback( data->frame_callback_context );
@@ -630,7 +627,6 @@ FFmpegVideo( DirectThread *thread,
                firtspts = data->video.pts;
      }
 
-     av_free( dst_frame );
      sws_freeContext( sws_ctx );
 
      return NULL;
@@ -645,12 +641,13 @@ FFmpegAudio( DirectThread *thread,
      IDirectFBVideoProvider_FFmpeg_data *data           = arg;
      int                                 bytespersample = av_get_bytes_per_sample( AV_SAMPLE_FMT_S16 ) *
                                                           av_get_channel_layout_nb_channels( AV_CH_LAYOUT_STEREO );
-     u8                                  buf[bytespersample * data->audio.ctx->sample_rate];
+     u8                                  buf[bytespersample * data->audio.codec_ctx->sample_rate];
 
      swr_ctx = swr_alloc_set_opts( NULL,
-                                   AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, data->audio.ctx->sample_rate,
-                                   data->audio.ctx->channel_layout, data->audio.ctx->sample_fmt, data->audio.ctx->sample_rate,
-                                   0, NULL );
+                                   AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16,
+                                   data->audio.codec_ctx->sample_rate,
+                                   data->audio.codec_ctx->channel_layout, data->audio.codec_ctx->sample_fmt,
+                                   data->audio.codec_ctx->sample_rate, 0, NULL );
 
      swr_init( swr_ctx );
 
@@ -677,12 +674,12 @@ FFmpegAudio( DirectThread *thread,
 
           if (data->audio.seeked) {
                data->audio.stream->Flush( data->audio.stream );
-               avcodec_flush_buffers( data->audio.ctx );
+               avcodec_flush_buffers( data->audio.codec_ctx );
                data->audio.seeked = false;
           }
 
           for (pkt_data = pkt.data, pkt_size = pkt.size; pkt_size > 0;) {
-               int decoded = avcodec_decode_audio4( data->audio.ctx, data->audio.src_frame, &got_frame, &pkt );
+               int decoded = avcodec_decode_audio4( data->audio.codec_ctx, data->audio.frame, &got_frame, &pkt );
 
                if (decoded < 0)
                     break;
@@ -690,14 +687,14 @@ FFmpegAudio( DirectThread *thread,
                pkt_data += decoded;
                pkt_size -= decoded;
 
-               length += data->audio.src_frame->nb_samples;
+               length += data->audio.frame->nb_samples;
           }
 
           if (pkt.pts != AV_NOPTS_VALUE) {
                data->audio.pts = av_rescale_q( pkt.pts, data->audio.st->time_base, AV_TIME_BASE_Q );
           }
           else if (length && data->audio.pts != -1) {
-               data->audio.pts += (s64) length * AV_TIME_BASE / data->audio.ctx->sample_rate;
+               data->audio.pts += (s64) length * AV_TIME_BASE / data->audio.codec_ctx->sample_rate;
           }
 
           av_free_packet( &pkt );
@@ -707,7 +704,7 @@ FFmpegAudio( DirectThread *thread,
           if (length) {
                uint8_t *out[] = { buf };
 
-               swr_convert( swr_ctx, out, data->audio.ctx->sample_rate, (void*) data->audio.src_frame->data, length );
+               swr_convert( swr_ctx, out, data->audio.codec_ctx->sample_rate, (void*) data->audio.frame->data, length );
 
                data->audio.stream->Write( data->audio.stream, buf, length );
           }
@@ -729,13 +726,13 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
      EventLink                          *link, *tmp;
      IDirectFBVideoProvider_FFmpeg_data *data = thiz->priv;
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      thiz->Stop( thiz );
 
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio.src_frame)
-          av_free( data->audio.src_frame );
+     if (data->audio.frame)
+          av_free( data->audio.frame );
 
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
@@ -746,13 +743,13 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
      if (data->audio.sound)
           data->audio.sound->Release( data->audio.sound );
 
-     if (data->audio.ctx)
-          avcodec_close( data->audio.ctx );
+     if (data->audio.codec_ctx)
+          avcodec_close( data->audio.codec_ctx );
 #endif
 
-     av_free( data->video.src_frame );
+     av_free( data->video.frame );
 
-     avcodec_close( data->video.ctx );
+     avcodec_close( data->video.codec_ctx );
 
 #ifdef HAVE_FUSIONSOUND
      flush_packets( &data->audio.queue );
@@ -790,7 +787,7 @@ IDirectFBVideoProvider_FFmpeg_AddRef( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -802,7 +799,7 @@ IDirectFBVideoProvider_FFmpeg_Release( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IDirectFBVideoProvider_FFmpeg_Destruct( thiz );
@@ -816,7 +813,7 @@ IDirectFBVideoProvider_FFmpeg_GetCapabilities( IDirectFBVideoProvider       *thi
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_caps)
           return DFB_INVARG;
@@ -824,7 +821,7 @@ IDirectFBVideoProvider_FFmpeg_GetCapabilities( IDirectFBVideoProvider       *thi
      *ret_caps = DVCAPS_BASIC | DVCAPS_SCALE | DVCAPS_SPEED;
      if (data->seekable)
           *ret_caps |= DVCAPS_SEEK;
-     if (data->video.src_frame->interlaced_frame)
+     if (data->video.frame->interlaced_frame)
           *ret_caps |= DVCAPS_INTERLACED;
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.playback)
@@ -840,12 +837,12 @@ IDirectFBVideoProvider_FFmpeg_GetSurfaceDescription( IDirectFBVideoProvider *thi
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
 
-     if (data->video.src_frame->interlaced_frame) {
+     if (data->video.frame->interlaced_frame) {
           data->desc.flags |= DSDESC_CAPS;
           data->desc.caps   = DSCAPS_INTERLACED;
      }
@@ -861,7 +858,7 @@ IDirectFBVideoProvider_FFmpeg_GetStreamDescription( IDirectFBVideoProvider *thiz
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -870,22 +867,22 @@ IDirectFBVideoProvider_FFmpeg_GetStreamDescription( IDirectFBVideoProvider *thiz
 
      ret_desc->caps = DVSCAPS_VIDEO;
 
-     snprintf( ret_desc->video.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->video.codec->name );
+     snprintf( ret_desc->video.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->video.codec_ctx->codec->name );
 
      ret_desc->video.framerate  = data->rate;
-     ret_desc->video.aspect     = av_q2d( data->video.ctx->sample_aspect_ratio );
+     ret_desc->video.aspect     = av_q2d( data->video.codec_ctx->sample_aspect_ratio );
      ret_desc->video.aspect    *= (double) data->desc.width / data->desc.height;
-     ret_desc->video.bitrate    = data->video.ctx->bit_rate;
+     ret_desc->video.bitrate    = data->video.codec_ctx->bit_rate;
 
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.stream) {
           ret_desc->caps |= DVSCAPS_AUDIO;
 
-          snprintf( ret_desc->audio.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->audio.codec->name );
+          snprintf( ret_desc->audio.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, data->audio.codec_ctx->codec->name );
 
-          ret_desc->audio.samplerate = data->audio.ctx->sample_rate;
-          ret_desc->audio.channels   = data->audio.ctx->channels;
-          ret_desc->audio.bitrate    = data->audio.ctx->bit_rate;
+          ret_desc->audio.samplerate = data->audio.codec_ctx->sample_rate;
+          ret_desc->audio.channels   = data->audio.codec_ctx->channels;
+          ret_desc->audio.bitrate    = data->audio.codec_ctx->bit_rate;
      }
 #endif
 
@@ -904,7 +901,7 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -921,8 +918,8 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
      }
      else {
           rect.x = rect.y = 0;
-          rect.w = data->video.ctx->width;
-          rect.h = data->video.ctx->height;
+          rect.w = data->video.codec_ctx->width;
+          rect.h = data->video.codec_ctx->height;
      }
 
      if (data->video.thread)
@@ -965,7 +962,7 @@ IDirectFBVideoProvider_FFmpeg_Stop( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (data->status == DVSTATE_STOP)
           return DFB_OK;
@@ -1018,7 +1015,7 @@ IDirectFBVideoProvider_FFmpeg_GetStatus( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_status)
           return DFB_INVARG;
@@ -1040,7 +1037,7 @@ IDirectFBVideoProvider_FFmpeg_SeekTo( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (seconds < 0.0)
           return DFB_INVARG;
@@ -1075,7 +1072,7 @@ IDirectFBVideoProvider_FFmpeg_GetPos( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DFB_INVARG;
@@ -1093,7 +1090,7 @@ IDirectFBVideoProvider_FFmpeg_GetLength( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DFB_INVARG;
@@ -1114,7 +1111,7 @@ IDirectFBVideoProvider_FFmpeg_SetPlaybackFlags( IDirectFBVideoProvider        *t
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (flags & ~DVPLAY_LOOPING)
           return DFB_UNSUPPORTED;
@@ -1133,7 +1130,7 @@ IDirectFBVideoProvider_FFmpeg_SetSpeed( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (multiplier < 0.0 || multiplier > 32.0)
           return DFB_UNSUPPORTED;
@@ -1179,7 +1176,7 @@ IDirectFBVideoProvider_FFmpeg_GetSpeed( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_multiplier)
           return DFB_INVARG;
@@ -1198,7 +1195,7 @@ IDirectFBVideoProvider_FFmpeg_SetVolume( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (level < 0.0)
           return DFB_INVARG;
@@ -1218,7 +1215,7 @@ IDirectFBVideoProvider_FFmpeg_GetVolume( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_level)
           return DFB_INVARG;
@@ -1238,7 +1235,7 @@ IDirectFBVideoProvider_FFmpeg_CreateEventBuffer( IDirectFBVideoProvider  *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_interface)
           return DFB_INVARG;
@@ -1265,7 +1262,7 @@ IDirectFBVideoProvider_FFmpeg_AttachEventBuffer( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!buffer)
           return DFB_INVARG;
@@ -1297,7 +1294,7 @@ IDirectFBVideoProvider_FFmpeg_EnableEvents( IDirectFBVideoProvider    *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (mask & ~DVPET_ALL)
           return DFB_INVARG;
@@ -1313,7 +1310,7 @@ IDirectFBVideoProvider_FFmpeg_DisableEvents( IDirectFBVideoProvider    *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (mask & ~DVPET_ALL)
           return DFB_INVARG;
@@ -1332,7 +1329,7 @@ IDirectFBVideoProvider_FFmpeg_DetachEventBuffer( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!buffer)
           return DFB_INVARG;
@@ -1362,7 +1359,7 @@ IDirectFBVideoProvider_FFmpeg_SetDestination( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p, %4d,%4d-%4dx%4d )\n", __FUNCTION__,
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p, %4d,%4d-%4dx%4d )\n", __FUNCTION__,
                  thiz, dest_rect->x, dest_rect->y, dest_rect->w, dest_rect->h );
 
      if (!dest_rect)
@@ -1383,9 +1380,9 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 {
      DFBResult            ret;
      AVProbeData          pd;
-     AVInputFormat       *fmt;
-     unsigned char        buf[2048];
      unsigned int         len;
+     unsigned char        buf[2048];
+     AVInputFormat       *fmt;
      IDirectFBDataBuffer *buffer = ctx->buffer;
 
      ret = buffer->WaitForData( buffer, sizeof(buf) );
@@ -1397,6 +1394,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 
      av_register_all();
 
+     memset( &pd, 0, sizeof(AVProbeData) );
      pd.filename = ctx->filename;
      pd.buf      = &buf[0];
      pd.buf_size = len;
@@ -1429,14 +1427,15 @@ Construct( IDirectFBVideoProvider *thiz,
      DFBResult                 ret;
      int                       i;
      AVProbeData               pd;
-     AVInputFormat            *fmt;
-     unsigned char             buf[2048];
      unsigned int              len;
+     unsigned char             buf[2048];
+     AVInputFormat            *fmt;
+     AVCodec                  *codec;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
 
-     D_DEBUG_AT( VideoProvider_FFMPEG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref    = 1;
      data->buffer = buffer;
@@ -1452,13 +1451,14 @@ Construct( IDirectFBVideoProvider *thiz,
      if (ret)
           goto error;
 
+     memset( &pd, 0, sizeof(AVProbeData) );
      pd.filename = buffer_data->filename;
      pd.buf      = &buf[0];
      pd.buf_size = len;
 
      fmt = av_probe_input_format( &pd, 1 );
      if (!fmt) {
-          D_ERROR( "VideoProvider/FFMPEG: Failed to guess the file format!\n" );
+          D_ERROR( "VideoProvider/FFmpeg: Failed to guess the file format!\n" );
           ret = DFB_INIT;
           goto error;
      }
@@ -1487,13 +1487,13 @@ Construct( IDirectFBVideoProvider *thiz,
      data->fmt_ctx->pb = data->io_ctx;
 
      if (avformat_open_input( &data->fmt_ctx, pd.filename, fmt, NULL ) < 0) {
-          D_ERROR( "VideoProvider/FFMPEG: Failed to open stream!\n" );
+          D_ERROR( "VideoProvider/FFmpeg: Failed to open stream!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
      if (avformat_find_stream_info( data->fmt_ctx, NULL ) < 0) {
-          D_ERROR( "VideoProvider/FFMPEG: Couldn't find stream info!\n" );
+          D_ERROR( "VideoProvider/FFmpeg: Couldn't find stream info!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -1516,17 +1516,17 @@ Construct( IDirectFBVideoProvider *thiz,
      }
 
      if (!data->video.st) {
-          D_ERROR( "VideoProvider/FFMPEG: Couldn't find video stream!\n" );
+          D_ERROR( "VideoProvider/FFmpeg: Couldn't find video stream!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
-     data->video.ctx = data->video.st->codec;
+     data->video.codec_ctx = data->video.st->codec;
 
      data->desc.flags  = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width  = data->video.ctx->width;
-     data->desc.height = data->video.ctx->height;
-     switch (data->video.ctx->pix_fmt) {
+     data->desc.width  = data->video.codec_ctx->width;
+     data->desc.height = data->video.codec_ctx->height;
+     switch (data->video.codec_ctx->pix_fmt) {
           case AV_PIX_FMT_RGB555:
                data->desc.pixelformat = DSPF_ARGB1555;
                break;
@@ -1569,41 +1569,41 @@ Construct( IDirectFBVideoProvider *thiz,
 
      data->rate = av_q2d( data->video.st->r_frame_rate );
      if (!data->rate || !finite( data->rate )) {
-          D_INFO( "VideoProvider/FFMPEG: Assuming 25 fps\n" );
+          D_INFO( "VideoProvider/FFmpeg: Assuming 25 fps\n" );
           data->rate = 25.0;
      }
 
-     data->video.codec = avcodec_find_decoder( data->video.ctx->codec_id );
+     codec = avcodec_find_decoder( data->video.codec_ctx->codec_id );
 
-     if (!data->video.codec || avcodec_open2( data->video.ctx, data->video.codec, NULL ) < 0) {
-          D_ERROR( "VideoProvider/FFMPEG: Failed to open video codec!\n" );
-          data->video.ctx = NULL;
+     if (!codec || avcodec_open2( data->video.codec_ctx, codec, NULL ) < 0) {
+          D_ERROR( "VideoProvider/FFmpeg: Failed to open video codec!\n" );
+          data->video.codec_ctx = NULL;
           ret = DFB_FAILURE;
           goto error;
      }
 
-     data->video.src_frame = av_frame_alloc();
-     if (!data->video.src_frame) {
+     data->video.frame = av_frame_alloc();
+     if (!data->video.frame) {
           ret = D_OOM();
           goto error;
      }
 
      data->video.queue.max_len = av_rescale_q( MAX_QUEUE_LEN * AV_TIME_BASE, AV_TIME_BASE_Q,
                                                data->video.st->time_base );
-     if (data->video.ctx->bit_rate > 0)
-          data->video.queue.max_size = MAX_QUEUE_LEN * data->video.ctx->bit_rate / 8;
+     if (data->video.codec_ctx->bit_rate > 0)
+          data->video.queue.max_size = MAX_QUEUE_LEN * data->video.codec_ctx->bit_rate / 8;
      else
           data->video.queue.max_size = MAX_QUEUE_LEN * 256 * 1024;
 
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.st) {
-          data->audio.ctx   = data->audio.st->codec;
-          data->audio.codec = avcodec_find_decoder( data->audio.ctx->codec_id );
+          data->audio.codec_ctx = data->audio.st->codec;
 
-          if (!data->audio.codec || avcodec_open2( data->audio.ctx, data->audio.codec, NULL ) < 0) {
-               data->audio.st    = NULL;
-               data->audio.ctx   = NULL;
-               data->audio.codec = NULL;
+          codec = avcodec_find_decoder( data->audio.codec_ctx->codec_id );
+
+          if (!codec || avcodec_open2( data->audio.codec_ctx, codec, NULL ) < 0) {
+               data->audio.st        = NULL;
+               data->audio.codec_ctx = NULL;
           }
      }
 
@@ -1611,18 +1611,18 @@ Construct( IDirectFBVideoProvider *thiz,
          FusionSoundInit( NULL, NULL ) == DR_OK && FusionSoundCreate( &data->audio.sound ) == DR_OK) {
           FSStreamDescription dsc;
 
-          if (data->audio.ctx->channels > FS_MAX_CHANNELS)
-               data->audio.ctx->channels = FS_MAX_CHANNELS;
+          if (data->audio.codec_ctx->channels > FS_MAX_CHANNELS)
+               data->audio.codec_ctx->channels = FS_MAX_CHANNELS;
 
           dsc.flags        = FSSDF_BUFFERSIZE | FSSDF_CHANNELS | FSSDF_SAMPLEFORMAT | FSSDF_SAMPLERATE;
-          dsc.channels     = data->audio.ctx->channels;
-          dsc.samplerate   = data->audio.ctx->sample_rate;
+          dsc.channels     = data->audio.codec_ctx->channels;
+          dsc.samplerate   = data->audio.codec_ctx->sample_rate;
           dsc.buffersize   = dsc.samplerate / 10;
           dsc.sampleformat = FSSF_S16;
 
           ret = data->audio.sound->CreateStream( data->audio.sound, &dsc, &data->audio.stream );
           if (ret != DFB_OK) {
-               D_ERROR( "VideoProvider/FFMPEG: Failed to create FusionSound stream!\n" );
+               D_ERROR( "VideoProvider/FFmpeg: Failed to create FusionSound stream!\n" );
                goto error;
           }
           else {
@@ -1630,21 +1630,21 @@ Construct( IDirectFBVideoProvider *thiz,
           }
      }
      else if (data->audio.st) {
-          D_ERROR( "VideoProvider/FFMPEG: Failed to initialize/create FusionSound!\n" );
+          D_ERROR( "VideoProvider/FFmpeg: Failed to initialize/create FusionSound!\n" );
           goto error;
      }
 
      if (data->audio.stream) {
-          data->audio.src_frame = av_frame_alloc();
-          if (!data->audio.src_frame) {
+          data->audio.frame = av_frame_alloc();
+          if (!data->audio.frame) {
                ret = D_OOM();
                goto error;
           }
 
           data->audio.queue.max_len = av_rescale_q( MAX_QUEUE_LEN * AV_TIME_BASE, AV_TIME_BASE_Q,
                                                     data->audio.st->time_base );
-          if (data->audio.ctx->bit_rate > 0)
-               data->audio.queue.max_size = MAX_QUEUE_LEN * data->audio.ctx->bit_rate / 8;
+          if (data->audio.codec_ctx->bit_rate > 0)
+               data->audio.queue.max_size = MAX_QUEUE_LEN * data->audio.codec_ctx->bit_rate / 8;
           else
                data->audio.queue.max_size = MAX_QUEUE_LEN * 64 * 1024;
      }
@@ -1703,8 +1703,8 @@ Construct( IDirectFBVideoProvider *thiz,
 
 error:
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio.src_frame)
-          av_free( data->audio.src_frame );
+     if (data->audio.frame)
+          av_free( data->audio.frame );
 
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
@@ -1715,15 +1715,15 @@ error:
      if (data->audio.sound)
           data->audio.sound->Release( data->audio.sound );
 
-     if (data->audio.ctx)
-          avcodec_close( data->audio.ctx );
+     if (data->audio.codec_ctx)
+          avcodec_close( data->audio.codec_ctx );
 #endif
 
-     if (data->video.src_frame)
-          av_free( data->video.src_frame );
+     if (data->video.frame)
+          av_free( data->video.frame );
 
-     if (data->video.ctx)
-          avcodec_close( data->video.ctx );
+     if (data->video.codec_ctx)
+          avcodec_close( data->video.codec_ctx );
 
      if (data->fmt_ctx)
           avformat_close_input( &data->fmt_ctx );

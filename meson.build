@@ -52,6 +52,7 @@ enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad') and enable_fusionsound
 enable_mng          = get_option('mng')
+enable_playlist     = get_option('playlist')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')

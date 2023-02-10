@@ -51,6 +51,10 @@ option('mng',
        type: 'boolean',
        description: 'MNG video provider')
 
+option('playlist',
+       type: 'boolean',
+       description: 'Playlist music provider')
+
 option('png',
        type: 'boolean',
        description: 'PNG image provider')

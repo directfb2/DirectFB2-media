@@ -23,7 +23,7 @@
 #include <media/idirectfbfont.h>
 #include <schrift.h>
 
-D_DEBUG_DOMAIN( Font_SCHRIFT, "Font/SCHRIFT", "Schrift Font Provider" );
+D_DEBUG_DOMAIN( Font_Schrift, "Font/Schrift", "Schrift Font Provider" );
 
 static DFBResult Probe    ( IDirectFBFont_ProbeContext *ctx );
 
@@ -136,7 +136,7 @@ render_glyph( CoreFont      *thiz,
 
      ret = dfb_surface_lock_buffer( surface, DSBR_BACK, CSAID_CPU, CSAF_WRITE, &lock );
      if (ret) {
-          D_DERROR( ret, "Font/SCHRIFT: Unable to lock surface!\n" );
+          D_DERROR( ret, "Font/Schrift: Unable to lock surface!\n" );
           return ret;
      }
 
@@ -176,7 +176,7 @@ IDirectFBFont_Schrift_Destruct( IDirectFBFont *thiz )
 {
      SFT *sft = ((IDirectFBFont_data*) thiz->priv)->font->impl_data;
 
-     D_DEBUG_AT( Font_SCHRIFT, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( Font_Schrift, "%s( %p )\n", __FUNCTION__, thiz );
 
      sft_freefont( sft->font );
 
@@ -190,7 +190,7 @@ IDirectFBFont_Schrift_Release( IDirectFBFont *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBFont )
 
-     D_DEBUG_AT( Font_SCHRIFT, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( Font_Schrift, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IDirectFBFont_Schrift_Destruct( thiz );
@@ -228,7 +228,7 @@ Construct( IDirectFBFont              *thiz,
      SFT          *sft  = NULL;
      CoreFont     *font = NULL;
 
-     D_DEBUG_AT( Font_SCHRIFT, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( Font_Schrift, "%s( %p )\n", __FUNCTION__, thiz );
 
      /* Check for valid description. */
      if (!(desc->flags & DFDESC_HEIGHT))
@@ -237,7 +237,7 @@ Construct( IDirectFBFont              *thiz,
      if (desc->flags & DFDESC_ROTATION)
           return DFB_UNSUPPORTED;
 
-     D_DEBUG_AT( Font_SCHRIFT, "  -> file '%s' at pixel height %d\n", ctx->filename, desc->height );
+     D_DEBUG_AT( Font_Schrift, "  -> file '%s' at pixel height %d\n", ctx->filename, desc->height );
 
      /* Open the file. */
      sft = D_CALLOC( 1, sizeof(SFT) );
@@ -248,7 +248,7 @@ Construct( IDirectFBFont              *thiz,
 
      sft->font = sft_loadfile( ctx->filename );
      if (!sft->font) {
-          D_ERROR( "Font/SCHRIFT: Failed to load font file '%s'!\n", ctx->filename );
+          D_ERROR( "Font/Schrift: Failed to load font file '%s'!\n", ctx->filename );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -272,7 +272,7 @@ Construct( IDirectFBFont              *thiz,
      font->up_unit_y = -1.0;
      font->flags     = CFF_SUBPIXEL_ADVANCE;
 
-     CORE_FONT_DEBUG_AT( Font_SCHRIFT, font );
+     CORE_FONT_DEBUG_AT( Font_Schrift, font );
 
      font->GetGlyphData = get_glyph_info;
      font->RenderGlyph  = render_glyph;

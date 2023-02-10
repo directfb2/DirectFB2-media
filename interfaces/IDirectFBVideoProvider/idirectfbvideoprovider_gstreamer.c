@@ -27,7 +27,7 @@
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbvideoprovider.h>
 
-D_DEBUG_DOMAIN( VideoProvider_GST, "VideoProvider/GST", "GStreamer Video Provider" );
+D_DEBUG_DOMAIN( VideoProvider_GStreamer, "VideoProvider/GStreamer", "GStreamer Video Provider" );
 
 static DFBResult Probe    ( IDirectFBVideoProvider_ProbeContext *ctx );
 
@@ -116,7 +116,7 @@ decode_unknown_type( GstBin   *bin,
                      GstCaps  *caps,
                      gpointer  ptr )
 {
-     D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
 }
 
 static void
@@ -130,49 +130,49 @@ decode_pad_added( GstElement *element,
      IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
 
      if (strstr( gst_caps_to_string( caps ), "video" )) {
-          D_DEBUG_AT( VideoProvider_GST, "  -> linking video pad\n" );
+          D_DEBUG_AT( VideoProvider_GStreamer, "  -> linking video pad\n" );
           sinkpad = gst_element_get_static_pad( data->convert_video, "sink" );
           ret = gst_pad_link( srcpad, sinkpad );
           gst_object_unref( sinkpad );
      }
 #ifdef HAVE_FUSIONSOUND
      else if (strstr( gst_caps_to_string( caps ), "audio" )) {
-          D_DEBUG_AT( VideoProvider_GST, "  -> linking audio pad\n" );
+          D_DEBUG_AT( VideoProvider_GStreamer, "  -> linking audio pad\n" );
           sinkpad = gst_element_get_static_pad( data->convert_audio, "sink" );
           ret = gst_pad_link( srcpad, sinkpad );
           gst_object_unref( sinkpad );
      }
 #endif
      else {
-          D_DEBUG_AT( VideoProvider_GST, "  -> unhandled caps\n" );
+          D_DEBUG_AT( VideoProvider_GStreamer, "  -> unhandled caps\n" );
           return;
      }
 
      switch (ret) {
           case GST_PAD_LINK_OK:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> OK\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> OK\n" );
                err = 0;
                break;
           case GST_PAD_LINK_WRONG_HIERARCHY:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
                break;
           case GST_PAD_LINK_WAS_LINKED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WAS_LINKED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WAS_LINKED\n" );
                break;
           case GST_PAD_LINK_WRONG_DIRECTION:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
                break;
           case GST_PAD_LINK_NOFORMAT:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOFORMAT\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOFORMAT\n" );
                break;
           case GST_PAD_LINK_NOSCHED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOSCHED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOSCHED\n" );
                break;
           case GST_PAD_LINK_REFUSED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> REFUSED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> REFUSED\n" );
                break;
           default:
                break;
@@ -200,7 +200,7 @@ decode_video_pad_added( GstElement *element,
      IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
 
      data->desc.flags |= DSDESC_WIDTH | DSDESC_HEIGHT;
      gst_structure_get_int( str, "width", &data->desc.width );
@@ -216,26 +216,26 @@ decode_video_pad_added( GstElement *element,
 
      switch (ret) {
           case GST_PAD_LINK_OK:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> OK\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> OK\n" );
                err = 0;
                break;
           case GST_PAD_LINK_WRONG_HIERARCHY:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
                break;
           case GST_PAD_LINK_WAS_LINKED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WAS_LINKED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WAS_LINKED\n" );
                break;
           case GST_PAD_LINK_WRONG_DIRECTION:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
                break;
           case GST_PAD_LINK_NOFORMAT:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOFORMAT\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOFORMAT\n" );
                break;
           case GST_PAD_LINK_NOSCHED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOSCHED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOSCHED\n" );
                break;
           case GST_PAD_LINK_REFUSED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> REFUSED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> REFUSED\n" );
                break;
           default:
                break;
@@ -266,7 +266,7 @@ decode_audio_pad_added( GstElement *element,
      IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
 
      gst_structure_get_int( str, "rate", &data->audio_rate );
      gst_structure_get_int( str, "channels", &data->audio_channels );
@@ -277,26 +277,26 @@ decode_audio_pad_added( GstElement *element,
 
      switch (ret) {
           case GST_PAD_LINK_OK:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> OK\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> OK\n" );
                err = 0;
                break;
           case GST_PAD_LINK_WRONG_HIERARCHY:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_HIERARCHY\n" );
                break;
           case GST_PAD_LINK_WAS_LINKED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WAS_LINKED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WAS_LINKED\n" );
                break;
           case GST_PAD_LINK_WRONG_DIRECTION:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> WRONG_DIRECTION\n" );
                break;
           case GST_PAD_LINK_NOFORMAT:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOFORMAT\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOFORMAT\n" );
                break;
           case GST_PAD_LINK_NOSCHED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> NOSCHED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> NOSCHED\n" );
                break;
           case GST_PAD_LINK_REFUSED:
-               D_DEBUG_AT( VideoProvider_GST, "  -> gst_pad_link --> REFUSED\n" );
+               D_DEBUG_AT( VideoProvider_GStreamer, "  -> gst_pad_link --> REFUSED\n" );
                break;
           default:
                break;
@@ -446,7 +446,7 @@ IDirectFBVideoProvider_GStreamer_Destruct( IDirectFBVideoProvider *thiz )
      EventLink                             *link, *tmp;
      IDirectFBVideoProvider_GStreamer_data *data = thiz->priv;
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      thiz->Stop( thiz );
 
@@ -484,7 +484,7 @@ IDirectFBVideoProvider_GStreamer_AddRef( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -496,7 +496,7 @@ IDirectFBVideoProvider_GStreamer_Release( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IDirectFBVideoProvider_GStreamer_Destruct( thiz );
@@ -510,7 +510,7 @@ IDirectFBVideoProvider_GStreamer_GetCapabilities( IDirectFBVideoProvider       *
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_caps)
           return DFB_INVARG;
@@ -532,7 +532,7 @@ IDirectFBVideoProvider_GStreamer_GetSurfaceDescription( IDirectFBVideoProvider *
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -548,7 +548,7 @@ IDirectFBVideoProvider_GStreamer_GetStreamDescription( IDirectFBVideoProvider *t
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -583,7 +583,7 @@ IDirectFBVideoProvider_GStreamer_PlayTo( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -623,7 +623,7 @@ IDirectFBVideoProvider_GStreamer_Stop( IDirectFBVideoProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (data->status == DVSTATE_STOP)
           return DFB_OK;
@@ -655,7 +655,7 @@ IDirectFBVideoProvider_GStreamer_GetStatus( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_status)
           return DFB_INVARG;
@@ -671,7 +671,7 @@ IDirectFBVideoProvider_GStreamer_SeekTo( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (seconds < 0.0)
           return DFB_INVARG;
@@ -697,7 +697,7 @@ IDirectFBVideoProvider_GStreamer_GetPos( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DFB_INVARG;
@@ -720,7 +720,7 @@ IDirectFBVideoProvider_GStreamer_GetLength( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DFB_INVARG;
@@ -741,7 +741,7 @@ IDirectFBVideoProvider_GStreamer_SetPlaybackFlags( IDirectFBVideoProvider       
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (flags & ~DVPLAY_LOOPING)
           return DFB_UNSUPPORTED;
@@ -760,7 +760,7 @@ IDirectFBVideoProvider_GStreamer_SetSpeed( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (multiplier != 0.0 && multiplier != 1.0)
           return DFB_UNSUPPORTED;
@@ -787,7 +787,7 @@ IDirectFBVideoProvider_GStreamer_GetSpeed( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_multiplier)
           return DFB_INVARG;
@@ -806,7 +806,7 @@ IDirectFBVideoProvider_GStreamer_SetVolume( IDirectFBVideoProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (level < 0.0)
           return DFB_INVARG;
@@ -826,7 +826,7 @@ IDirectFBVideoProvider_GStreamer_GetVolume( IDirectFBVideoProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_level)
           return DFB_INVARG;
@@ -846,7 +846,7 @@ IDirectFBVideoProvider_GStreamer_CreateEventBuffer( IDirectFBVideoProvider  *thi
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_interface)
           return DFB_INVARG;
@@ -873,7 +873,7 @@ IDirectFBVideoProvider_GStreamer_AttachEventBuffer( IDirectFBVideoProvider *thiz
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!buffer)
           return DFB_INVARG;
@@ -905,7 +905,7 @@ IDirectFBVideoProvider_GStreamer_EnableEvents( IDirectFBVideoProvider    *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (mask & ~DVPET_ALL)
           return DFB_INVARG;
@@ -921,7 +921,7 @@ IDirectFBVideoProvider_GStreamer_DisableEvents( IDirectFBVideoProvider    *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (mask & ~DVPET_ALL)
           return DFB_INVARG;
@@ -940,7 +940,7 @@ IDirectFBVideoProvider_GStreamer_DetachEventBuffer( IDirectFBVideoProvider *thiz
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!buffer)
           return DFB_INVARG;
@@ -989,7 +989,7 @@ Construct( IDirectFBVideoProvider *thiz,
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_GStreamer )
 
-     D_DEBUG_AT( VideoProvider_GST, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( VideoProvider_GStreamer, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
@@ -1011,7 +1011,7 @@ Construct( IDirectFBVideoProvider *thiz,
      }
 
      if (!gst_init_check( NULL, NULL, &err )) {
-          D_ERROR( "VideoProvider/GST: Failed to initialize GStreamer!\n" );
+          D_ERROR( "VideoProvider/GStreamer: Failed to initialize GStreamer!\n" );
           if (err) {
                g_error_free( err );
           }
@@ -1038,7 +1038,7 @@ Construct( IDirectFBVideoProvider *thiz,
          !data->convert_audio || !data->decode_audio || !data->queue_audio || !data->appsink_audio ||
 #endif
          !data->pipeline || !data->decode) {
-          D_DEBUG_AT( VideoProvider_GST, "Failed to create some GStreamer elements\n" );
+          D_ERROR( "VideoProvider/GStreamer: Failed to create some GStreamer elements\n" );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -1093,7 +1093,7 @@ Construct( IDirectFBVideoProvider *thiz,
 #endif
                break;
           default:
-               D_ERROR( "VideoProvider/GST: Unknown pixel format!\n" );
+               D_ERROR( "VideoProvider/GStreamer: Unknown pixel format!\n" );
                ret = DFB_FAILURE;
                goto error;
      }
@@ -1146,7 +1146,7 @@ Construct( IDirectFBVideoProvider *thiz,
      direct_mutex_unlock( &data->video_lock );
 
      if (data->error) {
-          D_DEBUG_AT( VideoProvider_GST, "VideoProvider/GST: Failed to prepare pipeline\n" );
+          D_ERROR( "VideoProvider/GStreamer: Failed to prepare pipeline\n" );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -1167,7 +1167,7 @@ Construct( IDirectFBVideoProvider *thiz,
 
           ret = data->audio_sound->CreateStream( data->audio_sound, &dsc, &data->audio_stream );
           if (ret != DFB_OK) {
-               D_ERROR( "VideoProvider/GST: Failed to create FusionSound stream!\n" );
+               D_ERROR( "VideoProvider/GStreamer: Failed to create FusionSound stream!\n" );
                goto error;
           }
           else {
@@ -1175,7 +1175,7 @@ Construct( IDirectFBVideoProvider *thiz,
           }
      }
      else if (data->parsed_audio) {
-          D_ERROR( "VideoProvider/GST: Failed to initialize/create FusionSound!\n" );
+          D_ERROR( "VideoProvider/GStreamer: Failed to initialize/create FusionSound!\n" );
           goto error;
      }
 

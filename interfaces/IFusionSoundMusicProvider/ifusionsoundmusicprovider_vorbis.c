@@ -24,7 +24,7 @@
 #include <media/ifusionsoundmusicprovider.h>
 #include <vorbis/vorbisfile.h>
 
-D_DEBUG_DOMAIN( MusicProvider_VORBIS, "MusicProvider/VORBIS", "Vorbis Music Provider" );
+D_DEBUG_DOMAIN( MusicProvider_Vorbis, "MusicProvider/Vorbis", "Vorbis Music Provider" );
 
 static DirectResult Probe    ( IFusionSoundMusicProvider_ProbeContext *ctx );
 
@@ -310,7 +310,7 @@ ov_read_func( void   *ptr,
      DirectStream *stream = user;
 
      while (length < total) {
-          unsigned int len = 0;
+          unsigned int len;
 
           direct_stream_wait( stream, total - length, NULL );
 
@@ -502,7 +502,7 @@ VorbisBuffer( DirectThread *thread,
 
           ret = data->dest.buffer->Lock( data->dest.buffer, (void*) &dst, &frames, NULL );
           if (ret) {
-               D_DERROR( ret, "MusicProvider/VORBIS: Could not lock buffer!\n" );
+               D_DERROR( ret, "MusicProvider/Vorbis: Could not lock buffer!\n" );
                direct_mutex_unlock( &data->lock );
                break;
           }
@@ -566,7 +566,7 @@ IFusionSoundMusicProvider_Vorbis_Destruct( IFusionSoundMusicProvider *thiz )
 {
      IFusionSoundMusicProvider_Vorbis_data *data = thiz->priv;
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      Vorbis_Stop( data, true );
 
@@ -585,7 +585,7 @@ IFusionSoundMusicProvider_Vorbis_AddRef( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -597,7 +597,7 @@ IFusionSoundMusicProvider_Vorbis_Release( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IFusionSoundMusicProvider_Vorbis_Destruct( thiz );
@@ -611,7 +611,7 @@ IFusionSoundMusicProvider_Vorbis_GetCapabilities( IFusionSoundMusicProvider   *t
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_caps)
           return DR_INVARG;
@@ -629,7 +629,7 @@ IFusionSoundMusicProvider_Vorbis_GetTrackDescription( IFusionSoundMusicProvider 
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -645,7 +645,7 @@ IFusionSoundMusicProvider_Vorbis_GetStreamDescription( IFusionSoundMusicProvider
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -665,7 +665,7 @@ IFusionSoundMusicProvider_Vorbis_GetBufferDescription( IFusionSoundMusicProvider
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -687,7 +687,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -784,7 +784,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -877,7 +877,7 @@ IFusionSoundMusicProvider_Vorbis_Stop( IFusionSoundMusicProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      direct_mutex_lock( &data->lock );
 
@@ -896,7 +896,7 @@ IFusionSoundMusicProvider_Vorbis_GetStatus( IFusionSoundMusicProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_status)
           return DR_INVARG;
@@ -914,7 +914,7 @@ IFusionSoundMusicProvider_Vorbis_SeekTo( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (seconds < 0.0)
           return DR_INVARG;
@@ -951,7 +951,7 @@ IFusionSoundMusicProvider_Vorbis_GetPos( IFusionSoundMusicProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
@@ -969,7 +969,7 @@ IFusionSoundMusicProvider_Vorbis_GetLength( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
@@ -991,7 +991,7 @@ IFusionSoundMusicProvider_Vorbis_SetPlaybackFlags( IFusionSoundMusicProvider    
 {
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (flags & ~FMPLAY_LOOPING)
           return DR_UNSUPPORTED;
@@ -1013,7 +1013,7 @@ IFusionSoundMusicProvider_Vorbis_WaitStatus( IFusionSoundMusicProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis)
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!mask || mask & ~FMSTATE_ALL)
           return DR_INVARG;
@@ -1094,7 +1094,7 @@ Construct( IFusionSoundMusicProvider *thiz,
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IFusionSoundMusicProvider_Vorbis )
 
-     D_DEBUG_AT( MusicProvider_VORBIS, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref    = 1;
      data->stream = direct_stream_dup( stream );
@@ -1105,7 +1105,7 @@ Construct( IFusionSoundMusicProvider *thiz,
      callbacks.tell_func  = ov_tell_func;
 
      if (ov_open_callbacks( data->stream, &data->vf, NULL, 0, callbacks ) < 0) {
-          D_ERROR( "MusicProvider/VORBIS: Failed to open stream!\n" );
+          D_ERROR( "MusicProvider/Vorbis: Failed to open stream!\n" );
           direct_stream_destroy( stream );
           DIRECT_DEALLOCATE_INTERFACE( thiz );
           return DR_UNSUPPORTED;
@@ -1113,7 +1113,7 @@ Construct( IFusionSoundMusicProvider *thiz,
 
      info = ov_info( &data->vf, -1 );
      if (!info) {
-          D_ERROR( "MusicProvider/VORBIS: Could not get stream info!\n" );
+          D_ERROR( "MusicProvider/Vorbis: Could not get stream info!\n" );
           ret = DR_FAILURE;
           goto error;
      }

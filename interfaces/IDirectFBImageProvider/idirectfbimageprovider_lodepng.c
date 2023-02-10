@@ -23,7 +23,7 @@
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 
-D_DEBUG_DOMAIN( ImageProvider_LODEPNG, "ImageProvider/LODEPNG", "LodePNG Image Provider" );
+D_DEBUG_DOMAIN( ImageProvider_LodePNG, "ImageProvider/LodePNG", "LodePNG Image Provider" );
 
 static DFBResult Probe    ( IDirectFBImageProvider_ProbeContext *ctx );
 
@@ -60,7 +60,7 @@ IDirectFBImageProvider_LodePNG_Destruct( IDirectFBImageProvider *thiz )
 {
      IDirectFBImageProvider_LodePNG_data *data = thiz->priv;
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      free( data->image );
 
@@ -74,7 +74,7 @@ IDirectFBImageProvider_LodePNG_AddRef( IDirectFBImageProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -86,7 +86,7 @@ IDirectFBImageProvider_LodePNG_Release( IDirectFBImageProvider *thiz )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
           IDirectFBImageProvider_LodePNG_Destruct( thiz );
@@ -100,7 +100,7 @@ IDirectFBImageProvider_LodePNG_GetSurfaceDescription( IDirectFBImageProvider *th
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -116,7 +116,7 @@ IDirectFBImageProvider_LodePNG_GetImageDescription( IDirectFBImageProvider *thiz
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -141,7 +141,7 @@ IDirectFBImageProvider_LodePNG_RenderTo( IDirectFBImageProvider *thiz,
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -206,7 +206,7 @@ IDirectFBImageProvider_LodePNG_SetRenderCallback( IDirectFBImageProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->render_callback         = callback;
      data->render_callback_context = ctx;
@@ -250,7 +250,7 @@ Construct( IDirectFBImageProvider *thiz,
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_LodePNG )
 
-     D_DEBUG_AT( ImageProvider_LODEPNG, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
@@ -264,7 +264,7 @@ Construct( IDirectFBImageProvider *thiz,
      /* Open the file. */
      ret = direct_file_open( &fd, buffer_data->filename, O_RDONLY, 0 );
      if (ret) {
-          D_DERROR( ret, "ImageProvider/LODEPNG: Failed to open file '%s'!\n", buffer_data->filename );
+          D_DERROR( ret, "ImageProvider/LodePNG: Failed to open file '%s'!\n", buffer_data->filename );
           DIRECT_DEALLOCATE_INTERFACE( thiz );
           return ret;
      }
@@ -272,20 +272,20 @@ Construct( IDirectFBImageProvider *thiz,
      /* Query file size. */
      ret = direct_file_get_info( &fd, &info );
      if (ret) {
-          D_DERROR( ret, "ImageProvider/LODEPNG: Failed during get_info() of '%s'!\n", buffer_data->filename );
+          D_DERROR( ret, "ImageProvider/LodePNG: Failed during get_info() of '%s'!\n", buffer_data->filename );
           goto error;
      }
 
      /* Memory-mapped file. */
      ret = direct_file_map( &fd, NULL, 0, info.size, DFP_READ, &ptr );
      if (ret) {
-          D_DERROR( ret, "ImageProvider/LODEPNG: Failed during mmap() of '%s'!\n", buffer_data->filename );
+          D_DERROR( ret, "ImageProvider/LodePNG: Failed during mmap() of '%s'!\n", buffer_data->filename );
           goto error;
      }
 
      error = lodepng_decode32( &data->image, &width, &height, ptr, info.size );
      if (error) {
-          D_ERROR( "ImageProvider/LODEPNG: Error during decoding: %s!\n", lodepng_error_text( error ) );
+          D_ERROR( "ImageProvider/LodePNG: Error during decoding: %s!\n", lodepng_error_text( error ) );
           ret = DFB_FAILURE;
           goto error;
      }
