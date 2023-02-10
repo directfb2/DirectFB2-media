@@ -1,3 +1,24 @@
+commit b6652c3f85bb4b00f1fb103507bd2393cd789a94
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Feb 10 14:28:50 2023 +0100
+
+    Add JasPer image provider
+
+commit 0270e0f61fce4155e74f01f99be8d70b8c2c1ac3
+Merge: 62761e1 65fc270
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Feb 10 08:51:33 2023 +0100
+
+    Merge pull request #31 from caramelli/master
+    
+    Add Playlist music provider
+
+commit 65fc2704ae16ce9ee6bf917d71df64016782c798
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Feb 10 08:51:17 2023 +0100
+
+    Update ChangeLog
+
 commit fb836e056db9a61d63378b246614e8a55c1f1ce4
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Feb 10 08:51:09 2023 +0100
