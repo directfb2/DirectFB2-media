@@ -21,6 +21,13 @@ if enable_bmp
           dependencies: directfb_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_bmp',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_bmp',
+                     description: 'BMP image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_bmp -Wl,--no-whole-archive'])
 endif
 
 if enable_ffmpeg
@@ -29,6 +36,14 @@ if enable_ffmpeg
           dependencies: [directfb_dep, ffmpeg_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_ffmpeg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_ffmpeg',
+                     description: 'FFmpeg image provider',
+                     requires_private: ['libavformat', 'libswscale'],
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
 if enable_jasper
@@ -37,6 +52,14 @@ if enable_jasper
           dependencies: [directfb_dep, jasper_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_jasper',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_jasper',
+                     description: 'JasPer image provider',
+                     requires_private: 'jasper',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_jasper -Wl,--no-whole-archive'])
 endif
 
 if enable_jpeg
@@ -46,6 +69,14 @@ if enable_jpeg
           dependencies: [directfb_dep, jpeg_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_jpeg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_jpeg',
+                     description: 'JPEG image provider',
+                     requires_private: 'libjpeg',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_jpeg -Wl,--no-whole-archive'])
 endif
 
 if enable_lodepng != ''
@@ -55,6 +86,13 @@ if enable_lodepng != ''
           dependencies: [directfb_dep, lodepng_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_lodepng',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_lodepng',
+                     description: 'LodePNG image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_lodepng -Wl,--no-whole-archive'])
 endif
 
 if enable_png
@@ -64,6 +102,14 @@ if enable_png
           dependencies: [directfb_dep, png_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_png',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_png',
+                     description: 'PNG image provider',
+                     requires_private: 'libpng',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_png -Wl,--no-whole-archive'])
 endif
 
 if enable_stb_image != ''
@@ -73,6 +119,13 @@ if enable_stb_image != ''
           dependencies: directfb_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_stb',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_stb',
+                     description: 'STB image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_stb -Wl,--no-whole-archive'])
 endif
 
 if enable_svg
@@ -81,6 +134,14 @@ if enable_svg
           dependencies: [directfb_dep, svg_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_svg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_svg',
+                     description: 'SVG image provider',
+                     requires_private: 'libsvg-cairo',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_svg -Wl,--no-whole-archive'])
 endif
 
 if enable_tiff
@@ -89,6 +150,14 @@ if enable_tiff
           dependencies: [directfb_dep, tiff_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_tiff',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_tiff',
+                     description: 'TIFF image provider',
+                     requires_private: 'libtiff-4',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_tiff -Wl,--no-whole-archive'])
 endif
 
 if enable_webp
@@ -97,6 +166,14 @@ if enable_webp
           dependencies: [directfb_dep, webp_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_webp',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_webp',
+                     description: 'WebP image provider',
+                     requires_private: 'libwebp',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_webp -Wl,--no-whole-archive'])
 endif
 
 if enable_yuv
@@ -105,4 +182,11 @@ if enable_yuv
           dependencies: directfb_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_yuv',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_yuv',
+                     description: 'YUV image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_yuv -Wl,--no-whole-archive'])
 endif
