@@ -1,3 +1,24 @@
+commit 88cfc9c5b8562a6a09c66fb5d7c81863e99c7641
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Feb 28 02:02:27 2023 +0100
+
+    Add pkg-config files per module (for static build)
+
+commit f9c9df2b0d405464eeb1aa1e9db35b971936100b
+Merge: 0270e0f 4ba9407
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Feb 10 14:30:03 2023 +0100
+
+    Merge pull request #32 from caramelli/master
+    
+    Add JasPer image provider
+
+commit 4ba94072ead40e3bebf2070565240609e27a220a
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Feb 10 14:29:01 2023 +0100
+
+    Update ChangeLog
+
 commit b6652c3f85bb4b00f1fb103507bd2393cd789a94
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri Feb 10 14:28:50 2023 +0100
