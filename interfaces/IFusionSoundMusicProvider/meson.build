@@ -20,6 +20,14 @@ if enable_ffmpeg
           dependencies: [fusionsound_dep, ffmpeg_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+
+  pkgconfig.generate(filebase: 'fusionsound-interface-musicprovider_ffmpeg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'FusionSound-interface-musicprovider_ffmpeg',
+                     description: 'FFmpeg music provider',
+                     requires_private: 'libavformat',
+                     libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
+                                         '-Wl,--whole-archive -lifusionsoundmusicprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
 if enable_mad
@@ -29,6 +37,14 @@ if enable_mad
           dependencies: [fusionsound_dep, mad_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+
+  pkgconfig.generate(filebase: 'fusionsound-interface-musicprovider_mad',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'FusionSound-interface-musicprovider_mad',
+                     description: 'MAD music provider',
+                     requires_private: 'libmad',
+                     libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
+                                         '-Wl,--whole-archive -lifusionsoundmusicprovider_mad -Wl,--no-whole-archive'])
 endif
 
 if enable_playlist
@@ -37,6 +53,13 @@ if enable_playlist
           dependencies: fusionsound_dep,
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+
+  pkgconfig.generate(filebase: 'fusionsound-interface-musicprovider_playlist',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'FusionSound-interface-musicprovider_playlist',
+                     description: 'Playlist music provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
+                                         '-Wl,--whole-archive -lifusionsoundmusicprovider_playlist -Wl,--no-whole-archive'])
 endif
 
 if enable_vorbis
@@ -46,4 +69,12 @@ if enable_vorbis
           dependencies: [fusionsound_dep, vorbis_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+
+  pkgconfig.generate(filebase: 'fusionsound-interface-musicprovider_vorbis',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'FusionSound-interface-musicprovider_vorbis',
+                     description: 'Vorbis music provider',
+                     requires_private: 'vorbisfile',
+                     libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
+                                         '-Wl,--whole-archive -lifusionsoundmusicprovider_vorbis -Wl,--no-whole-archive'])
 endif

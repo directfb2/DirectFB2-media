@@ -14,6 +14,11 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
+fusionsound = []
+if enable_fusionsound
+  fusionsound = 'fusionsound'
+endif
+
 if enable_ffmpeg
   library('idirectfbvideoprovider_ffmpeg',
           'idirectfbvideoprovider_ffmpeg.c',
@@ -21,6 +26,14 @@ if enable_ffmpeg
           dependencies: [directfb_dep, ffmpeg_dep, fusionsound_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_ffmpeg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_ffmpeg',
+                     description: 'FFmpeg video provider',
+                     requires_private: ['libavformat', 'libswscale', fusionsound],
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
 if enable_gstreamer
@@ -30,6 +43,14 @@ if enable_gstreamer
           dependencies: [directfb_dep, gstreamer_dep, fusionsound_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_gstreamer',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_gstreamer',
+                     description: 'GStreamer video provider',
+                     requires_private: ['gstreamer-app-1.0', fusionsound],
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_gstreamer -Wl,--no-whole-archive'])
 endif
 
 if enable_mng
@@ -38,4 +59,12 @@ if enable_mng
           dependencies: [directfb_dep, mng_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_mng',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_mng',
+                     description: 'MNG video provider',
+                     requires_private: 'libmng',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_mng -Wl,--no-whole-archive'])
 endif

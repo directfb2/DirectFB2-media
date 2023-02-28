@@ -21,6 +21,14 @@ if enable_ft2
           dependencies: [directfb_dep, ft2_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-font_ft2',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-font_ft2',
+                     description: 'FreeType2 font provider',
+                     requires_private: 'freetype2',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBFont',
+                                         '-Wl,--whole-archive -lidirectfbfont_ft2 -Wl,--no-whole-archive', '-lm'])
 endif
 
 if enable_sft
@@ -29,6 +37,14 @@ if enable_sft
           dependencies: [directfb_dep, sft_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-font_sft',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-font_sft',
+                     description: 'Schrift font provider',
+                     requires_private: 'libschrift',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBFont',
+                                         '-Wl,--whole-archive -lidirectfbfont_sft -Wl,--no-whole-archive'])
 endif
 
 if enable_stb_truetype != ''
@@ -38,4 +54,11 @@ if enable_stb_truetype != ''
           dependencies: [directfb_dep, stb_truetype_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBFont'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-font_stb',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-font_stb',
+                     description: 'STB font provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBFont',
+                                         '-Wl,--whole-archive -lidirectfbfont_stb -Wl,--no-whole-archive', '-lm'])
 endif

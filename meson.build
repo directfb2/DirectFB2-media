@@ -16,7 +16,7 @@
 
 project('DirectFB2-media', 'c',
         version: '2.0.0',
-        meson_version: '>= 0.53')
+        meson_version: '>= 0.57')
 
 directfb_dep = dependency('directfb-internal')
 
@@ -118,17 +118,8 @@ if enable_jpeg
   jpeg_dep = dependency('libjpeg', required: false)
 
   if not jpeg_dep.found()
-    if meson.get_compiler('c').has_header('jpeglib.h')
-      jpeg_dep = meson.get_compiler('c').find_library('jpeg', required: false)
-
-      if not jpeg_dep.found()
-        warning('JPEG image provider will not be built.')
-        enable_jpeg = false
-      endif
-    else
-      warning('JPEG image provider will not be built.')
-      enable_jpeg = false
-    endif
+    warning('JPEG image provider will not be built.')
+    enable_jpeg = false
   endif
 endif
 
@@ -142,20 +133,11 @@ if enable_lodepng != ''
 endif
 
 if enable_mad
-  mad_dep = dependency('mad', required: false)
+  mad_dep = dependency('libmad', required: false)
 
   if not mad_dep.found()
-    if meson.get_compiler('c').has_header('mad.h')
-      mad_dep = meson.get_compiler('c').find_library('mad', required: false)
-
-      if not mad_dep.found()
-        warning('MAD music provider will not be built.')
-        enable_mad = false
-      endif
-    else
-      warning('MAD music provider will not be built.')
-      enable_mad = false
-    endif
+    warning('MAD music provider will not be built.')
+    enable_mad = false
   endif
 endif
 
@@ -178,14 +160,9 @@ if enable_png
 endif
 
 if enable_sft
-  if meson.get_compiler('c').has_header('schrift.h')
-    sft_dep = meson.get_compiler('c').find_library('schrift', required: false)
+  sft_dep = dependency('libschrift', required: false)
 
-    if not sft_dep.found()
-      warning('Schrift font provider will not be built.')
-      enable_sft = false
-    endif
-  else
+  if not sft_dep.found()
     warning('Schrift font provider will not be built.')
     enable_sft = false
   endif
@@ -247,6 +224,8 @@ if enable_webp
   endif
 endif
 
+pkgconfig = import('pkgconfig')
+
 subdir('interfaces/IDirectFBFont')
 subdir('interfaces/IDirectFBImageProvider')
 subdir('interfaces/IDirectFBVideoProvider')
@@ -256,4 +235,9 @@ endif
 
 if get_option('tools')
   subdir('tools')
+endif
+
+meson.add_install_script('dfb-update-pkgconfig', skip_if_destdir: true)
+if enable_fusionsound
+  meson.add_install_script('fs-update-pkgconfig', skip_if_destdir: true)
 endif
