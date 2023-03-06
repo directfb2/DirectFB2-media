@@ -40,7 +40,6 @@ static DFBResult Construct( IDirectFBVideoProvider              *thiz,
                             CoreDFB                             *core,
                             IDirectFB                           *idirectfb );
 
-
 #include <direct/interface_implementation.h>
 
 DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBVideoProvider, FFmpeg )
@@ -745,18 +744,16 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
 
      if (data->audio.codec_ctx)
           avcodec_close( data->audio.codec_ctx );
-#endif
 
-     av_free( data->video.frame );
-
-     avcodec_close( data->video.codec_ctx );
-
-#ifdef HAVE_FUSIONSOUND
      flush_packets( &data->audio.queue );
      direct_mutex_deinit( &data->audio.queue.lock );
      direct_waitqueue_deinit( &data->audio.cond );
      direct_mutex_deinit( &data->audio.lock );
 #endif
+
+     av_free( data->video.frame );
+
+     avcodec_close( data->video.codec_ctx );
 
      flush_packets( &data->video.queue );
      direct_mutex_deinit( &data->video.queue.lock );
@@ -1151,7 +1148,7 @@ IDirectFBVideoProvider_FFmpeg_SetSpeed( IDirectFBVideoProvider *thiz,
 #endif
      }
 
-     if (multiplier && !data->speed) {
+     if (multiplier > data->speed) {
           direct_waitqueue_signal( &data->video.cond );
 #ifdef HAVE_FUSIONSOUND
           direct_waitqueue_signal( &data->audio.cond );
@@ -1350,7 +1347,6 @@ IDirectFBVideoProvider_FFmpeg_DetachEventBuffer( IDirectFBVideoProvider *thiz,
 
      return ret;
 }
-
 
 static DFBResult
 IDirectFBVideoProvider_FFmpeg_SetDestination( IDirectFBVideoProvider *thiz,
@@ -1621,7 +1617,7 @@ Construct( IDirectFBVideoProvider *thiz,
           dsc.sampleformat = FSSF_S16;
 
           ret = data->audio.sound->CreateStream( data->audio.sound, &dsc, &data->audio.stream );
-          if (ret != DFB_OK) {
+          if (ret) {
                D_ERROR( "VideoProvider/FFmpeg: Failed to create FusionSound stream!\n" );
                goto error;
           }

@@ -42,7 +42,7 @@ if enable_mad
                      variables: 'moduledir=' + moduledir,
                      name: 'FusionSound-interface-musicprovider_mad',
                      description: 'MAD music provider',
-                     requires_private: 'libmad',
+                     requires_private: 'mad',
                      libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
                                          '-Wl,--whole-archive -lifusionsoundmusicprovider_mad -Wl,--no-whole-archive'])
 endif

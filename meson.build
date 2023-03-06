@@ -59,6 +59,7 @@ enable_sft          = get_option('sft')
 enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
 enable_svg          = get_option('svg')
+enable_swfdec       = get_option('swfdec')
 enable_tiff         = get_option('tiff')
 enable_vorbis       = get_option('vorbis') and enable_fusionsound
 enable_webp         = get_option('webp')
@@ -133,7 +134,7 @@ if enable_lodepng != ''
 endif
 
 if enable_mad
-  mad_dep = dependency('libmad', required: false)
+  mad_dep = dependency('mad', required: false)
 
   if not mad_dep.found()
     warning('MAD music provider will not be built.')
@@ -190,6 +191,15 @@ if enable_svg
   if not svg_dep.found()
     warning('SVG image provider will not be built.')
     enable_svg = false
+  endif
+endif
+
+if enable_swfdec
+  swfdec_dep = dependency('swfdec-0.5', required: false)
+
+  if not swfdec_dep.found()
+    warning('Swfdec video provider will not be built.')
+    swfdec_dep = false
   endif
 endif
 

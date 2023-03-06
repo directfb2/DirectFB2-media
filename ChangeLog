@@ -1,3 +1,24 @@
+commit b821913d5295e531996bf6d5c05d8425f59e5bca
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Mar 6 22:25:45 2023 +0100
+
+    Add Swfdec video provider
+
+commit 01af5edabf40eccd8db881c9759d55db687b47ec
+Merge: f9c9df2 7a01f54
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Feb 28 02:09:30 2023 +0100
+
+    Merge pull request #33 from caramelli/master
+    
+    Add pkg-config files per module (for static build)
+
+commit 7a01f54a385079033eadf3b8250feca88d551312
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Feb 28 02:02:43 2023 +0100
+
+    Update ChangeLog
+
 commit 88cfc9c5b8562a6a09c66fb5d7c81863e99c7641
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Feb 28 02:02:27 2023 +0100

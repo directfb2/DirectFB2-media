@@ -81,6 +81,10 @@ option('svg',
        type: 'boolean',
        description: 'SVG image provider')
 
+option('swfdec',
+       type: 'boolean',
+       description: 'Swfdec video provider')
+
 option('tiff',
        type: 'boolean',
        description: 'TIFF image provider')
