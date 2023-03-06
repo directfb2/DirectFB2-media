@@ -64,7 +64,24 @@ if enable_mng
                      variables: 'moduledir=' + moduledir,
                      name: 'DirectFB-interface-videoprovider_mng',
                      description: 'MNG video provider',
-                     requires_private: 'libmng',
+                     requires_private: ['libmng'],
                      libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
                                          '-Wl,--whole-archive -lidirectfbvideoprovider_mng -Wl,--no-whole-archive'])
+endif
+
+if enable_swfdec
+  library('idirectfbvideoprovider_swfdec',
+          'idirectfbvideoprovider_swfdec.c',
+          include_directories: config_inc,
+          dependencies: [directfb_dep, swfdec_dep, fusionsound_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_swfdec',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_swfdec',
+                     description: 'Swfdec video provider',
+                     requires_private: ['swfdec-0.5', fusionsound],
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_swfdec -Wl,--no-whole-archive'])
 endif

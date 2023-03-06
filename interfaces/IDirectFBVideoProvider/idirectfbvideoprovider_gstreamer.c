@@ -114,20 +114,19 @@ static void
 decode_unknown_type( GstBin   *bin,
                      GstPad   *pad,
                      GstCaps  *caps,
-                     gpointer  ptr )
+                     IDirectFBVideoProvider_GStreamer_data *data )
 {
      D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
 }
 
 static void
-decode_pad_added( GstElement *element,
-                  GstPad     *srcpad,
-                  gpointer    ptr )
+decode_pad_added( GstElement                            *element,
+                  GstPad                                *srcpad,
+                  IDirectFBVideoProvider_GStreamer_data *data )
 {
      GstPadLinkReturn                       ret;
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
-     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -189,15 +188,14 @@ decode_pad_added( GstElement *element,
 }
 
 static void
-decode_video_pad_added( GstElement *element,
-                        GstPad     *srcpad,
-                        gpointer    ptr )
+decode_video_pad_added( GstElement                            *element,
+                        GstPad                                *srcpad,
+                        IDirectFBVideoProvider_GStreamer_data *data )
 {
      GstPadLinkReturn                       ret;
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
      GstStructure                          *str  = gst_caps_get_structure( caps, 0 );
-     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -255,15 +253,14 @@ decode_video_pad_added( GstElement *element,
 
 #ifdef HAVE_FUSIONSOUND
 static void
-decode_audio_pad_added( GstElement *element,
-                        GstPad     *srcpad,
-                        gpointer    ptr )
+decode_audio_pad_added( GstElement                            *element,
+                        GstPad                                *srcpad,
+                        IDirectFBVideoProvider_GStreamer_data *data )
 {
      GstPadLinkReturn                       ret;
      GstPad                                *sinkpad;
      GstCaps                               *caps = gst_pad_query_caps( srcpad, NULL );
      GstStructure                          *str  = gst_caps_get_structure( caps, 0 );
-     IDirectFBVideoProvider_GStreamer_data *data = ptr;
      int                                    err  = 1;
 
      D_DEBUG_AT( VideoProvider_GStreamer, "%s( caps %s )\n", __FUNCTION__, gst_caps_to_string( caps ) );
@@ -1045,11 +1042,11 @@ Construct( IDirectFBVideoProvider *thiz,
 
      g_object_set( data->decode, "uri", uri, NULL );
 
-     g_signal_connect( data->decode,       "pad-added",    G_CALLBACK(decode_pad_added), data );
-     g_signal_connect( data->decode,       "unknown-type", G_CALLBACK(decode_unknown_type), data );
-     g_signal_connect( data->decode_video, "pad-added",    G_CALLBACK(decode_video_pad_added), data );
+     g_signal_connect( data->decode,       "unknown-type", G_CALLBACK( decode_unknown_type ), data );
+     g_signal_connect( data->decode,       "pad-added",    G_CALLBACK( decode_pad_added ), data );
+     g_signal_connect( data->decode_video, "pad-added",    G_CALLBACK( decode_video_pad_added ), data );
 #ifdef HAVE_FUSIONSOUND
-     g_signal_connect( data->decode_audio, "pad-added",    G_CALLBACK(decode_audio_pad_added), data );
+     g_signal_connect( data->decode_audio, "pad-added",    G_CALLBACK( decode_audio_pad_added ), data );
 #endif
 
      bin = GST_BIN( data->pipeline );
@@ -1166,7 +1163,7 @@ Construct( IDirectFBVideoProvider *thiz,
           dsc.sampleformat = FSSF_S16;
 
           ret = data->audio_sound->CreateStream( data->audio_sound, &dsc, &data->audio_stream );
-          if (ret != DFB_OK) {
+          if (ret) {
                D_ERROR( "VideoProvider/GStreamer: Failed to create FusionSound stream!\n" );
                goto error;
           }
