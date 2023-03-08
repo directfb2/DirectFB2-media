@@ -335,9 +335,9 @@ Construct( IDirectFBImageProvider *thiz,
      DFBResult          ret;
      svg_cairo_status_t status;
 
-     D_DEBUG_AT( ImageProvider_SVG, "%s( %p )\n", __FUNCTION__, thiz );
+     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_SVG )
 
-     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_SVG );
+     D_DEBUG_AT( ImageProvider_SVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref = 1;
 

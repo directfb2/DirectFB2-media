@@ -53,6 +53,7 @@ enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad') and enable_fusionsound
 enable_mng          = get_option('mng')
+enable_openexr      = get_option('openexr')
 enable_playlist     = get_option('playlist')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
@@ -151,6 +152,15 @@ if enable_mng
   endif
 endif
 
+if enable_openexr
+  openexr_dep = dependency('OpenEXR', required: false)
+
+  if not openexr_dep.found()
+    warning('OpenEXR image provider will not be built.')
+    enable_openexr = false
+  endif
+endif
+
 if enable_png
   png_dep = dependency('libpng', required: false)
 
@@ -199,7 +209,7 @@ if enable_swfdec
 
   if not swfdec_dep.found()
     warning('Swfdec video provider will not be built.')
-    swfdec_dep = false
+    enable_swfdec = false
   endif
 endif
 
@@ -247,7 +257,9 @@ if get_option('tools')
   subdir('tools')
 endif
 
-meson.add_install_script('dfb-update-pkgconfig', skip_if_destdir: true)
-if enable_fusionsound
-  meson.add_install_script('fs-update-pkgconfig', skip_if_destdir: true)
+if get_option('default_library') != 'shared'
+  meson.add_install_script('dfb-update-pkgconfig', skip_if_destdir: true)
+  if enable_fusionsound
+    meson.add_install_script('fs-update-pkgconfig', skip_if_destdir: true)
+  endif
 endif

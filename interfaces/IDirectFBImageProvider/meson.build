@@ -95,6 +95,22 @@ if enable_lodepng != ''
                                          '-Wl,--whole-archive -lidirectfbimageprovider_lodepng -Wl,--no-whole-archive'])
 endif
 
+if enable_openexr
+  library('idirectfbimageprovider_openexr',
+          'idirectfbimageprovider_openexr.c',
+          dependencies: [directfb_dep, openexr_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_openexr',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_openexr',
+                     description: 'OpenEXR image provider',
+                     requires_private: 'OpenEXR',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_openexr -Wl,--no-whole-archive'])
+endif
+
 if enable_png
   library('idirectfbimageprovider_png',
           'idirectfbimageprovider_png.c',
