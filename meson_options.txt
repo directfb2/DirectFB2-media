@@ -55,6 +55,10 @@ option('mng',
        type: 'boolean',
        description: 'MNG video provider')
 
+option('openexr',
+       type: 'boolean',
+       description: 'OpenEXR image provider')
+
 option('playlist',
        type: 'boolean',
        description: 'Playlist music provider')

@@ -1,3 +1,24 @@
+commit c563f8887a4e7b49834fe62575e781b568cd926e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 8 11:28:03 2023 +0100
+
+    Add OpenEXR image provider
+
+commit dae11cc9b49c123485714fc7e73e5f3c382a9bee
+Merge: 01af5ed eb3472e
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Mon Mar 6 22:28:33 2023 +0100
+
+    Merge pull request #34 from caramelli/master
+    
+    Add Swfdec video provider
+
+commit eb3472ecc2acee576f6f0acd4c9989e754f24d31
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Mar 6 22:25:55 2023 +0100
+
+    Update ChangeLog
+
 commit b821913d5295e531996bf6d5c05d8425f59e5bca
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Mon Mar 6 22:25:45 2023 +0100

@@ -11,6 +11,7 @@ Initial version using the Meson build system and containing:
   - LodePNG image provider
   - MAD music provider
   - MNG video provider
+  - OpenEXR image provider
   - Playlist music provider
   - PNG image provider
   - Schrift font provider
