@@ -97,6 +97,10 @@ option('tools',
        type: 'boolean',
        description: 'Compile tools')
 
+option('tremor',
+       type: 'boolean',
+       description: 'Tremor music provider')
+
 option('vorbis',
        type: 'boolean',
        description: 'Vorbis music provider')

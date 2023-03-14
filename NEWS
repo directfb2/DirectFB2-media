@@ -19,6 +19,7 @@ Initial version using the Meson build system and containing:
   - SVG image provider
   - Swfdec video provider
   - TIFF image provider
+  - Tremor music provider
   - Vorbis music provider
   - WebP image provider
   - YUV image provider

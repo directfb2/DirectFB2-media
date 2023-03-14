@@ -62,6 +62,23 @@ if enable_playlist
                                          '-Wl,--whole-archive -lifusionsoundmusicprovider_playlist -Wl,--no-whole-archive'])
 endif
 
+if enable_tremor
+  library('ifusionsoundmusicprovider_tremor',
+          'ifusionsoundmusicprovider_tremor.c',
+          include_directories: config_inc,
+          dependencies: [fusionsound_dep, tremor_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IFusionSoundMusicProvider'))
+
+  pkgconfig.generate(filebase: 'fusionsound-interface-musicprovider_tremor',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'FusionSound-interface-musicprovider_tremor',
+                     description: 'Tremor music provider',
+                     requires_private: 'vorbisidec',
+                     libraries_private: ['-L${moduledir}/interfaces/IFusionSoundMusicProvider',
+                                         '-Wl,--whole-archive -lifusionsoundmusicprovider_tremor -Wl,--no-whole-archive'])
+endif
+
 if enable_vorbis
   library('ifusionsoundmusicprovider_vorbis',
           'ifusionsoundmusicprovider_vorbis.c',
