@@ -1,3 +1,24 @@
+commit c739dfbaf7e82343f5811a92db80949769a34dce
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Mar 14 03:26:19 2023 +0100
+
+    Add Tremor music provider
+
+commit 554d4fa5bb6e0ca5a341e18ea413cbbc81a2f0a5
+Merge: dae11cc 542c177
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Mar 8 11:29:03 2023 +0100
+
+    Merge pull request #35 from caramelli/master
+    
+    Add OpenEXR image provider
+
+commit 542c1776c77fb86433f50126654bc35ea38b3aa2
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 8 11:28:11 2023 +0100
+
+    Update ChangeLog
+
 commit c563f8887a4e7b49834fe62575e781b568cd926e
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Mar 8 11:28:03 2023 +0100
