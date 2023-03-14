@@ -508,7 +508,7 @@ FFmpegVideo( DirectThread *thread,
      struct SwsContext                  *sws_ctx;
      s64                                 firtspts = 0;
      unsigned int                        framecnt = 0;
-     int                                 drop     = 0;
+     bool                                drop     = false;
      IDirectFBVideoProvider_FFmpeg_data *data     = arg;
 
      data->video.dest->GetPixelFormat( data->video.dest, &pixelformat );
@@ -545,11 +545,11 @@ FFmpegVideo( DirectThread *thread,
      avpicture_fill( &picture, ptr, pix_fmt, data->video.codec_ctx->width, data->video.codec_ctx->height );
      data->video.dest->Unlock( data->video.dest );
 
-     duration = 1000000.0 / data->rate;
+     duration = 1000000 / data->rate;
 
      while (data->status != DVSTATE_STOP) {
           AVPacket  pkt;
-          long long time, now;
+          long long time;
           int       got_picture = 0;
 
           time = direct_clock_get_abs_micros();
@@ -589,7 +589,8 @@ FFmpegVideo( DirectThread *thread,
                direct_waitqueue_wait( &data->video.cond, &data->video.lock );
           }
           else {
-               long length, delay;
+               long      length, delay;
+               long long now;
 
                if (framecnt)
                     duration = (data->video.pts - firtspts) / framecnt;

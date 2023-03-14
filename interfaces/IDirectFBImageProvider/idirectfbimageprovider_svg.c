@@ -236,7 +236,6 @@ IDirectFBImageProvider_SVG_RenderTo( IDirectFBImageProvider *thiz,
           return ret;
 
      source->Lock( source, DSLF_WRITE, &ptr, &pitch );
-     source->Unlock( source );
 
      cairo_surface = cairo_image_surface_create_for_data( ptr, cairo_format, rect.w, rect.h, pitch );
      if (!cairo_surface) {
@@ -265,6 +264,8 @@ IDirectFBImageProvider_SVG_RenderTo( IDirectFBImageProvider *thiz,
           source->Release( source );
           return ret;
      }
+
+     source->Unlock( source );
 
      destination->GetClip( destination, &old_clip );
 

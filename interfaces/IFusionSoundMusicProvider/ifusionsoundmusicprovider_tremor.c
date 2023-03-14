@@ -17,14 +17,13 @@
 */
 
 #include <config.h>
+#include <direct/memcpy.h>
 #include <direct/stream.h>
 #include <direct/thread.h>
-#include <fusionsound_util.h>
-#include <math.h>
 #include <media/ifusionsoundmusicprovider.h>
-#include <vorbis/vorbisfile.h>
+#include <tremor/ivorbisfile.h>
 
-D_DEBUG_DOMAIN( MusicProvider_Vorbis, "MusicProvider/Vorbis", "Vorbis Music Provider" );
+D_DEBUG_DOMAIN( MusicProvider_Tremor, "MusicProvider/Tremor", "Tremor Music Provider" );
 
 static DirectResult Probe    ( IFusionSoundMusicProvider_ProbeContext *ctx );
 
@@ -34,7 +33,7 @@ static DirectResult Construct( IFusionSoundMusicProvider              *thiz,
 
 #include <direct/interface_implementation.h>
 
-DIRECT_INTERFACE_IMPLEMENTATION( IFusionSoundMusicProvider, Vorbis )
+DIRECT_INTERFACE_IMPLEMENTATION( IFusionSoundMusicProvider, Tremor )
 
 /**********************************************************************************************************************/
 
@@ -72,7 +71,7 @@ typedef struct {
 
      FMBufferCallback              buffer_callback;
      void                         *buffer_callback_context;
-} IFusionSoundMusicProvider_Vorbis_data;
+} IFusionSoundMusicProvider_Tremor_data;
 
 /**********************************************************************************************************************/
 
@@ -88,166 +87,68 @@ typedef struct {
 #endif
 } __attribute__((packed)) s24;
 
-static __inline__ u8
-FtoU8( float s )
-{
-     int d;
-
-     d = s * 128.0f + 128.5f;
-
-     return CLAMP( d, 0, 255 );
-}
-
-static __inline__ s16
-FtoS16( float s )
-{
-     int d;
-
-     d = s * 32768.0f + 0.5f;
-
-     return CLAMP( d, -32768, 32767 );
-}
-
-static __inline__ s24
-FtoS24( float s )
-{
-     int d;
-
-     d = s * 8388608.0f + 0.5f;
-     d = CLAMP( d, -8388608, 8388607 );
-
-     return (s24) { a:d, b:d >> 8, c:d >> 16 };
-}
-
-static __inline__ s32
-FtoS32( float s )
-{
-     s = CLAMP( s, -1.0f, 1.0f );
-
-     return s * 2147483647.0f;
-}
-
-static __inline__ float
-FtoF32( float s )
-{
-     return CLAMP( s, -1.0f, 1.0f );
-}
-
-#define VORBIS_MIX_LOOP()                                                          \
-do {                                                                               \
-     int i;                                                                        \
-     if (fs_mode_for_channels( s_n ) == mode) {                                    \
-          int n;                                                                   \
-          for (n = 0; n < s_n; n++) {                                              \
-               float *s = src[n] + pos;                                            \
-               TYPE  *d = &((TYPE*) dst)[n];                                       \
-               for (i = frames; i; i--) {                                          \
-                    *d = CONV( *s );                                               \
-                    d += d_n;                                                      \
-                    s++;                                                           \
-               }                                                                   \
-          }                                                                        \
-     }                                                                             \
-     else {                                                                        \
-                       /* L  C  R Rl Rr LFE */                                     \
-          float  c[6] = { 0, 0, 0, 0, 0,  0 };                                     \
-          TYPE  *d    = (TYPE*) dst;                                               \
-          for (i = pos; i < pos + frames; i++) {                                   \
-               float s;                                                            \
-               switch (s_n) {                                                      \
-                    case 1:                                                        \
-                         c[0] = c[2] = src[0][i];                                  \
-                         break;                                                    \
-                    case 4:                                                        \
-                         c[3] = src[2][i];                                         \
-                         c[4] = src[3][i];                                         \
-                    case 2:                                                        \
-                         c[0] = src[0][i];                                         \
-                         c[2] = src[1][i];                                         \
-                         break;                                                    \
-                    case 6:                                                        \
-                         c[5] = src[5][i];                                         \
-                    case 5:                                                        \
-                         c[3] = src[3][i];                                         \
-                         c[4] = src[4][i];                                         \
-                    case 3:                                                        \
-                         c[0] = src[0][i];                                         \
-                         c[1] = src[1][i];                                         \
-                         c[2] = src[2][i];                                         \
-                         break;                                                    \
-                    default:                                                       \
-                         break;                                                    \
-               }                                                                   \
-               switch (mode) {                                                     \
-                    case FSCM_MONO:                                                \
-                         s = c[0] + c[2];                                          \
-                         if (s_n > 2) s += (c[1] * 2 + c[3] + c[4]) * 0.7079f;     \
-                         s *= 0.5f;                                                \
-                         *d++ = CONV( s );                                         \
-                         break;                                                    \
-                    case FSCM_STEREO:                                              \
-                    case FSCM_STEREO21:                                            \
-                         s = c[0];                                                 \
-                         if (s_n > 2) s += (c[1] + c[3]) * 0.7079f;                \
-                         *d++ = CONV( s );                                         \
-                         s = c[2];                                                 \
-                         if (s_n > 2) s += (c[1] + c[4]) * 0.7079f;                \
-                         *d++ = CONV( s );                                         \
-                         if (FS_MODE_HAS_LFE( mode ))                              \
-                              *d++ = CONV( c[5] );                                 \
-                         break;                                                    \
-                    case FSCM_STEREO30:                                            \
-                    case FSCM_STEREO31:                                            \
-                         s = c[0] + c[3] * 0.7079f;                                \
-                         *d++ = CONV( s );                                         \
-                         s = (s_n == 2 || s_n == 4) ? (c[0] + c[2]) * 0.5f : c[1]; \
-                         *d++ = CONV( s );                                         \
-                         s = c[2] + c[4] * 0.7079f;                                \
-                         *d++ = CONV( s );                                         \
-                         if (FS_MODE_HAS_LFE( mode ))                              \
-                              *d++ = CONV( c[5] );                                 \
-                         break;                                                    \
-                    default:                                                       \
-                         if (FS_MODE_HAS_CENTER( mode )) {                         \
-                              *d++ = CONV( c[0] );                                 \
-                              if (s_n == 2 || s_n == 4) {                          \
-                                   s = (c[0] + c[2]) * 0.5f;                       \
-                                   *d++ = CONV( s );                               \
-                              }                                                    \
-                              else                                                 \
-                                   *d++ = CONV( c[1] );                            \
-                              *d++ = CONV( c[2] );                                 \
-                         }                                                         \
-                         else {                                                    \
-                              s = c[0] + c[1] * 0.7079f;                           \
-                              *d++ = CONV( s );                                    \
-                              s = c[2] + c[1] * 0.7079f;                           \
-                              *d++ = CONV( s );                                    \
-                         }                                                         \
-                         if (FS_MODE_NUM_REARS( mode ) == 1) {                     \
-                              s = (c[3] + c[4]) * 0.5f;                            \
-                              *d++ = CONV( s );                                    \
-                         }                                                         \
-                         else {                                                    \
-                              *d++ = CONV( c[3] );                                 \
-                              *d++ = CONV( c[4] );                                 \
-                         }                                                         \
-                         if (FS_MODE_HAS_LFE( mode ))                              \
-                              *d++ = CONV( c[5] );                                 \
-                         break;                                                    \
-               }                                                                   \
-          }                                                                        \
-     }                                                                             \
+#define VORBIS_MIX_LOOP()                                           \
+ do {                                                               \
+     int i, n;                                                      \
+     if (d_n == s_n) {                                              \
+          s16 *s = src + pos * s_n;                                 \
+          if (sizeof(TYPE) == sizeof(s16)) {                        \
+               direct_memcpy( dst, s, frames * s_n * sizeof(s16) ); \
+          }                                                         \
+          else {                                                    \
+               TYPE *d = (TYPE*) dst;                               \
+               for (i = frames * s_n; i; i--) {                     \
+                    *d++ = CONV( *s );                              \
+                    s++;                                            \
+               }                                                    \
+          }                                                         \
+          break;                                                    \
+     }                                                              \
+     else if (d_n < s_n) {                                          \
+          if (d_n == 1 && s_n == 2) {                               \
+               /* Downmix to stereo to mono */                      \
+               s16  *s = src + pos * 2;                             \
+               TYPE *d = (TYPE*) dst;                               \
+               for (i = frames; i; i--) {                           \
+                    *d++ = CONV( (s[0] + s[1]) >> 1 );              \
+                    s += 2;                                         \
+               }                                                    \
+               break;                                               \
+          }                                                         \
+     }                                                              \
+     else if (d_n > s_n) {                                          \
+          if (d_n == 2 && s_n == 1) {                               \
+               /* Upmix stereo to mono */                           \
+               s16  *s = src + pos;                                 \
+               TYPE *d = (TYPE*) dst;                               \
+               for (i = frames; i; i--) {                           \
+                    d[0] = d[1] = CONV( *s );                       \
+                    d += 2;                                         \
+                    s++;                                            \
+               }                                                    \
+               break;                                               \
+          }                                                         \
+          memset( dst, 0, frames * d_n * sizeof(TYPE) );            \
+     }                                                              \
+     for (n = 0; n < MIN( s_n, d_n ); n++) {                        \
+          s16  *s = &(src + pos * s_n)[n];                          \
+          TYPE *d = &((TYPE*) dst)[n];                              \
+          for (i = frames; i; i--) {                                \
+               *d = CONV( *s );                                     \
+               d += d_n;                                            \
+               s += s_n;                                            \
+          }                                                         \
+     }                                                              \
 } while (0)
 
 static void
-vorbis_mix_audio( float          **src,
-                  void            *dst,
-                  int              pos,
-                  int              frames,
-                  FSSampleFormat   f,
-                  int              channels,
-                  FSChannelMode    mode )
+vorbis_mix_audio( s16            *src,
+                  void           *dst,
+                  int             pos,
+                  int             frames,
+                  FSSampleFormat  f,
+                  int             channels,
+                  FSChannelMode   mode )
 {
      int s_n = channels;
      int d_n = FS_CHANNELS_FOR_MODE( mode );
@@ -255,7 +156,7 @@ vorbis_mix_audio( float          **src,
      switch (f) {
           case FSSF_U8:
                #define TYPE u8
-               #define CONV FtoU8
+               #define CONV(s) (((s) >> 8) + 128)
                VORBIS_MIX_LOOP();
                #undef CONV
                #undef TYPE
@@ -263,7 +164,7 @@ vorbis_mix_audio( float          **src,
 
           case FSSF_S16:
                #define TYPE s16
-               #define CONV FtoS16
+               #define CONV(s) (s)
                VORBIS_MIX_LOOP();
                #undef CONV
                #undef TYPE
@@ -271,7 +172,7 @@ vorbis_mix_audio( float          **src,
 
           case FSSF_S24:
                #define TYPE s24
-               #define CONV FtoS24
+               #define CONV(s) ((s24) { a:0, b:(s), c:(s) >> 8 })
                VORBIS_MIX_LOOP();
                #undef CONV
                #undef TYPE
@@ -279,7 +180,7 @@ vorbis_mix_audio( float          **src,
 
           case FSSF_S32:
                #define TYPE s32
-               #define CONV FtoS32
+               #define CONV(s) ((s) << 8)
                VORBIS_MIX_LOOP();
                #undef CONV
                #undef TYPE
@@ -287,7 +188,7 @@ vorbis_mix_audio( float          **src,
 
           case FSSF_FLOAT:
                #define TYPE float
-               #define CONV FtoF32
+               #define CONV(s) ((s) / 32768.f)
                VORBIS_MIX_LOOP();
                #undef CONV
                #undef TYPE
@@ -381,7 +282,7 @@ ov_tell_func( void *user )
 /**********************************************************************************************************************/
 
 static void
-Vorbis_Stop( IFusionSoundMusicProvider_Vorbis_data *data,
+Tremor_Stop( IFusionSoundMusicProvider_Tremor_data *data,
              bool                                   now )
 {
      data->status = FMSTATE_STOP;
@@ -415,16 +316,16 @@ Vorbis_Stop( IFusionSoundMusicProvider_Vorbis_data *data,
 }
 
 static void *
-VorbisStream( DirectThread *thread,
+TremorStream( DirectThread *thread,
               void         *arg )
 {
-     IFusionSoundMusicProvider_Vorbis_data *data = arg;
+     IFusionSoundMusicProvider_Tremor_data *data = arg;
 
      while (data->status == FMSTATE_PLAY) {
-          int     section;
-          long    length;
-          float **src;
-          int     pos = 0;
+          int  section;
+          long length;
+          s16  src[2048];
+          int  pos = 0;
 
           direct_mutex_lock( &data->lock );
 
@@ -438,7 +339,8 @@ VorbisStream( DirectThread *thread,
                data->seeked = false;
           }
 
-          length = ov_read_float( &data->vf, &src, data->dest.buffersize, &section );
+          length = ov_read( &data->vf, (char*) &src, sizeof(src), &section );
+          length = length / (data->channels * 2);
 
           if (length == 0) {
                if (data->flags & FMPLAY_LOOPING) {
@@ -480,10 +382,10 @@ VorbisStream( DirectThread *thread,
 }
 
 static void *
-VorbisBuffer( DirectThread *thread,
+TremorBuffer( DirectThread *thread,
               void         *arg )
 {
-     IFusionSoundMusicProvider_Vorbis_data *data           = arg;
+     IFusionSoundMusicProvider_Tremor_data *data           = arg;
      int                                    bytespersample = FS_CHANNELS_FOR_MODE(data->dest.mode) *
                                                              FS_BYTES_PER_SAMPLE(data->dest.sampleformat);
 
@@ -503,16 +405,17 @@ VorbisBuffer( DirectThread *thread,
 
           ret = data->dest.buffer->Lock( data->dest.buffer, (void*) &dst, &frames, NULL );
           if (ret) {
-               D_DERROR( ret, "MusicProvider/Vorbis: Could not lock buffer!\n" );
+               D_DERROR( ret, "MusicProvider/Tremor: Could not lock buffer!\n" );
                direct_mutex_unlock( &data->lock );
                break;
           }
 
           do {
-               long    length;
-               float **src;
+               long length;
+               s16  src[2048];
 
-               length = ov_read_float( &data->vf, &src, frames - pos, &section );
+               length = ov_read( &data->vf, (char*) &src, frames - pos, &section );
+               length = length / (data->channels * 2);
 
                if (length == 0) {
                     if (data->flags & FMPLAY_LOOPING) {
@@ -563,13 +466,13 @@ VorbisBuffer( DirectThread *thread,
 /**********************************************************************************************************************/
 
 static void
-IFusionSoundMusicProvider_Vorbis_Destruct( IFusionSoundMusicProvider *thiz )
+IFusionSoundMusicProvider_Tremor_Destruct( IFusionSoundMusicProvider *thiz )
 {
-     IFusionSoundMusicProvider_Vorbis_data *data = thiz->priv;
+     IFusionSoundMusicProvider_Tremor_data *data = thiz->priv;
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
-     Vorbis_Stop( data, true );
+     Tremor_Stop( data, true );
 
      direct_stream_destroy( data->stream );
 
@@ -582,11 +485,11 @@ IFusionSoundMusicProvider_Vorbis_Destruct( IFusionSoundMusicProvider *thiz )
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_AddRef( IFusionSoundMusicProvider *thiz )
+IFusionSoundMusicProvider_Tremor_AddRef( IFusionSoundMusicProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -594,30 +497,30 @@ IFusionSoundMusicProvider_Vorbis_AddRef( IFusionSoundMusicProvider *thiz )
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_Release( IFusionSoundMusicProvider *thiz )
+IFusionSoundMusicProvider_Tremor_Release( IFusionSoundMusicProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
-          IFusionSoundMusicProvider_Vorbis_Destruct( thiz );
+          IFusionSoundMusicProvider_Tremor_Destruct( thiz );
 
      return DR_OK;
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetCapabilities( IFusionSoundMusicProvider   *thiz,
+IFusionSoundMusicProvider_Tremor_GetCapabilities( IFusionSoundMusicProvider   *thiz,
                                                   FSMusicProviderCapabilities *ret_caps )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_caps)
           return DR_INVARG;
 
-     *ret_caps = FMCAPS_BASIC | FMCAPS_HALFRATE;
+     *ret_caps = FMCAPS_BASIC;
      if (direct_stream_seekable( data->stream ))
           *ret_caps |= FMCAPS_SEEK;
 
@@ -625,12 +528,12 @@ IFusionSoundMusicProvider_Vorbis_GetCapabilities( IFusionSoundMusicProvider   *t
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetTrackDescription( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetTrackDescription( IFusionSoundMusicProvider *thiz,
                                                       FSTrackDescription        *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -641,12 +544,12 @@ IFusionSoundMusicProvider_Vorbis_GetTrackDescription( IFusionSoundMusicProvider 
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetStreamDescription( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetStreamDescription( IFusionSoundMusicProvider *thiz,
                                                        FSStreamDescription       *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -654,19 +557,19 @@ IFusionSoundMusicProvider_Vorbis_GetStreamDescription( IFusionSoundMusicProvider
      ret_desc->flags        = FSSDF_BUFFERSIZE | FSSDF_CHANNELS | FSSDF_SAMPLEFORMAT | FSSDF_SAMPLERATE;
      ret_desc->buffersize   = data->samplerate / 8;
      ret_desc->channels     = data->channels;
-     ret_desc->sampleformat = FSSF_FLOAT;
+     ret_desc->sampleformat = FSSF_S16;
      ret_desc->samplerate   = data->samplerate;
 
      return DR_OK;
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetBufferDescription( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetBufferDescription( IFusionSoundMusicProvider *thiz,
                                                        FSBufferDescription       *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DR_INVARG;
@@ -674,21 +577,21 @@ IFusionSoundMusicProvider_Vorbis_GetBufferDescription( IFusionSoundMusicProvider
      ret_desc->flags        = FSBDF_LENGTH | FSBDF_CHANNELS | FSBDF_SAMPLEFORMAT | FSBDF_SAMPLERATE;
      ret_desc->length       = MIN( ov_pcm_total( &data->vf, -1 ), FS_MAX_FRAMES );
      ret_desc->channels     = data->channels;
-     ret_desc->sampleformat = FSSF_FLOAT;
+     ret_desc->sampleformat = FSSF_S16;
      ret_desc->samplerate   = data->samplerate;
 
      return DR_OK;
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_PlayToStream( IFusionSoundMusicProvider *thiz,
                                                IFusionSoundStream        *destination )
 {
      FSStreamDescription desc;
 
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -698,8 +601,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
 
      destination->GetDescription( destination, &desc );
 
-     if (desc.samplerate != data->samplerate &&
-         desc.samplerate != data->samplerate / 2)
+     if (desc.samplerate != data->samplerate)
           return DR_UNSUPPORTED;
 
      switch (desc.sampleformat) {
@@ -737,16 +639,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
 
      direct_mutex_lock( &data->lock );
 
-     Vorbis_Stop( data, false );
-
-     if (desc.samplerate == data->samplerate / 2) {
-          if (ov_halfrate( &data->vf, 1 )) {
-               direct_mutex_unlock( &data->lock );
-               return DR_UNSUPPORTED;
-          }
-     }
-     else
-          ov_halfrate( &data->vf, 0 );
+     Tremor_Stop( data, false );
 
      /* Increase the sound stream reference counter. */
      destination->AddRef( destination );
@@ -768,7 +661,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
 
      direct_waitqueue_broadcast( &data->cond );
 
-     data->thread = direct_thread_create( DTT_DEFAULT, VorbisStream, data, "Vorbis Stream" );
+     data->thread = direct_thread_create( DTT_DEFAULT, TremorStream, data, "Tremor Stream" );
 
      direct_mutex_unlock( &data->lock );
 
@@ -776,16 +669,16 @@ IFusionSoundMusicProvider_Vorbis_PlayToStream( IFusionSoundMusicProvider *thiz,
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_PlayToBuffer( IFusionSoundMusicProvider *thiz,
                                                IFusionSoundBuffer        *destination,
                                                FMBufferCallback           callback,
                                                void                      *ctx )
 {
      FSBufferDescription desc;
 
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DR_INVARG;
@@ -795,8 +688,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      destination->GetDescription( destination, &desc );
 
-     if (desc.samplerate != data->samplerate &&
-         desc.samplerate != data->samplerate / 2)
+     if (desc.samplerate != data->samplerate)
           return DR_UNSUPPORTED;
 
      switch (desc.sampleformat) {
@@ -834,16 +726,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      direct_mutex_lock( &data->lock );
 
-     Vorbis_Stop( data, false );
-
-     if (desc.samplerate == data->samplerate / 2) {
-          if (ov_halfrate( &data->vf, 1 )) {
-               direct_mutex_unlock( &data->lock );
-               return DR_UNSUPPORTED;
-          }
-     }
-     else
-          ov_halfrate( &data->vf, 0 );
+     Tremor_Stop( data, false );
 
      /* Increase the sound buffer reference counter. */
      destination->AddRef( destination );
@@ -866,7 +749,7 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 
      direct_waitqueue_broadcast( &data->cond );
 
-     data->thread = direct_thread_create( DTT_DEFAULT, VorbisBuffer, data, "Vorbis Buffer" );
+     data->thread = direct_thread_create( DTT_DEFAULT, TremorBuffer, data, "Tremor Buffer" );
 
      direct_mutex_unlock( &data->lock );
 
@@ -874,15 +757,15 @@ IFusionSoundMusicProvider_Vorbis_PlayToBuffer( IFusionSoundMusicProvider *thiz,
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_Stop( IFusionSoundMusicProvider *thiz )
+IFusionSoundMusicProvider_Tremor_Stop( IFusionSoundMusicProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      direct_mutex_lock( &data->lock );
 
-     Vorbis_Stop( data, false );
+     Tremor_Stop( data, false );
 
      direct_waitqueue_broadcast( &data->cond );
 
@@ -892,12 +775,12 @@ IFusionSoundMusicProvider_Vorbis_Stop( IFusionSoundMusicProvider *thiz )
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetStatus( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetStatus( IFusionSoundMusicProvider *thiz,
                                             FSMusicProviderStatus     *ret_status )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_status)
           return DR_INVARG;
@@ -908,14 +791,14 @@ IFusionSoundMusicProvider_Vorbis_GetStatus( IFusionSoundMusicProvider *thiz,
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_SeekTo( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_SeekTo( IFusionSoundMusicProvider *thiz,
                                          double                     seconds )
 {
      DirectResult ret = DR_OK;
 
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (seconds < 0.0)
           return DR_INVARG;
@@ -932,6 +815,7 @@ IFusionSoundMusicProvider_Vorbis_SeekTo( IFusionSoundMusicProvider *thiz,
           ret = direct_stream_seek( data->stream, offset );
      }
      else {
+          seconds *= 1000.0;
           if (ov_time_seek( &data->vf, seconds ))
                ret = DR_FAILURE;
      }
@@ -947,35 +831,35 @@ IFusionSoundMusicProvider_Vorbis_SeekTo( IFusionSoundMusicProvider *thiz,
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetPos( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetPos( IFusionSoundMusicProvider *thiz,
                                          double                    *ret_seconds )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
 
-     *ret_seconds = ov_time_tell( &data->vf );
+     *ret_seconds = ov_time_tell( &data->vf ) / 1000.0;
 
      return DR_OK;
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_GetLength( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_GetLength( IFusionSoundMusicProvider *thiz,
                                             double                    *ret_seconds )
 {
      double seconds;
 
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_seconds)
           return DR_INVARG;
 
-     seconds = ov_time_total( &data->vf, -1 );
+     seconds = ov_time_total( &data->vf, -1 ) / 1000.0;
      if (seconds < 0) {
           if (data->bitrate_nominal)
                seconds = (double) direct_stream_length( data->stream ) / (data->bitrate_nominal >> 3);
@@ -987,12 +871,12 @@ IFusionSoundMusicProvider_Vorbis_GetLength( IFusionSoundMusicProvider *thiz,
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_SetPlaybackFlags( IFusionSoundMusicProvider    *thiz,
+IFusionSoundMusicProvider_Tremor_SetPlaybackFlags( IFusionSoundMusicProvider    *thiz,
                                                    FSMusicProviderPlaybackFlags  flags )
 {
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis )
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (flags & ~FMPLAY_LOOPING)
           return DR_UNSUPPORTED;
@@ -1006,15 +890,15 @@ IFusionSoundMusicProvider_Vorbis_SetPlaybackFlags( IFusionSoundMusicProvider    
 }
 
 static DirectResult
-IFusionSoundMusicProvider_Vorbis_WaitStatus( IFusionSoundMusicProvider *thiz,
+IFusionSoundMusicProvider_Tremor_WaitStatus( IFusionSoundMusicProvider *thiz,
                                              FSMusicProviderStatus      mask,
                                              unsigned int               timeout )
 {
      DirectResult ret;
 
-     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Vorbis)
+     DIRECT_INTERFACE_GET_DATA( IFusionSoundMusicProvider_Tremor)
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!mask || mask & ~FMSTATE_ALL)
           return DR_INVARG;
@@ -1052,24 +936,6 @@ IFusionSoundMusicProvider_Vorbis_WaitStatus( IFusionSoundMusicProvider *thiz,
 
 /**********************************************************************************************************************/
 
-static __inline__ float
-compute_gain( const char *rg_gain,
-              const char *rg_peak )
-{
-     float gain;
-     float peak = 1.0f;
-
-     if (rg_peak)
-          peak = atof( rg_peak ) ?: 1.0f;
-
-     gain = pow( 10.0f, atof( rg_gain ) / 20.0f );
-
-     if (gain * peak > 1.0f)
-          gain = 1.0f / peak;
-
-     return gain;
-}
-
 static DirectResult
 Probe( IFusionSoundMusicProvider_ProbeContext *ctx )
 {
@@ -1088,14 +954,10 @@ Construct( IFusionSoundMusicProvider *thiz,
      ov_callbacks   callbacks;
      vorbis_info   *info;
      char         **ptr;
-     char          *track_gain = NULL;
-     char          *track_peak = NULL;
-     char          *album_gain = NULL;
-     char          *album_peak = NULL;
 
-     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IFusionSoundMusicProvider_Vorbis )
+     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IFusionSoundMusicProvider_Tremor )
 
-     D_DEBUG_AT( MusicProvider_Vorbis, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( MusicProvider_Tremor, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref    = 1;
      data->stream = direct_stream_dup( stream );
@@ -1106,7 +968,7 @@ Construct( IFusionSoundMusicProvider *thiz,
      callbacks.tell_func  = ov_tell_func;
 
      if (ov_open_callbacks( data->stream, &data->vf, NULL, 0, callbacks ) < 0) {
-          D_ERROR( "MusicProvider/Vorbis: Failed to open stream!\n" );
+          D_ERROR( "MusicProvider/Tremor: Failed to open stream!\n" );
           direct_stream_destroy( stream );
           DIRECT_DEALLOCATE_INTERFACE( thiz );
           return DR_UNSUPPORTED;
@@ -1114,7 +976,7 @@ Construct( IFusionSoundMusicProvider *thiz,
 
      info = ov_info( &data->vf, -1 );
      if (!info) {
-          D_ERROR( "MusicProvider/Vorbis: Could not get stream info!\n" );
+          D_ERROR( "MusicProvider/Tremor: Could not get stream info!\n" );
           ret = DR_FAILURE;
           goto error;
      }
@@ -1144,18 +1006,6 @@ Construct( IFusionSoundMusicProvider *thiz,
           else if (!strncasecmp( comment, "GENRE=", sizeof("GENRE=") - 1 )) {
                strncpy( data->desc.genre, comment + sizeof("GENRE=") - 1, FS_TRACK_DESC_GENRE_LENGTH - 1 );
           }
-          else if (!strncasecmp( comment, "REPLAYGAIN_TRACK_GAIN=", sizeof("REPLAYGAIN_TRACK_GAIN=") - 1 )) {
-               track_gain = comment + sizeof("REPLAYGAIN_TRACK_GAIN=") - 1;
-          }
-          else if (!strncasecmp( comment, "REPLAYGAIN_TRACK_PEAK=", sizeof("REPLAYGAIN_TRACK_PEAK=") - 1 )) {
-               track_peak = comment + sizeof("REPLAYGAIN_TRACK_PEAK=") - 1;
-          }
-          else if (!strncasecmp( comment, "REPLAYGAIN_ALBUM_GAIN=", sizeof("REPLAYGAIN_ALBUM_GAIN=") - 1 )) {
-               album_gain = comment + sizeof("REPLAYGAIN_ALBUM_GAIN=") - 1;
-          }
-          else if (!strncasecmp( comment, "REPLAYGAIN_ALBUM_PEAK=", sizeof("REPLAYGAIN_ALBUM_PEAK=") - 1 )) {
-               album_peak = comment + sizeof("REPLAYGAIN_ALBUM_PEAK=") - 1;
-          }
 
           ptr++;
      }
@@ -1163,31 +1013,27 @@ Construct( IFusionSoundMusicProvider *thiz,
      snprintf( data->desc.encoding, FS_TRACK_DESC_ENCODING_LENGTH, "vorbis" );
 
      data->desc.bitrate = ov_bitrate( &data->vf, -1 ) ?: ov_bitrate_instant( &data->vf );
-     if (track_gain)
-          data->desc.replaygain = compute_gain( track_gain, track_peak );
-     if (album_gain)
-          data->desc.replaygain_album = compute_gain( album_gain, album_peak );
 
      direct_mutex_init( &data->lock );
      direct_waitqueue_init( &data->cond );
 
      data->status = FMSTATE_STOP;
 
-     thiz->AddRef               = IFusionSoundMusicProvider_Vorbis_AddRef;
-     thiz->Release              = IFusionSoundMusicProvider_Vorbis_Release;
-     thiz->GetCapabilities      = IFusionSoundMusicProvider_Vorbis_GetCapabilities;
-     thiz->GetTrackDescription  = IFusionSoundMusicProvider_Vorbis_GetTrackDescription;
-     thiz->GetStreamDescription = IFusionSoundMusicProvider_Vorbis_GetStreamDescription;
-     thiz->GetBufferDescription = IFusionSoundMusicProvider_Vorbis_GetBufferDescription;
-     thiz->PlayToStream         = IFusionSoundMusicProvider_Vorbis_PlayToStream;
-     thiz->PlayToBuffer         = IFusionSoundMusicProvider_Vorbis_PlayToBuffer;
-     thiz->Stop                 = IFusionSoundMusicProvider_Vorbis_Stop;
-     thiz->GetStatus            = IFusionSoundMusicProvider_Vorbis_GetStatus;
-     thiz->SeekTo               = IFusionSoundMusicProvider_Vorbis_SeekTo;
-     thiz->GetPos               = IFusionSoundMusicProvider_Vorbis_GetPos;
-     thiz->GetLength            = IFusionSoundMusicProvider_Vorbis_GetLength;
-     thiz->SetPlaybackFlags     = IFusionSoundMusicProvider_Vorbis_SetPlaybackFlags;
-     thiz->WaitStatus           = IFusionSoundMusicProvider_Vorbis_WaitStatus;
+     thiz->AddRef               = IFusionSoundMusicProvider_Tremor_AddRef;
+     thiz->Release              = IFusionSoundMusicProvider_Tremor_Release;
+     thiz->GetCapabilities      = IFusionSoundMusicProvider_Tremor_GetCapabilities;
+     thiz->GetTrackDescription  = IFusionSoundMusicProvider_Tremor_GetTrackDescription;
+     thiz->GetStreamDescription = IFusionSoundMusicProvider_Tremor_GetStreamDescription;
+     thiz->GetBufferDescription = IFusionSoundMusicProvider_Tremor_GetBufferDescription;
+     thiz->PlayToStream         = IFusionSoundMusicProvider_Tremor_PlayToStream;
+     thiz->PlayToBuffer         = IFusionSoundMusicProvider_Tremor_PlayToBuffer;
+     thiz->Stop                 = IFusionSoundMusicProvider_Tremor_Stop;
+     thiz->GetStatus            = IFusionSoundMusicProvider_Tremor_GetStatus;
+     thiz->SeekTo               = IFusionSoundMusicProvider_Tremor_SeekTo;
+     thiz->GetPos               = IFusionSoundMusicProvider_Tremor_GetPos;
+     thiz->GetLength            = IFusionSoundMusicProvider_Tremor_GetLength;
+     thiz->SetPlaybackFlags     = IFusionSoundMusicProvider_Tremor_SetPlaybackFlags;
+     thiz->WaitStatus           = IFusionSoundMusicProvider_Tremor_WaitStatus;
 
      return DR_OK;
 

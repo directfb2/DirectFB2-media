@@ -51,7 +51,7 @@ enable_gstreamer    = get_option('gstreamer')
 enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
-enable_mad          = get_option('mad') and enable_fusionsound
+enable_mad          = get_option('mad')
 enable_mng          = get_option('mng')
 enable_openexr      = get_option('openexr')
 enable_playlist     = get_option('playlist')
@@ -62,7 +62,8 @@ enable_stb_truetype = get_option('stb_truetype')
 enable_svg          = get_option('svg')
 enable_swfdec       = get_option('swfdec')
 enable_tiff         = get_option('tiff')
-enable_vorbis       = get_option('vorbis') and enable_fusionsound
+enable_tremor       = get_option('tremor')
+enable_vorbis       = get_option('vorbis')
 enable_webp         = get_option('webp')
 enable_yuv          = get_option('yuv')
 
@@ -134,7 +135,7 @@ if enable_lodepng != ''
   endif
 endif
 
-if enable_mad
+if enable_mad and enable_fusionsound
   mad_dep = dependency('mad', required: false)
 
   if not mad_dep.found()
@@ -222,7 +223,16 @@ if enable_tiff
   endif
 endif
 
-if enable_vorbis
+if enable_tremor and enable_fusionsound
+  tremor_dep = dependency('vorbisidec', required: false)
+
+  if not tremor_dep.found()
+    warning('Tremor music provider will not be built.')
+    enable_tremor = false
+  endif
+endif
+
+if enable_vorbis and enable_fusionsound
   vorbis_dep = [dependency('vorbisfile', required: false),
                 meson.get_compiler('c').find_library('m', required: false)]
 

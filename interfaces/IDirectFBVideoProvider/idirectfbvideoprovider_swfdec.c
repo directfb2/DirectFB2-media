@@ -511,11 +511,11 @@ SwfVideo( DirectThread *thread,
      dispatch_event( data, DVPET_STARTED );
 
      while (data->status != DVSTATE_STOP) {
-          long long  s, t;
+          long long  time;
           guint      bgcolor;
           cairo_t   *cairo;
 
-          s = direct_clock_get_abs_micros();
+          time = direct_clock_get_abs_micros();
 
           direct_mutex_lock( &data->video.lock );
 
@@ -561,8 +561,7 @@ SwfVideo( DirectThread *thread,
 
                     direct_waitqueue_wait_timeout( &data->video.cond, &data->video.lock, next * 1000 );
 
-                    t = direct_clock_get_abs_micros();
-                    next = (t - s + 500) / 1000;
+                    next = (direct_clock_get_abs_micros() - time + 500) / 1000;
                     if (data->speed != 1.0)
                          next = next * data->speed;
                }
