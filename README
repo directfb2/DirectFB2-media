@@ -1,4 +1,27 @@
 DirectFB2-media
 ===============
 
-DirectFB2-media contains additional font/image/music/video providers for DirectFB2.
+DirectFB2-media contains additional font/image/music/video providers for DirectFB2:
+
+  - BMP image provider
+  - FFmpeg image provider, music provider and video provider
+  - FreeType2 font provider
+  - GStreamer video provider
+  - JasPer image provider
+  - JPEG image provider
+  - LodePNG image provider
+  - MAD music provider
+  - MNG video provider
+  - OpenEXR image provider
+  - Playlist music provider
+  - PNG image provider
+  - Schrift font provider
+  - STB font provider and image provider
+  - SVG image provider
+  - Swfdec video provider
+  - TIFF image provider
+  - Tremor music provider
+  - Video4Linux video provider
+  - Vorbis music provider
+  - WebP image provider
+  - YUV image provider

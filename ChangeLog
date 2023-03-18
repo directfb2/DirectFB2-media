@@ -1,3 +1,24 @@
+commit c5de8fa42ebe47f9f521156b55ede37be0b41b28
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Mar 18 08:31:16 2023 +0100
+
+    Add Video4Linux video provider
+
+commit cc98b06956e61f62fd5dbafb8acebf19dafa995a
+Merge: 554d4fa 8de7257
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Mar 14 03:36:34 2023 +0100
+
+    Merge pull request #36 from caramelli/master
+    
+    Add Tremor music provider
+
+commit 8de72572f9dfbe9ba8606818b62b351d936bd038
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Mar 14 03:26:37 2023 +0100
+
+    Update ChangeLog
+
 commit c739dfbaf7e82343f5811a92db80949769a34dce
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Mar 14 03:26:19 2023 +0100

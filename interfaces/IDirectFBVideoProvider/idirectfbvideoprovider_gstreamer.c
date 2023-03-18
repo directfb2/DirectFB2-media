@@ -603,9 +603,8 @@ IDirectFBVideoProvider_GStreamer_PlayTo( IDirectFBVideoProvider *thiz,
      data->video_thread = direct_thread_create( DTT_DEFAULT, GStreamerVideo, data, "GStreamer Video" );
 
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio_stream) {
+     if (data->audio_stream)
           data->audio_id = g_signal_connect( data->appsink_audio, "new-sample", G_CALLBACK( GStreamerAudio ), data );
-     }
 #endif
 
      gst_element_set_state( data->pipeline, GST_STATE_PLAYING );
