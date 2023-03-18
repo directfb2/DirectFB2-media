@@ -331,6 +331,8 @@ IDirectFBVideoProvider_MNG_GetStreamDescription( IDirectFBVideoProvider *thiz,
 
      snprintf( ret_desc->video.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, "mng" );
 
+     ret_desc->video.aspect  = (double) data->desc.width / data->desc.height;
+
      return DFB_OK;
 }
 
@@ -473,6 +475,27 @@ IDirectFBVideoProvider_MNG_SetPlaybackFlags( IDirectFBVideoProvider        *thiz
      return DFB_OK;
 }
 
+static DFBResult
+IDirectFBVideoProvider_MNG_SetDestination( IDirectFBVideoProvider *thiz,
+                                           IDirectFBSurface       *destination,
+                                           const DFBRectangle     *dest_rect )
+{
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_MNG )
+
+     D_DEBUG_AT( VideoProvider_MNG, "%s( %p, %4d,%4d-%4dx%4d )\n", __FUNCTION__,
+                 thiz, dest_rect->x, dest_rect->y, dest_rect->w, dest_rect->h );
+
+     if (!dest_rect)
+          return DFB_INVARG;
+
+     if (dest_rect->w < 1 || dest_rect->h < 1)
+          return DFB_INVARG;
+
+     data->rect = *dest_rect;
+
+     return DFB_OK;
+}
+
 /**********************************************************************************************************************/
 
 static DFBResult
@@ -534,6 +557,7 @@ Construct( IDirectFBVideoProvider *thiz,
      thiz->GetPos                = IDirectFBVideoProvider_MNG_GetPos;
      thiz->GetLength             = IDirectFBVideoProvider_MNG_GetLength;
      thiz->SetPlaybackFlags      = IDirectFBVideoProvider_MNG_SetPlaybackFlags;
+     thiz->SetDestination        = IDirectFBVideoProvider_MNG_SetDestination;
 
      return DFB_OK;
 

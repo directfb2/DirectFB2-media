@@ -101,6 +101,10 @@ option('tremor',
        type: 'boolean',
        description: 'Tremor music provider')
 
+option('v4l',
+       type: 'boolean',
+       description: 'Video4Linux video provider')
+
 option('vorbis',
        type: 'boolean',
        description: 'Vorbis music provider')

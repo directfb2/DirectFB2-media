@@ -1,25 +1,4 @@
 2.0.0
 -----
 
-Initial version using the Meson build system and containing:
-  - BMP image provider
-  - FFmpeg image provider, music provider and video provider
-  - FreeType2 font provider
-  - GStreamer video provider
-  - JasPer image provider
-  - JPEG image provider
-  - LodePNG image provider
-  - MAD music provider
-  - MNG video provider
-  - OpenEXR image provider
-  - Playlist music provider
-  - PNG image provider
-  - Schrift font provider
-  - STB font provider and image provider
-  - SVG image provider
-  - Swfdec video provider
-  - TIFF image provider
-  - Tremor music provider
-  - Vorbis music provider
-  - WebP image provider
-  - YUV image provider
+Initial version using the Meson build system

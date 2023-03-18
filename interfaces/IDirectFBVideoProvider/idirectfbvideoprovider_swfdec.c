@@ -82,6 +82,7 @@ typedef struct {
           long                  seek;
 
           IDirectFBSurface     *dest;
+          DFBRectangle          rect;
      } video;
 
 #ifdef HAVE_FUSIONSOUND
@@ -497,7 +498,6 @@ SwfVideo( DirectThread *thread,
      long                                next = 0;
      IDirectFBVideoProvider_Swfdec_data *data = arg;
 
-
      ret = data->idirectfb->CreateSurface( data->idirectfb, &data->desc, &source );
      if (ret)
           return NULL;
@@ -570,11 +570,9 @@ SwfVideo( DirectThread *thread,
           direct_mutex_unlock( &data->video.lock );
      }
 
-     if (cairo_surface)
-          cairo_surface_destroy( cairo_surface );
+     cairo_surface_destroy( cairo_surface );
 
-     if (source)
-          source->Release( source );
+     source->Release( source );
 
      return NULL;
 }
@@ -742,6 +740,7 @@ IDirectFBVideoProvider_Swfdec_GetStreamDescription( IDirectFBVideoProvider *thiz
      ret_desc->caps = DVSCAPS_VIDEO;
 
      snprintf( ret_desc->video.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, "swf" );
+
      ret_desc->video.framerate = data->rate;
      ret_desc->video.aspect    = (double) data->desc.width / data->desc.height;
 
@@ -750,6 +749,7 @@ IDirectFBVideoProvider_Swfdec_GetStreamDescription( IDirectFBVideoProvider *thiz
           ret_desc->caps |= DVSCAPS_AUDIO;
 
           snprintf( ret_desc->audio.encoding, DFB_STREAM_DESC_ENCODING_LENGTH, "mp3" );
+
           ret_desc->audio.samplerate = 44100;
           ret_desc->audio.channels   = 2;
      }
@@ -766,6 +766,7 @@ IDirectFBVideoProvider_Swfdec_PlayTo( IDirectFBVideoProvider *thiz,
                                       void                   *ctx )
 {
      IDirectFBSurface_data *dst_data;
+     DFBRectangle           rect;
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_Swfdec )
 
@@ -778,6 +779,17 @@ IDirectFBVideoProvider_Swfdec_PlayTo( IDirectFBVideoProvider *thiz,
      if (!dst_data)
           return DFB_DEAD;
 
+     if (dest_rect) {
+          if (dest_rect->w < 1 || dest_rect->h < 1)
+               return DFB_INVARG;
+
+          rect = *dest_rect;
+          rect.x += dst_data->area.wanted.x;
+          rect.y += dst_data->area.wanted.y;
+     }
+     else
+          rect = dst_data->area.wanted;
+
      if (data->video.thread)
           return DFB_OK;
 
@@ -787,17 +799,17 @@ IDirectFBVideoProvider_Swfdec_PlayTo( IDirectFBVideoProvider *thiz,
 #endif
 
      data->video.dest             = destination;
+     data->video.rect             = rect;
      data->frame_callback         = callback;
      data->frame_callback_context = ctx;
 
      data->status = DVSTATE_PLAY;
 
-     data->video.thread = direct_thread_create( DTT_DEFAULT, SwfVideo, (void*)data, "Swf Video" );
+     data->video.thread = direct_thread_create( DTT_DEFAULT, SwfVideo, data, "Swf Video" );
 
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio.stream) {
-          data->audio.thread = direct_thread_create( DTT_DEFAULT, SwfAudio, (void*)data, "Swf Audio" );
-     }
+     if (data->audio.stream)
+          data->audio.thread = direct_thread_create( DTT_DEFAULT, SwfAudio, data, "Swf Audio" );
 #endif
 
 #ifdef HAVE_FUSIONSOUND
@@ -1275,6 +1287,26 @@ IDirectFBVideoProvider_Swfdec_DetachEventBuffer( IDirectFBVideoProvider *thiz,
      return ret;
 }
 
+IDirectFBVideoProvider_Swfdec_SetDestination( IDirectFBVideoProvider *thiz,
+                                              IDirectFBSurface       *destination,
+                                              const DFBRectangle     *dest_rect )
+{
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_Swfdec )
+
+     D_DEBUG_AT( VideoProvider_Swfdec, "%s( %p, %4d,%4d-%4dx%4d )\n", __FUNCTION__,
+                 thiz, dest_rect->x, dest_rect->y, dest_rect->w, dest_rect->h );
+
+     if (!dest_rect)
+          return DFB_INVARG;
+
+     if (dest_rect->w < 1 || dest_rect->h < 1)
+          return DFB_INVARG;
+
+     data->video.rect = *dest_rect;
+
+     return DFB_OK;
+}
+
 /**********************************************************************************************************************/
 
 static DFBResult
@@ -1434,6 +1466,7 @@ Construct( IDirectFBVideoProvider *thiz,
      thiz->EnableEvents          = IDirectFBVideoProvider_Swfdec_EnableEvents;
      thiz->DisableEvents         = IDirectFBVideoProvider_Swfdec_DisableEvents;
      thiz->DetachEventBuffer     = IDirectFBVideoProvider_Swfdec_DetachEventBuffer;
+     thiz->SetDestination        = IDirectFBVideoProvider_Swfdec_SetDestination;
 
      return DFB_OK;
 

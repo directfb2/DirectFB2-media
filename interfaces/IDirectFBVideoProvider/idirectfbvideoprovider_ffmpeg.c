@@ -941,9 +941,8 @@ IDirectFBVideoProvider_FFmpeg_PlayTo( IDirectFBVideoProvider *thiz,
      data->video.thread = direct_thread_create( DTT_DEFAULT, FFmpegVideo, data, "FFmpeg Video" );
 
 #ifdef HAVE_FUSIONSOUND
-     if (data->audio.stream) {
+     if (data->audio.stream)
           data->audio.thread = direct_thread_create( DTT_DEFAULT, FFmpegAudio, data, "FFmpeg Audio" );
-     }
 #endif
 
 #ifdef HAVE_FUSIONSOUND
