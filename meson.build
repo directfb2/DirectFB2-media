@@ -48,6 +48,7 @@ enable_bmp          = get_option('bmp')
 enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
 enable_gstreamer    = get_option('gstreamer')
+enable_imlib2       = get_option('imlib2')
 enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
 enable_lodepng      = get_option('lodepng')
@@ -106,6 +107,15 @@ if enable_gstreamer
   if not gstreamer_dep.found()
     warning('GStreamer video provider will not be built.')
     enable_gstreamer = false
+  endif
+endif
+
+if enable_imlib2
+  imlib2_dep = dependency('imlib2', required: false)
+
+  if not imlib2_dep.found()
+    warning('Imlib2 image provider will not be built.')
+    enable_imlib2 = false
   endif
 endif
 
