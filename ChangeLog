@@ -1,3 +1,24 @@
+commit 50f34b6879c55c12334813d052acb19cb1b18782
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 22 08:05:33 2023 +0100
+
+    Add Imlib2 image provider
+
+commit f82f5f51d67f38725cce5c70b0a308e3a0e0a77c
+Merge: cc98b06 150a901
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sat Mar 18 08:38:15 2023 +0100
+
+    Merge pull request #37 from caramelli/master
+    
+    Add Video4Linux video provider
+
+commit 150a901ffa8c8eca5954a623866aea2e162dd2a3
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Mar 18 08:32:06 2023 +0100
+
+    Update ChangeLog
+
 commit c5de8fa42ebe47f9f521156b55ede37be0b41b28
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sat Mar 18 08:31:16 2023 +0100
