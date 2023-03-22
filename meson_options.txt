@@ -34,6 +34,10 @@ option('gstreamer',
        type: 'boolean',
        description: 'GStreamer video provider')
 
+option('imlib2',
+       type: 'boolean',
+       description: 'Imlib2 image provider')
+
 option('jasper',
        type: 'boolean',
        description: 'JasPer image provider')

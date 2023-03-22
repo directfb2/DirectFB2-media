@@ -1287,6 +1287,7 @@ IDirectFBVideoProvider_Swfdec_DetachEventBuffer( IDirectFBVideoProvider *thiz,
      return ret;
 }
 
+static DFBResult
 IDirectFBVideoProvider_Swfdec_SetDestination( IDirectFBVideoProvider *thiz,
                                               IDirectFBSurface       *destination,
                                               const DFBRectangle     *dest_rect )

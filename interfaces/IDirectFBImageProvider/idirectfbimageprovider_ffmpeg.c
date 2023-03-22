@@ -243,7 +243,7 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      }
 
      sws_ctx = sws_getContext( data->codec_ctx->width, data->codec_ctx->height, data->codec_ctx->pix_fmt,
-                               data->codec_ctx->width, data->codec_ctx->height, PIX_FMT_BGRA,
+                               data->codec_ctx->width, data->codec_ctx->height, AV_PIX_FMT_BGRA,
                                SWS_FAST_BILINEAR, NULL, NULL, NULL );
 
      dst[0]    = data->image;

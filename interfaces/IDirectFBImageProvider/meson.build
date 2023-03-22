@@ -46,6 +46,22 @@ if enable_ffmpeg
                                          '-Wl,--whole-archive -lidirectfbimageprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
+if enable_imlib2
+  library('idirectfbimageprovider_imlib2',
+          'idirectfbimageprovider_imlib2.c',
+          dependencies: [directfb_dep, imlib2_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_imlib2',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_imlib2',
+                     description: 'Imlib2 image provider',
+                     requires_private: 'imlib2',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_imlib2 -Wl,--no-whole-archive'])
+endif
+
 if enable_jasper
   library('idirectfbimageprovider_jasper',
           'idirectfbimageprovider_jasper.c',

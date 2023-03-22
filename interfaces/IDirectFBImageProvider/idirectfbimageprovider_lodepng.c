@@ -43,8 +43,6 @@ typedef struct {
 
      IDirectFB             *idirectfb;
 
-     void                  *ptr;
-     int                    len;
      unsigned char         *image;
 
      DFBSurfaceDescription  desc;
@@ -63,8 +61,6 @@ IDirectFBImageProvider_LodePNG_Destruct( IDirectFBImageProvider *thiz )
      D_DEBUG_AT( ImageProvider_LodePNG, "%s( %p )\n", __FUNCTION__, thiz );
 
      free( data->image );
-
-     direct_file_unmap( data->ptr, data->len );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 }
@@ -290,8 +286,9 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
-     data->ptr              = ptr;
-     data->len              = info.size;
+     direct_file_unmap( ptr, info.size );
+     direct_file_close( &fd );
+
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      data->desc.width       = width;
      data->desc.height      = height;
