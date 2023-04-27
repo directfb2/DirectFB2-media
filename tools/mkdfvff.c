@@ -46,7 +46,7 @@ static void print_usage()
      int i = 0;
 
      fprintf( stderr, "DirectFB Fast Video File Format Tool\n\n" );
-     fprintf( stderr, "Usage: mkdfvff [options] video\n\n" );
+     fprintf( stderr, "Usage: mkdfvff [options] <video>\n\n" );
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                           Output debug information.\n" );
      fprintf( stderr, "  -f, --format     <pixelformat>        Choose the pixel format (default Y444).\n" );
@@ -123,7 +123,7 @@ static DFBBoolean parse_colorspace( const char *arg )
 static DFBBoolean parse_rate( const char *arg )
 {
      if (sscanf( arg, "%u/%u", &fps_num, &fps_den ) == 2)
-         return DFB_TRUE;
+          return DFB_TRUE;
 
      fprintf( stderr, "Invalid frame rate specified!\n" );
 
@@ -133,7 +133,7 @@ static DFBBoolean parse_rate( const char *arg )
 static DFBBoolean parse_size( const char *arg )
 {
      if (sscanf( arg, "%dx%d", &width, &height ) == 2)
-         return DFB_TRUE;
+          return DFB_TRUE;
 
      fprintf( stderr, "Invalid size specified!\n" );
 

@@ -652,11 +652,10 @@ FFmpegAudio( DirectThread *thread,
      swr_init( swr_ctx );
 
      while (data->status != DVSTATE_STOP) {
-          AVPacket  pkt;
-          u8       *pkt_data;
-          int       pkt_size;
-          int       got_frame;
-          int       length = 0;
+          AVPacket pkt;
+          int      pkt_size;
+          int      got_frame;
+          int      length = 0;
 
           direct_mutex_lock( &data->audio.lock );
 
@@ -678,13 +677,12 @@ FFmpegAudio( DirectThread *thread,
                data->audio.seeked = false;
           }
 
-          for (pkt_data = pkt.data, pkt_size = pkt.size; pkt_size > 0;) {
+          for (pkt_size = pkt.size; pkt_size > 0;) {
                int decoded = avcodec_decode_audio4( data->audio.codec_ctx, data->audio.frame, &got_frame, &pkt );
 
                if (decoded < 0)
                     break;
 
-               pkt_data += decoded;
                pkt_size -= decoded;
 
                length += data->audio.frame->nb_samples;

@@ -47,7 +47,7 @@ static void print_usage()
      int i = 0;
 
      fprintf( stderr, "DirectFB Glyph Image File Format Tool\n\n" );
-     fprintf( stderr, "Usage: mkdgiff [options] font\n\n" );
+     fprintf( stderr, "Usage: mkdgiff [options] <font>\n\n" );
      fprintf( stderr, "Options:\n\n" );
      fprintf( stderr, "  -d, --debug                      Output debug information.\n" );
      fprintf( stderr, "  -f, --format      <pixelformat>  Choose the pixel format (default A8).\n" );
@@ -79,7 +79,6 @@ static DFBBoolean parse_format( const char *arg )
                format = format_names[i].format;
                return DFB_TRUE;
           }
-
           ++i;
      }
 
