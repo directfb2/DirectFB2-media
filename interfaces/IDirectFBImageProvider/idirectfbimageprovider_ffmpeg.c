@@ -93,7 +93,7 @@ IDirectFBImageProvider_FFmpeg_Destruct( IDirectFBImageProvider *thiz )
 
      avcodec_close( data->codec_ctx );
 
-     avformat_close_input(&data->fmt_ctx);
+     avformat_close_input( &data->fmt_ctx );
 
      /* Decrease the data buffer reference counter. */
      if (data->buffer)

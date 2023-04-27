@@ -1,3 +1,24 @@
+commit c68fc2a07105cff6cf463517ac6600abdb0d869d
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Apr 27 16:05:38 2023 +0200
+
+    directfb-csource: Restore --raw option
+
+commit 641252e6294b60f8aeb96e6b8ee60ab9445c7393
+Merge: f82f5f5 49a4716
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Mar 22 08:19:34 2023 +0100
+
+    Merge pull request #38 from caramelli/master
+    
+    Add Imlib2 image provider
+
+commit 49a47167f336a30810285b1ccd58b4b934a2cf2f
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 22 08:05:39 2023 +0100
+
+    Update ChangeLog
+
 commit 50f34b6879c55c12334813d052acb19cb1b18782
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Mar 22 08:05:33 2023 +0100
