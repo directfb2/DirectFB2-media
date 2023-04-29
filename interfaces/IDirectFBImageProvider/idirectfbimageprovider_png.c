@@ -399,7 +399,7 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult ret = DFB_FAILURE;
+     DFBResult ret;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_PNG )
 
@@ -413,27 +413,36 @@ Construct( IDirectFBImageProvider *thiz,
 
      /* Create the PNG read handle. */
      data->png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-     if (!data->png_ptr)
+     if (!data->png_ptr) {
+          D_ERROR( "ImageProvider/PNG: Failed to create PNG read handle!\n" );
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      /* setjmp() must be called in every function that calls a PNG-reading libpng function. */
      if (setjmp( png_jmpbuf( data->png_ptr ) )) {
-          D_ERROR( "ImageProvider/PNG: Error reading header!\n" );
+          D_ERROR( "ImageProvider/PNG: Failed to read PNG header!\n" );
+          ret = DFB_FAILURE;
           goto error;
      }
 
      /* Create the PNG info handle. */
      data->info_ptr = png_create_info_struct( data->png_ptr );
-     if (!data->info_ptr)
+     if (!data->info_ptr) {
+          D_ERROR( "ImageProvider/PNG: Failed to create PNG info handle!\n" );
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      /* Setup progressive image loading. */
      png_set_progressive_read_fn( data->png_ptr, data, png_info_callback, png_row_callback, png_end_callback );
 
      /* Read until info callback is called. */
      ret = push_data_until_stage( data, STAGE_INFO, 64 );
-     if (ret)
+     if (ret) {
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      thiz->AddRef                = IDirectFBImageProvider_PNG_AddRef;
      thiz->Release               = IDirectFBImageProvider_PNG_Release;

@@ -216,6 +216,7 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      Imlib_Image im;
 
+     /* Check for valid filename. */
      if (!ctx->filename)
           return DFB_UNSUPPORTED;
 
@@ -243,14 +244,12 @@ Construct( IDirectFBImageProvider *thiz,
 
      data->ref = 1;
 
-     /* Check for valid filename. */
-     if (!buffer_data->filename) {
-          ret = DFB_UNSUPPORTED;
-          goto error;
-     }
-
      /* The image is already loaded and is in cache. */
      data->im = imlib_load_image( buffer_data->filename );
+     if (!data->im) {
+          ret = DFB_FAILURE;
+          goto error;
+     }
 
      imlib_context_set_image( data->im );
 

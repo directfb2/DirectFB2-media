@@ -619,7 +619,7 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult                     ret = DFB_FAILURE;
+     DFBResult                     ret;
      struct jpeg_decompress_struct cinfo;
      struct jpeg_error             jerr;
 
@@ -639,6 +639,7 @@ Construct( IDirectFBImageProvider *thiz,
      if (setjmp( jerr.jmpbuf )) {
           D_ERROR( "ImageProvider/JPEG: Error reading header!\n" );
           jpeg_destroy_decompress( &cinfo );
+          ret = DFB_FAILURE;
           goto error;
      }
 
@@ -655,8 +656,10 @@ Construct( IDirectFBImageProvider *thiz,
      jpeg_abort_decompress( &cinfo );
      jpeg_destroy_decompress( &cinfo );
 
-     if ((cinfo.output_width == 0) || (cinfo.output_height == 0))
+     if ((cinfo.output_width == 0) || (cinfo.output_height == 0)) {
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      thiz->AddRef                = IDirectFBImageProvider_JPEG_AddRef;
      thiz->Release               = IDirectFBImageProvider_JPEG_Release;

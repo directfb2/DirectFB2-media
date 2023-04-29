@@ -240,7 +240,7 @@ Construct( IDirectFBFont              *thiz,
      if (desc->flags & DFDESC_ROTATION)
           return DFB_UNSUPPORTED;
 
-     D_DEBUG_AT( Font_STB, "  -> file '%s' at pixel height %d\n", ctx->filename, desc->height );
+     D_DEBUG_AT( Font_STB, "  -> font at pixel height %d\n", desc->height );
 
      /* Open the font loaded into memory. */
      fontinfo = D_CALLOC( 1, sizeof(stbtt_fontinfo) );
@@ -251,13 +251,13 @@ Construct( IDirectFBFont              *thiz,
 
      err = stbtt_InitFont( fontinfo, ctx->content, 0 );
      if (!err) {
-          D_ERROR( "Font/STB: Failed to load font file '%s'!\n", ctx->filename );
+          D_ERROR( "Font/STB: Failed to load font!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
      /* Create the font object. */
-     ret = dfb_font_create( core, desc, ctx->filename, &font );
+     ret = dfb_font_create( core, desc, &font );
      if (ret)
           goto error;
 

@@ -218,6 +218,10 @@ IDirectFBImageProvider_YUV_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
+     /* Check for valid filename. */
+     if (!ctx->filename)
+          return DFB_UNSUPPORTED;
+
      /* Check the file extension. */
      if (ctx->filename && strrchr( ctx->filename, '.' ) &&
          strcasecmp( strrchr( ctx->filename, '.' ), ".yuv" ) == 0)
@@ -251,12 +255,6 @@ Construct( IDirectFBImageProvider *thiz,
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
-
-     /* Check for valid filename. */
-     if (!buffer_data->filename) {
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_UNSUPPORTED;
-     }
 
      basename = strrchr( buffer_data->filename, '/' );
      if (basename)

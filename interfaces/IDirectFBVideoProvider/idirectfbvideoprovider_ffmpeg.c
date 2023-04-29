@@ -1389,7 +1389,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      av_register_all();
 
      memset( &pd, 0, sizeof(AVProbeData) );
-     pd.filename = ctx->filename;
+     pd.filename = ctx->filename ?: "";
      pd.buf      = &buf[0];
      pd.buf_size = len;
 

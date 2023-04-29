@@ -282,7 +282,7 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult         ret = DFB_FAILURE;
+     DFBResult         ret;
      stbi_io_callbacks callbacks;
      int               width, height;
 
@@ -303,8 +303,10 @@ Construct( IDirectFBImageProvider *thiz,
      callbacks.eof  = eofSTB;
 
      data->image = stbi_load_from_callbacks( &callbacks, data->buffer, &width, &height, NULL, 4 );
-     if (!data->image)
+     if (!data->image) {
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      data->desc.width       = width;
