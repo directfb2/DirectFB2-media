@@ -205,6 +205,7 @@ Probe( IDirectFBFont_ProbeContext *ctx )
 {
      SFT_Font *font;
 
+     /* Check for valid filename. */
      if (!ctx->filename)
           return DFB_UNSUPPORTED;
 
@@ -237,7 +238,7 @@ Construct( IDirectFBFont              *thiz,
      if (desc->flags & DFDESC_ROTATION)
           return DFB_UNSUPPORTED;
 
-     D_DEBUG_AT( Font_Schrift, "  -> file '%s' at pixel height %d\n", ctx->filename, desc->height );
+     D_DEBUG_AT( Font_Schrift, "  -> font at pixel height %d\n", desc->height );
 
      /* Open the file. */
      sft = D_CALLOC( 1, sizeof(SFT) );
@@ -258,7 +259,7 @@ Construct( IDirectFBFont              *thiz,
      sft->flags  = SFT_DOWNWARD_Y;
 
      /* Create the font object. */
-     ret = dfb_font_create( core, desc, ctx->filename, &font );
+     ret = dfb_font_create( core, desc, &font );
      if (ret)
           goto error;
 

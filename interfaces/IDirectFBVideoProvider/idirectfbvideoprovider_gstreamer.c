@@ -963,6 +963,10 @@ IDirectFBVideoProvider_GStreamer_DetachEventBuffer( IDirectFBVideoProvider *thiz
 static DFBResult
 Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 {
+     /* Check for valid filename. */
+     if (!ctx->filename)
+          return DFB_UNSUPPORTED;
+
      return DFB_OK;
 }
 
@@ -989,12 +993,6 @@ Construct( IDirectFBVideoProvider *thiz,
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
-
-     /* Check for valid filename. */
-     if (!buffer_data->filename) {
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_UNSUPPORTED;
-     }
 
      if (g_strstr_len( buffer_data->filename, -1, "://" )) {
           g_strlcpy( uri, buffer_data->filename, sizeof(uri) );

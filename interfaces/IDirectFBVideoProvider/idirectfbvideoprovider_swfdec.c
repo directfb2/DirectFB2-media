@@ -1313,6 +1313,10 @@ IDirectFBVideoProvider_Swfdec_SetDestination( IDirectFBVideoProvider *thiz,
 static DFBResult
 Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 {
+     /* Check for valid filename. */
+     if (!ctx->filename)
+          return DFB_UNSUPPORTED;
+
      /* Check the magic. */
      if ((ctx->header[0] == 'F' || ctx->header[0] == 'C') && ctx->header[1] == 'W' && ctx->header[2] == 'S')
           return DFB_OK;
@@ -1327,7 +1331,6 @@ Construct( IDirectFBVideoProvider *thiz,
            IDirectFB              *idirectfb )
 {
      DFBResult                 ret;
-     char                     *uri;
      SwfdecURL                *url;
      SwfdecLoader             *loader;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
@@ -1340,22 +1343,20 @@ Construct( IDirectFBVideoProvider *thiz,
 
      swfdec_init();
 
-     /* Check for valid filename. */
-     if (buffer_data->filename && direct_access( buffer_data->filename, F_OK ) == DR_OK) {
+     if (g_strstr_len( buffer_data->filename, -1, "://" )) {
+          url = swfdec_url_new( buffer_data->filename );
+     }
+     else {
+          char *uri;
+
           if (*buffer_data->filename == '/')
                uri = g_strconcat( "file://", buffer_data->filename, NULL );
           else
                uri = g_strconcat( "file://", g_get_current_dir(), "/", buffer_data->filename, NULL );
 
           url = swfdec_url_new( uri );
+
           g_free( uri );
-     }
-     else if (g_strstr_len( buffer_data->filename, -1, "://" )) {
-          url = swfdec_url_new( buffer_data->filename );
-     }
-     else {
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_UNSUPPORTED;
      }
 
      loader = g_object_new( databuffer_loader_get_type(), "url", url, NULL );

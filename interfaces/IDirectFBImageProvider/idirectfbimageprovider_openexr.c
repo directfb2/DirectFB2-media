@@ -224,6 +224,10 @@ IDirectFBImageProvider_OpenEXR_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
+     /* Check for valid filename. */
+     if (!ctx->filename)
+          return DFB_UNSUPPORTED;
+
      /* Check the magic. */
      if (ctx->header[0] == 0x76 && ctx->header[1] == 0x2f && ctx->header[2] == 0x31 && ctx->header[3] == 0x01)
           return DFB_OK;
@@ -251,9 +255,7 @@ Construct( IDirectFBImageProvider *thiz,
      data->ref       = 1;
      data->idirectfb = idirectfb;
 
-     if (buffer_data->filename && direct_access( buffer_data->filename, F_OK ) == DR_OK)
-         file = ImfOpenInputFile( buffer_data->filename );
-
+     file = ImfOpenInputFile( buffer_data->filename );
      if (!file) {
           DIRECT_DEALLOCATE_INTERFACE( thiz );
           return DFB_UNSUPPORTED;

@@ -857,7 +857,7 @@ Construct( IDirectFBFont              *thiz,
      if (!(desc->flags & (DFDESC_HEIGHT | DFDESC_WIDTH | DFDESC_FRACT_HEIGHT | DFDESC_FRACT_WIDTH)))
           return DFB_INVARG;
 
-     D_DEBUG_AT( Font_FT2, "  -> file '%s' (index %u) at pixel size %dx%d and rotation %d\n", ctx->filename,
+     D_DEBUG_AT( Font_FT2, "  -> font (index %u) at pixel size %dx%d and rotation %d\n",
                  desc->flags & DFDESC_INDEX        ? desc->index        : 0,
                  desc->flags & DFDESC_FRACT_WIDTH  ? desc->fract_width  :
                  desc->flags & DFDESC_WIDTH        ? desc->width        : 0,
@@ -883,11 +883,10 @@ Construct( IDirectFBFont              *thiz,
      if (err) {
           switch (err) {
                case FT_Err_Unknown_File_Format:
-                    D_ERROR( "Font/FT2: Unsupported font format in file '%s'!\n", ctx->filename );
+                    D_ERROR( "Font/FT2: Unsupported font format!\n" );
                     break;
                default:
-                    D_ERROR( "Font/FT2: Failed loading face %u from font file '%s'!\n",
-                              (desc->flags & DFDESC_INDEX) ? desc->index : 0, ctx->filename );
+                    D_ERROR( "Font/FT2: Failed loading face %u!\n", (desc->flags & DFDESC_INDEX) ? desc->index : 0 );
                     break;
           }
           ret = DFB_FAILURE;
@@ -896,8 +895,8 @@ Construct( IDirectFBFont              *thiz,
 
      if ((desc->flags & DFDESC_ROTATION) && desc->rotation) {
           if (!FT_IS_SCALABLE( face )) {
-               D_ERROR( "Font/FT2: Face %u from font file '%s' is not scalable so cannot be rotated!\n",
-                         (desc->flags & DFDESC_INDEX) ? desc->index : 0, ctx->filename );
+               D_ERROR( "Font/FT2: Face %u is not scalable so cannot be rotated!\n",
+                         (desc->flags & DFDESC_INDEX) ? desc->index : 0 );
                ret = DFB_UNSUPPORTED;
                goto error;
           }
@@ -1011,7 +1010,7 @@ Construct( IDirectFBFont              *thiz,
      face->generic.finalizer = NULL;
 
      /* Create the font object. */
-     ret = dfb_font_create( core, desc, ctx->filename, &font );
+     ret = dfb_font_create( core, desc, &font );
      if (ret)
           goto error;
 

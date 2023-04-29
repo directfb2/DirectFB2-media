@@ -286,7 +286,7 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult ret = DFB_FAILURE;
+     DFBResult ret;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_TIFF )
 
@@ -302,8 +302,10 @@ Construct( IDirectFBImageProvider *thiz,
 
      data->tiff = TIFFClientOpen( "TIFF", "rM", data->buffer,
                                   readTIFF, writeTIFF, seekTIFF, closeTIFF, sizeTIFF, NULL, NULL );
-     if (!data->tiff)
+     if (!data->tiff) {
+          ret = DFB_FAILURE;
           goto error;
+     }
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      TIFFGetField( data->tiff, TIFFTAG_IMAGEWIDTH,  &data->desc.width );

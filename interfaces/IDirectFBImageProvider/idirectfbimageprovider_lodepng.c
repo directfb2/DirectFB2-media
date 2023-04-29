@@ -219,6 +219,10 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      unsigned int width, height;
      LodePNGState state;
 
+     /* Check for valid filename. */
+     if (!ctx->filename)
+          return DFB_UNSUPPORTED;
+
      lodepng_state_init( &state );
      state.decoder.ignore_crc = 1;
 
@@ -251,12 +255,6 @@ Construct( IDirectFBImageProvider *thiz,
      data->ref       = 1;
      data->idirectfb = idirectfb;
 
-     /* Check for valid filename. */
-     if (!buffer_data->filename) {
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_UNSUPPORTED;
-     }
-
      /* Open the file. */
      ret = direct_file_open( &fd, buffer_data->filename, O_RDONLY, 0 );
      if (ret) {
@@ -280,14 +278,15 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      error = lodepng_decode32( &data->image, &width, &height, ptr, info.size );
+
+     direct_file_unmap( ptr, info.size );
+     direct_file_close( &fd );
+
      if (error) {
           D_ERROR( "ImageProvider/LodePNG: Error during decoding: %s!\n", lodepng_error_text( error ) );
           ret = DFB_FAILURE;
           goto error;
      }
-
-     direct_file_unmap( ptr, info.size );
-     direct_file_close( &fd );
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      data->desc.width       = width;

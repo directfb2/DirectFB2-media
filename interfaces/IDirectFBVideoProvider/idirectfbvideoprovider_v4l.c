@@ -600,6 +600,7 @@ IDirectFBVideoProvider_V4L_SetDestination( IDirectFBVideoProvider *thiz,
 static DFBResult
 Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 {
+     /* Check for valid filename. */
      if (ctx->filename && !memcmp( ctx->filename, "/dev/video", 10 ))
           return DFB_OK;
 

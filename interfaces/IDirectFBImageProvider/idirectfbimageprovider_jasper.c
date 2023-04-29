@@ -347,14 +347,14 @@ Construct( IDirectFBImageProvider *thiz,
      if (buffer_data->buffer) {
           st = jas_stream_memopen( buffer_data->buffer, buffer_data->length );
      }
-     else if (buffer_data->filename && direct_access( buffer_data->filename, F_OK ) == DR_OK) {
+     else if (buffer_data->filename) {
           st = jas_stream_fopen( buffer_data->filename, "rb" );
      }
      else {
           unsigned int size = 0;
 
           while (1) {
-               unsigned int len;
+               unsigned int bytes;
 
                chunk = D_REALLOC( chunk, size + 4096 );
                if (!chunk) {
@@ -363,10 +363,10 @@ Construct( IDirectFBImageProvider *thiz,
                }
 
                buffer->WaitForData( buffer, 4096 );
-               if (buffer->GetData( buffer, 4096, chunk + size, &len ))
+               if (buffer->GetData( buffer, 4096, chunk + size, &bytes ))
                     break;
 
-               size += len;
+               size += bytes;
           }
 
           if (!size) {
