@@ -1,3 +1,39 @@
+commit 9acc0662553c6e43a6c4f05b31730aa60b96bdc7
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun May 7 08:28:18 2023 +0200
+
+    VideoProvider/FFmpeg: Use recursive mutex for audio/video queue lock
+
+commit 3fc11348dbbf8a393dee53c13c2579e5d1ab76fa
+Merge: 2ac8c04 b587b79
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sat Apr 29 14:22:23 2023 +0200
+
+    Merge pull request #40 from caramelli/master
+    
+    font provider: Unused url in dfb_font_create()
+
+commit b587b79e2342718a69c59dbe36db0c9c764b6073
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Apr 29 14:14:18 2023 +0200
+
+    font provider: Unused url in dfb_font_create()
+
+commit 2ac8c041422ec5abae19ca185b103d65043a7597
+Merge: 641252e 0f0e156
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Thu Apr 27 16:12:17 2023 +0200
+
+    Merge pull request #39 from caramelli/master
+    
+    directfb-csource: Restore --raw option
+
+commit 0f0e1563abe4fa1a814db46fc4afdbe29f41d126
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Thu Apr 27 16:06:04 2023 +0200
+
+    Update ChangeLog
+
 commit c68fc2a07105cff6cf463517ac6600abdb0d869d
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Thu Apr 27 16:05:38 2023 +0200

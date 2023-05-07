@@ -176,7 +176,7 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      struct SwsContext     *sws_ctx;
      uint8_t               *dst[1];
      int                    dstStride;
-     int                    got_picture = 0;
+     int                    got_frame = 0;
 
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_FFmpeg )
 
@@ -232,11 +232,11 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      do {
           data->buffer->PeekData( data->buffer, len, 0, buf, (unsigned int*) &pkt.size );
 
-          avcodec_decode_video2( data->codec_ctx, frame, &got_picture, &pkt );
-     } while (pkt.size && !got_picture);
+          avcodec_decode_video2( data->codec_ctx, frame, &got_frame, &pkt );
+     } while (pkt.size && !got_frame);
 
-     if (!got_picture) {
-          D_ERROR( "ImageProvider/FFmpeg: Couldn't decode picture!\n" );
+     if (!got_frame) {
+          D_ERROR( "ImageProvider/FFmpeg: Couldn't decode frame!\n" );
           av_free( frame );
           D_FREE( buf );
           return DFB_FAILURE;
@@ -309,9 +309,8 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult     ret;
-     unsigned int  len;
-     AVCodec      *codec;
+     DFBResult    ret;
+     unsigned int len;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_FFmpeg )
 
@@ -378,9 +377,7 @@ Construct( IDirectFBImageProvider *thiz,
      data->desc.height      = data->codec_ctx->height;
      data->desc.pixelformat = dfb_primary_layer_pixelformat();
 
-     codec = avcodec_find_decoder( data->codec_ctx->codec_id );
-
-     if (!codec || avcodec_open2( data->codec_ctx, codec, NULL ) < 0) {
+     if (avcodec_open2( data->codec_ctx, avcodec_find_decoder( data->codec_ctx->codec_id ), NULL ) < 0) {
           D_ERROR( "ImageProvider/FFmpeg: Failed to open video codec!\n" );
           data->codec_ctx = NULL;
           ret = DFB_FAILURE;
