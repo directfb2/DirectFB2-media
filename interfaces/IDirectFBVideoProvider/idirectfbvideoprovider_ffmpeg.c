@@ -550,7 +550,7 @@ FFmpegVideo( DirectThread *thread,
      while (data->status != DVSTATE_STOP) {
           AVPacket  pkt;
           long long time;
-          int       got_picture = 0;
+          int       got_frame = 0;
 
           time = direct_clock_get_abs_micros();
 
@@ -568,9 +568,9 @@ FFmpegVideo( DirectThread *thread,
                framecnt = 0;
           }
 
-          avcodec_decode_video2( data->video.codec_ctx, data->video.frame, &got_picture, &pkt );
+          avcodec_decode_video2( data->video.codec_ctx, data->video.frame, &got_frame, &pkt );
 
-          if (got_picture && !drop) {
+          if (got_frame && !drop) {
                sws_scale( sws_ctx, (void*) data->video.frame->data, data->video.frame->linesize,
                           0, data->video.codec_ctx->height, picture.data, picture.linesize );
 
@@ -1389,7 +1389,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      av_register_all();
 
      memset( &pd, 0, sizeof(AVProbeData) );
-     pd.filename = ctx->filename ?: "";
+     pd.filename = ctx->filename;
      pd.buf      = &buf[0];
      pd.buf_size = len;
 
@@ -1424,7 +1424,6 @@ Construct( IDirectFBVideoProvider *thiz,
      unsigned int              len;
      unsigned char             buf[2048];
      AVInputFormat            *fmt;
-     AVCodec                  *codec;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
@@ -1567,9 +1566,7 @@ Construct( IDirectFBVideoProvider *thiz,
           data->rate = 25.0;
      }
 
-     codec = avcodec_find_decoder( data->video.codec_ctx->codec_id );
-
-     if (!codec || avcodec_open2( data->video.codec_ctx, codec, NULL ) < 0) {
+     if (avcodec_open2( data->video.codec_ctx, avcodec_find_decoder( data->video.codec_ctx->codec_id ), NULL ) < 0) {
           D_ERROR( "VideoProvider/FFmpeg: Failed to open video codec!\n" );
           data->video.codec_ctx = NULL;
           ret = DFB_FAILURE;
@@ -1593,9 +1590,7 @@ Construct( IDirectFBVideoProvider *thiz,
      if (data->audio.st) {
           data->audio.codec_ctx = data->audio.st->codec;
 
-          codec = avcodec_find_decoder( data->audio.codec_ctx->codec_id );
-
-          if (!codec || avcodec_open2( data->audio.codec_ctx, codec, NULL ) < 0) {
+          if (avcodec_open2( data->audio.codec_ctx, avcodec_find_decoder( data->audio.codec_ctx->codec_id ), NULL ) < 0) {
                data->audio.st        = NULL;
                data->audio.codec_ctx = NULL;
           }
@@ -1658,14 +1653,16 @@ Construct( IDirectFBVideoProvider *thiz,
 
      direct_mutex_init( &data->video.lock );
      direct_waitqueue_init( &data->video.cond );
-     direct_mutex_init( &data->video.queue.lock );
+
+     direct_recursive_mutex_init( &data->video.queue.lock );
 
 #ifdef HAVE_FUSIONSOUND
      data->audio.volume = 1.0;
 
      direct_mutex_init( &data->audio.lock );
      direct_waitqueue_init( &data->audio.cond );
-     direct_mutex_init( &data->audio.queue.lock );
+
+     direct_recursive_mutex_init( &data->audio.queue.lock );
 #endif
 
      thiz->AddRef                = IDirectFBVideoProvider_FFmpeg_AddRef;

@@ -27,9 +27,9 @@ static const DirectFBPixelFormatNames(format_names);
 static const char            *filename      = NULL;
 static bool                   debug         = false;
 static DFBSurfacePixelFormat  format        = DSPF_UNKNOWN;
-static bool                   premultiplied = false;
 static int                    width         = 0;
 static int                    height        = 0;
+static bool                   premultiplied = false;
 
 #define DEBUG(...)                             \
      do {                                      \
@@ -194,8 +194,12 @@ static DFBResult load_image( DFBSurfaceDescription *desc )
                fprintf( stderr, "Failed to allocate %d bytes!\n", height * pitch );
                goto out;
           }
-          else
-               fread( data, 1, height * pitch, fp );
+          else {
+               if (fread( data, 1, height * pitch, fp ) != height * pitch) {
+                   fprintf( stderr, "Failed to read raw file!\n" );
+                   goto out;
+               }
+          }
      }
      else {
           unsigned char         signature[8];
@@ -488,7 +492,8 @@ int main( int argc, char *argv[] )
 
      for (i = 0; i < D_ARRAY_SIZE(format_names); i++) {
           if (format_names[i].format == desc.pixelformat) {
-               DEBUG( "Writing image: %dx%d, %s\n", desc.width, desc.height, format_names[i].name );
+               DEBUG( "Writing image: %dx%d, %s\n",
+                      desc.width, desc.height, format_names[i].name );
                break;
           }
      }
