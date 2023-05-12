@@ -374,6 +374,8 @@ IDirectFBImageProvider_BMP_SetRenderCallback( IDirectFBImageProvider *thiz,
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_BMP )
 
+     D_DEBUG_AT( ImageProvider_BMP, "%s( %p )\n", __FUNCTION__, thiz );
+
      data->render_callback         = callback;
      data->render_callback_context = ctx;
 

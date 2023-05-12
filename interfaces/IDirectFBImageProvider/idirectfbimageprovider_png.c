@@ -478,21 +478,21 @@ static int SortColors( const void *a, const void *b )
  * Look for a color that is not in the colormap and ideally not even close to the colors used in the colormap.
  */
 static u32
-FindColorKey( int  n_colors,
+FindColorKey( int  num_colors,
               u8  *cmap )
 {
-     u32 color = 0xff000000;
-     u8  csort[n_colors];
      int i, j, index, d;
+     u8  csort[num_colors];
+     u32 color = 0xff000000;
 
-     if (n_colors < 1)
+     if (num_colors < 1)
           return color;
 
      for (i = 0; i < 3; i++) {
-          direct_memcpy( csort, cmap + n_colors * i, n_colors );
-          qsort( csort, n_colors, 1, SortColors );
+          direct_memcpy( csort, cmap + num_colors * i, num_colors );
+          qsort( csort, num_colors, 1, SortColors );
 
-          for (j = 1, index = 0, d = 0; j < n_colors; j++) {
+          for (j = 1, index = 0, d = 0; j < num_colors; j++) {
                if (csort[j] - csort[j-1] > d) {
                     d = csort[j] - csort[j-1];
                     index = j;
@@ -501,16 +501,16 @@ FindColorKey( int  n_colors,
 
           if (csort[0] > d) {
                d = csort[0];
-               index = n_colors;
+               index = num_colors;
           }
 
-          if (0xff - csort[n_colors-1] > d) {
-               index = n_colors + 1;
+          if (0xff - csort[num_colors-1] > d) {
+               index = num_colors + 1;
           }
 
-          if (index < n_colors)
+          if (index < num_colors)
                csort[0] = csort[index] - d / 2;
-          else if (index == n_colors)
+          else if (index == num_colors)
                csort[0] = 0;
           else
                csort[0] = 0xff;
@@ -558,12 +558,12 @@ png_info_callback( png_structp png_read_ptr,
                png_colorp    palette;
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_palette = 0, num_colors = 0, num_trans = 0;
+               int           num_palette = 0, num_trans = 0;
                u8            cmap[3][256];
 
                if (png_get_PLTE( data->png_ptr, data->info_ptr, &palette, &num_palette )) {
                     if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
-                         num_colors = MIN( 256, num_palette );
+                         int num_colors = MIN( 256, num_palette );
 
                          for (i = 0; i < num_colors; i++) {
                               cmap[0][i] = palette[i].red;
@@ -661,34 +661,34 @@ png_info_callback( png_structp png_read_ptr,
 
      switch (data->color_type) {
           case PNG_COLOR_TYPE_PALETTE: {
-               data->pitch = (data->desc.width + 7) & ~7;
-
                png_colorp    palette;
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_palette = 0, num_colors = 0, num_trans = 0;
+               int           num_palette = 0, num_trans = 0;
 
-               png_get_PLTE( data->png_ptr, data->info_ptr, &palette, &num_palette );
+               data->pitch = (data->desc.width + 7) & ~7;
 
-               png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color );
+               if (png_get_PLTE( data->png_ptr, data->info_ptr, &palette, &num_palette )) {
+                    if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
+                         int num_colors = MIN( 256, num_palette );
 
-               num_colors = MIN( 256, num_palette );
+                         for (i = 0; i < num_colors; i++) {
+                              data->colors[i].a = (i < num_trans) ? trans_alpha[i] : 0xff;
+                              data->colors[i].r = palette[i].red;
+                              data->colors[i].g = palette[i].green;
+                              data->colors[i].b = palette[i].blue;
 
-               for (i = 0; i < num_colors; i++) {
-                    data->colors[i].a = (i < num_trans) ? trans_alpha[i] : 0xff;
-                    data->colors[i].r = palette[i].red;
-                    data->colors[i].g = palette[i].green;
-                    data->colors[i].b = palette[i].blue;
+                              data->palette[i] = (data->colors[i].a << 24) |
+                                                 (data->colors[i].r << 16) |
+                                                 (data->colors[i].g <<  8) |
+                                                  data->colors[i].b;
+                         }
 
-                    data->palette[i] = (data->colors[i].a << 24) |
-                                       (data->colors[i].r << 16) |
-                                       (data->colors[i].g <<  8) |
-                                        data->colors[i].b;
+                         data->desc.flags           |= DSDESC_PALETTE;
+                         data->desc.palette.entries  = data->colors;
+                         data->desc.palette.size     = 256;
+                    }
                }
-
-               data->desc.flags           |= DSDESC_PALETTE;
-               data->desc.palette.entries  = data->colors;
-               data->desc.palette.size     = 256;
                break;
           }
 
