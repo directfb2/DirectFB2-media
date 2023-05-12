@@ -42,7 +42,7 @@ DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, Imlib2 )
 typedef struct {
      int                    ref;                     /* reference counter */
 
-     Imlib_Image            im;
+     Imlib_Image            image;
 
      DFBSurfaceDescription  desc;
 
@@ -59,7 +59,7 @@ IDirectFBImageProvider_Imlib2_Destruct( IDirectFBImageProvider *thiz )
 
      D_DEBUG_AT( ImageProvider_Imlib2, "%s( %p )\n", __FUNCTION__, thiz );
 
-     imlib_context_set_image( data->im );
+     imlib_context_set_image( data->image );
 
      imlib_free_image_and_decache();
 
@@ -118,7 +118,7 @@ IDirectFBImageProvider_Imlib2_GetImageDescription( IDirectFBImageProvider *thiz,
      if (!ret_desc)
           return DFB_INVARG;
 
-     imlib_context_set_image( data->im );
+     imlib_context_set_image( data->image );
 
      ret_desc->caps = imlib_image_has_alpha() ? DICAPS_ALPHACHANNEL : DICAPS_NONE;
 
@@ -163,7 +163,7 @@ IDirectFBImageProvider_Imlib2_RenderTo( IDirectFBImageProvider *thiz,
      if (!dfb_rectangle_region_intersects( &rect, &clip ))
           return DFB_OK;
 
-     imlib_context_set_image( data->im );
+     imlib_context_set_image( data->image );
 
      ret = dfb_surface_lock_buffer( dst_data->surface, DSBR_BACK, CSAID_CPU, CSAF_WRITE, &lock );
      if (ret)
@@ -201,7 +201,7 @@ IDirectFBImageProvider_Imlib2_SetRenderCallback( IDirectFBImageProvider *thiz,
 /**********************************************************************************************************************/
 
 static int
-progress( Imlib_Image im,
+progress( Imlib_Image image,
           char        percent,
           int         update_x,
           int         update_y,
@@ -214,7 +214,7 @@ progress( Imlib_Image im,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     Imlib_Image im;
+     Imlib_Image image;
 
      /* Check for valid filename. */
      if (!ctx->filename)
@@ -222,8 +222,8 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 
      imlib_context_set_progress_function( progress );
 
-     im = imlib_load_image( ctx->filename );
-     if (im)
+     image = imlib_load_image( ctx->filename );
+     if (image)
           return DFB_OK;
 
      return DFB_UNSUPPORTED;
@@ -245,13 +245,13 @@ Construct( IDirectFBImageProvider *thiz,
      data->ref = 1;
 
      /* The image is already loaded and is in cache. */
-     data->im = imlib_load_image( buffer_data->filename );
-     if (!data->im) {
+     data->image = imlib_load_image( buffer_data->filename );
+     if (!data->image) {
           ret = DFB_FAILURE;
           goto error;
      }
 
-     imlib_context_set_image( data->im );
+     imlib_context_set_image( data->image );
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      data->desc.width       = imlib_image_get_width();

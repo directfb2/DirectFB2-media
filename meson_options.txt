@@ -30,6 +30,10 @@ option('fusionsound',
        type: 'boolean',
        description: 'FusionSound support')
 
+option('gif',
+       type: 'boolean',
+       description: 'GIF image provider')
+
 option('gstreamer',
        type: 'boolean',
        description: 'GStreamer video provider')

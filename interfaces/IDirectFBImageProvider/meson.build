@@ -46,6 +46,21 @@ if enable_ffmpeg
                                          '-Wl,--whole-archive -lidirectfbimageprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
+if enable_gif
+  library('idirectfbimageprovider_gif',
+          'idirectfbimageprovider_gif.c',
+          dependencies: directfb_dep,
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_gif',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_gif',
+                     description: 'GIF image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_gif -Wl,--no-whole-archive'])
+endif
+
 if enable_imlib2
   library('idirectfbimageprovider_imlib2',
           'idirectfbimageprovider_imlib2.c',

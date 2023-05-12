@@ -595,8 +595,8 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      /* Look for the JPEG SOI marker. */
      if (ctx->header[0] == 0xff && ctx->header[1] == 0xd8) {
           /* Look for JFIF or Exif strings. */
-          if (strncmp( (const char*) ctx->header + 6, "JFIF", 4 ) == 0 ||
-              strncmp( (const char*) ctx->header + 6, "Exif", 4 ) == 0)
+          if (!strncmp( (const char*) ctx->header + 6, "JFIF", 4 ) ||
+              !strncmp( (const char*) ctx->header + 6, "Exif", 4 ))
                return DFB_OK;
 
           /* Else look for Quantization table marker or Define Huffman table marker. */
