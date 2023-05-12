@@ -1,3 +1,24 @@
+commit b9e045a691cb617de065e21f9f98911510ee9d89
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri May 12 13:52:57 2023 +0200
+
+    Add GIF image provider
+
+commit 6a0c6cb49435c5b8c6970f2d74fc0aa13aa39c9b
+Merge: 3fc1134 2a74934
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sun May 7 08:58:05 2023 +0200
+
+    Merge pull request #41 from caramelli/master
+    
+    VideoProvider/FFmpeg: Use recursive mutex for audio/video queue lock
+
+commit 2a749343b922820d3a83377c1a23db7889334d43
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun May 7 08:28:28 2023 +0200
+
+    Update ChangeLog
+
 commit 9acc0662553c6e43a6c4f05b31730aa60b96bdc7
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sun May 7 08:28:18 2023 +0200
