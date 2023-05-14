@@ -344,7 +344,7 @@ FFmpegInput( DirectThread *thread,
 {
      IDirectFBVideoProvider_FFmpeg_data *data = arg;
 
-     if (!data->io_ctx->seekable) {
+     if (!data->seekable) {
           data->input.buffering = true;
           direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -375,7 +375,7 @@ FFmpegInput( DirectThread *thread,
                     flush_packets( &data->audio.queue );
 #endif
 
-                    if (!data->input.buffering && !data->io_ctx->seekable) {
+                    if (!data->input.buffering && !data->seekable) {
                          data->input.buffering = true;
                          direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -427,7 +427,7 @@ FFmpegInput( DirectThread *thread,
 #else
           else if (data->video.queue.size == 0) {
 #endif
-               if (!data->input.buffering && !data->io_ctx->seekable) {
+               if (!data->input.buffering && !data->seekable) {
                     data->input.buffering = true;
                     direct_mutex_lock( &data->video.queue.lock );
 #ifdef HAVE_FUSIONSOUND
@@ -1379,6 +1379,12 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      AVInputFormat       *fmt;
      IDirectFBDataBuffer *buffer = ctx->buffer;
 
+     av_register_all();
+     avformat_network_init();
+
+     if (ctx->filename && strstr( ctx->filename, "rtsp://" ))
+          return DFB_OK;
+
      ret = buffer->WaitForData( buffer, sizeof(buf) );
      if (ret == DFB_OK)
           ret = buffer->PeekData( buffer, sizeof(buf), 0, buf, &len );
@@ -1386,10 +1392,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      if (ret != DFB_OK)
           return ret;
 
-     av_register_all();
-
      memset( &pd, 0, sizeof(AVProbeData) );
-     pd.filename = ctx->filename;
      pd.buf      = &buf[0];
      pd.buf_size = len;
 
@@ -1423,63 +1426,67 @@ Construct( IDirectFBVideoProvider *thiz,
      AVProbeData               pd;
      unsigned int              len;
      unsigned char             buf[2048];
-     AVInputFormat            *fmt;
+     AVInputFormat            *fmt = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
 
      D_DEBUG_AT( VideoProvider_FFmpeg, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref    = 1;
-     data->buffer = buffer;
+     data->ref = 1;
 
-     /* Increase the data buffer reference counter. */
-     buffer->AddRef( buffer );
+     if (!(buffer_data->filename && strstr( buffer_data->filename, "rtsp://" ))) {
+          data->buffer = buffer;
+
+          /* Increase the data buffer reference counter. */
+          buffer->AddRef( buffer );
+     }
 
      data->idirectfb = idirectfb;
 
-     data->seekable = (buffer->SeekTo( buffer, 0 ) == DFB_OK);
+     if (data->buffer) {
+          data->seekable = (buffer->SeekTo( buffer, 0 ) == DFB_OK);
 
-     ret = buffer->PeekData( buffer, sizeof(buf), 0, buf, &len );
-     if (ret)
-          goto error;
+          ret = buffer->PeekData( buffer, sizeof(buf), 0, buf, &len );
+          if (ret)
+               goto error;
 
-     memset( &pd, 0, sizeof(AVProbeData) );
-     pd.filename = buffer_data->filename;
-     pd.buf      = &buf[0];
-     pd.buf_size = len;
+          memset( &pd, 0, sizeof(AVProbeData) );
+          pd.buf      = &buf[0];
+          pd.buf_size = len;
 
-     fmt = av_probe_input_format( &pd, 1 );
-     if (!fmt) {
-          D_ERROR( "VideoProvider/FFmpeg: Failed to guess the file format!\n" );
-          ret = DFB_INIT;
-          goto error;
+          fmt = av_probe_input_format( &pd, 1 );
+          if (!fmt) {
+               D_ERROR( "VideoProvider/FFmpeg: Failed to guess the file format!\n" );
+               ret = DFB_INIT;
+               goto error;
+          }
+
+          data->io_buf = av_malloc( IO_BUFFER_SIZE * 1024 );
+          if (!data->io_buf) {
+               ret = D_OOM();
+               goto error;
+          }
+
+          data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data->buffer, av_read_callback,
+                                             NULL, data->seekable ? av_seek_callback : NULL );
+          if (!data->io_ctx) {
+               av_free( data->io_buf );
+               ret = D_OOM();
+               goto error;
+          }
+
+          data->fmt_ctx = avformat_alloc_context();
+          if (!data->fmt_ctx) {
+               avio_close( data->io_ctx );
+               ret = D_OOM();
+               goto error;
+          }
+
+          data->fmt_ctx->pb = data->io_ctx;
      }
 
-     data->io_buf = av_malloc( IO_BUFFER_SIZE * 1024 );
-     if (!data->io_buf) {
-          ret = D_OOM();
-          goto error;
-     }
-
-     data->io_ctx = avio_alloc_context( data->io_buf, IO_BUFFER_SIZE * 1024, 0, data->buffer, av_read_callback,
-                                        NULL, data->seekable ? av_seek_callback : NULL );
-     if (!data->io_ctx) {
-          av_free( data->io_buf );
-          ret = D_OOM();
-          goto error;
-     }
-
-     data->fmt_ctx = avformat_alloc_context();
-     if (!data->fmt_ctx) {
-          avio_close( data->io_ctx );
-          ret = D_OOM();
-          goto error;
-     }
-
-     data->fmt_ctx->pb = data->io_ctx;
-
-     if (avformat_open_input( &data->fmt_ctx, pd.filename, fmt, NULL ) < 0) {
+     if (avformat_open_input( &data->fmt_ctx, buffer_data->filename, fmt, NULL ) < 0) {
           D_ERROR( "VideoProvider/FFmpeg: Failed to open stream!\n" );
           ret = DFB_FAILURE;
           goto error;

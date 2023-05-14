@@ -17,6 +17,7 @@
 */
 
 #include <direct/filesystem.h>
+#include <direct/system.h>
 #include <display/idirectfbsurface.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
@@ -263,8 +264,8 @@ Construct( IDirectFBImageProvider *thiz,
           basename = buffer_data->filename;
 
      /* YUV bitdepth. */
-     if (getenv( "YUV_BITDEPTH" )) {
-          bitdepth = atoi( getenv( "YUV_BITDEPTH" ) );
+     if (direct_getenv( "YUV_BITDEPTH" )) {
+          bitdepth = atoi( direct_getenv( "YUV_BITDEPTH" ) );
      }
      else {
           char *name = basename;
@@ -285,8 +286,8 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      /* YUV size. */
-     if (getenv( "YUV_SIZE" )) {
-          sscanf( getenv( "YUV_SIZE" ), "%dx%d", &width, &height );
+     if (direct_getenv( "YUV_SIZE" )) {
+          sscanf( direct_getenv( "YUV_SIZE" ), "%dx%d", &width, &height );
      }
      else {
           char *name = basename;
@@ -308,8 +309,8 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      /* YUV format. */
-     if (getenv( "YUV_FORMAT" )) {
-          format = dfb_pixelformat_parse( getenv( "YUV_FORMAT" ) );
+     if (direct_getenv( "YUV_FORMAT" )) {
+          format = dfb_pixelformat_parse( direct_getenv( "YUV_FORMAT" ) );
           if (!DFB_COLOR_IS_YUV( format ) || !DFB_PLANAR_PIXELFORMAT( format ))
                format = DSPF_UNKNOWN;
      }
@@ -345,8 +346,8 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      /* YUV colorspace. */
-     if (getenv( "YUV_COLORSPACE" )) {
-          colorspace = dfb_colorspace_parse( getenv( "YUV_COLORSPACE" ) );
+     if (direct_getenv( "YUV_COLORSPACE" )) {
+          colorspace = dfb_colorspace_parse( direct_getenv( "YUV_COLORSPACE" ) );
           if (colorspace == DSCS_RGB)
                colorspace = DSCS_BT709;
      }
@@ -396,8 +397,8 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      /* YUV frame. */
-     if (getenv( "YUV_FRAME" )) {
-          data->offset = frame_size * atoi( getenv( "YUV_FRAME" ) );
+     if (direct_getenv( "YUV_FRAME" )) {
+          data->offset = frame_size * atoi( direct_getenv( "YUV_FRAME" ) );
           if (bitdepth > 8)
                data->offset *= 2;
 
