@@ -506,7 +506,7 @@ FFmpegVideo( DirectThread *thread,
      int                                 pitch;
      void                               *ptr;
      struct SwsContext                  *sws_ctx;
-     s64                                 firtspts = 0;
+     s64                                 firstpts = 0;
      unsigned int                        framecnt = 0;
      bool                                drop     = false;
      IDirectFBVideoProvider_FFmpeg_data *data     = arg;
@@ -593,7 +593,7 @@ FFmpegVideo( DirectThread *thread,
                long long now;
 
                if (framecnt)
-                    duration = (data->video.pts - firtspts) / framecnt;
+                    duration = (data->video.pts - firstpts) / framecnt;
 
                length = duration;
 
@@ -624,7 +624,7 @@ FFmpegVideo( DirectThread *thread,
           direct_mutex_unlock( &data->video.lock );
 
           if (framecnt++ == 0)
-               firtspts = data->video.pts;
+               firstpts = data->video.pts;
      }
 
      sws_freeContext( sws_ctx );

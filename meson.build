@@ -275,10 +275,6 @@ if enable_fusionsound
   subdir('interfaces/IFusionSoundMusicProvider')
 endif
 
-if get_option('tools')
-  subdir('tools')
-endif
-
 if get_option('default_library') != 'shared'
   meson.add_install_script('dfb-update-pkgconfig', skip_if_destdir: true)
   if enable_fusionsound

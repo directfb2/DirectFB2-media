@@ -101,10 +101,6 @@ option('tiff',
        type: 'boolean',
        description: 'TIFF image provider')
 
-option('tools',
-       type: 'boolean',
-       description: 'Compile tools')
-
 option('tremor',
        type: 'boolean',
        description: 'Tremor music provider')
