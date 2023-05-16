@@ -1,3 +1,39 @@
+commit 957cc6a98bd8f2f3942259b88422789df7f2f343
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue May 16 06:07:07 2023 +0200
+
+    Move tools to DirectFB2-tools repository
+
+commit 84205afb67fe381c3b00257146bf4f34ae2e350e
+Merge: 3f291cc ce1638f
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sun May 14 16:26:39 2023 +0200
+
+    Merge pull request #43 from caramelli/master
+    
+    VideoProvider/FFmpeg: Add support for RTSP URL input
+
+commit ce1638f273016e593016596a6c9c94af3d04a9d8
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun May 14 16:13:43 2023 +0200
+
+    VideoProvider/FFmpeg: Add support for RTSP URL input
+
+commit 3f291cc9ce844bb017a77245f8f81d1d3060e1be
+Merge: 6a0c6cb d86bd7e
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri May 12 14:01:44 2023 +0200
+
+    Merge pull request #42 from caramelli/master
+    
+    Add GIF image provider
+
+commit d86bd7e1ab6bfc862f9343da4f75785a5114bca0
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri May 12 13:53:02 2023 +0200
+
+    Update ChangeLog
+
 commit b9e045a691cb617de065e21f9f98911510ee9d89
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Fri May 12 13:52:57 2023 +0200
