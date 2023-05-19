@@ -47,7 +47,7 @@ if enable_sft
                                          '-Wl,--whole-archive -lidirectfbfont_sft -Wl,--no-whole-archive'])
 endif
 
-if enable_stb_truetype != ''
+if enable_stb_truetype != 'false'
   library('idirectfbfont_stb',
           'idirectfbfont_stb.c',
           c_args: '-DSTB_TRUETYPE_H="@0@"'.format(enable_stb_truetype),

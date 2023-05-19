@@ -558,20 +558,19 @@ png_info_callback( png_structp png_read_ptr,
                png_colorp    palette;
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_palette = 0, num_trans = 0;
+               int           num_palette;
+               int           num_trans;
                u8            cmap[3][256];
 
                if (png_get_PLTE( data->png_ptr, data->info_ptr, &palette, &num_palette )) {
                     if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
-                         int num_colors = MIN( 256, num_palette );
-
-                         for (i = 0; i < num_colors; i++) {
+                         for (i = 0; i < num_palette; i++) {
                               cmap[0][i] = palette[i].red;
                               cmap[1][i] = palette[i].green;
                               cmap[2][i] = palette[i].blue;
                          }
 
-                         data->color_key = FindColorKey( num_colors, &cmap[0][0] );
+                         data->color_key = FindColorKey( num_palette, &cmap[0][0] );
 
                          for (i = 0; i < num_trans; i++) {
                               if (!trans_alpha[i]) {
@@ -587,7 +586,7 @@ png_info_callback( png_structp png_read_ptr,
                /* Color key based on trans gray value. */
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_trans = 0;
+               int           num_trans;
 
                if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
                     switch (data->bpp) {
@@ -624,7 +623,7 @@ png_info_callback( png_structp png_read_ptr,
                /* Color key based on trans rgb value. */
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_trans = 0;
+               int           num_trans;
 
                if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
                     switch (data->bpp) {
@@ -664,30 +663,30 @@ png_info_callback( png_structp png_read_ptr,
                png_colorp    palette;
                png_bytep     trans_alpha;
                png_color_16p trans_color;
-               int           num_palette = 0, num_trans = 0;
+               int           num_palette;
 
                data->pitch = (data->desc.width + 7) & ~7;
 
                if (png_get_PLTE( data->png_ptr, data->info_ptr, &palette, &num_palette )) {
-                    if (png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color )) {
-                         int num_colors = MIN( 256, num_palette );
+                    int num_trans = 0;
 
-                         for (i = 0; i < num_colors; i++) {
-                              data->colors[i].a = (i < num_trans) ? trans_alpha[i] : 0xff;
-                              data->colors[i].r = palette[i].red;
-                              data->colors[i].g = palette[i].green;
-                              data->colors[i].b = palette[i].blue;
+                    png_get_tRNS( data->png_ptr, data->info_ptr, &trans_alpha, &num_trans, &trans_color );
 
-                              data->palette[i] = (data->colors[i].a << 24) |
-                                                 (data->colors[i].r << 16) |
-                                                 (data->colors[i].g <<  8) |
-                                                  data->colors[i].b;
-                         }
+                    for (i = 0; i < num_palette; i++) {
+                         data->colors[i].a = (i < num_trans) ? trans_alpha[i] : 0xff;
+                         data->colors[i].r = palette[i].red;
+                         data->colors[i].g = palette[i].green;
+                         data->colors[i].b = palette[i].blue;
 
-                         data->desc.flags           |= DSDESC_PALETTE;
-                         data->desc.palette.entries  = data->colors;
-                         data->desc.palette.size     = 256;
+                         data->palette[i] = (data->colors[i].a << 24) |
+                                            (data->colors[i].r << 16) |
+                                            (data->colors[i].g <<  8) |
+                                             data->colors[i].b;
                     }
+
+                    data->desc.flags           |= DSDESC_PALETTE;
+                    data->desc.palette.entries  = data->colors;
+                    data->desc.palette.size     = 256;
                }
                break;
           }
