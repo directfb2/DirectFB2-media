@@ -110,7 +110,7 @@ if enable_jpeg
                                          '-Wl,--whole-archive -lidirectfbimageprovider_jpeg -Wl,--no-whole-archive'])
 endif
 
-if enable_lodepng != ''
+if enable_lodepng != 'false'
   library('idirectfbimageprovider_lodepng',
           'idirectfbimageprovider_lodepng.c',
           c_args: '-DLODEPNG_C="lodepng.cpp"',
@@ -159,7 +159,7 @@ if enable_png
                                          '-Wl,--whole-archive -lidirectfbimageprovider_png -Wl,--no-whole-archive'])
 endif
 
-if enable_stb_image != ''
+if enable_stb_image != 'false'
   library('idirectfbimageprovider_stb',
           'idirectfbimageprovider_stb.c',
           c_args: '-DSTB_IMAGE_H="@0@"'.format(enable_stb_image),

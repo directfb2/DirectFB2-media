@@ -138,10 +138,10 @@ if enable_jpeg
   endif
 endif
 
-if enable_lodepng != ''
+if enable_lodepng != 'false'
   if not fs.is_dir(enable_lodepng)
     warning('LodePNG image provider will not be built.')
-    enable_lodepng = ''
+    enable_lodepng = 'false'
   else
     lodepng_dep = declare_dependency(include_directories: include_directories(enable_lodepng))
   endif
@@ -192,19 +192,19 @@ if enable_sft
   endif
 endif
 
-if enable_stb_image != ''
+if enable_stb_image != 'false'
   if not fs.is_file(enable_stb_image)
     warning('STB image provider will not be built.')
-    enable_stb_image = ''
+    enable_stb_image = 'false'
   endif
 endif
 
-if enable_stb_truetype != ''
+if enable_stb_truetype != 'false'
   stb_truetype_dep = meson.get_compiler('c').find_library('m', required: false)
 
   if not fs.is_file(enable_stb_truetype) or not stb_truetype_dep.found()
     warning('STB font provider will not be built.')
-    enable_stb_truetype = ''
+    enable_stb_truetype = 'false'
   endif
 endif
 
@@ -281,3 +281,49 @@ if get_option('default_library') != 'shared'
     meson.add_install_script('fs-update-pkgconfig', skip_if_destdir: true)
   endif
 endif
+
+summary = [
+  '',
+  'Building Font Modules:',
+  '  FreeType2   @0@'.format(enable_ft2),
+  '  Schrift     @0@'.format(enable_sft),
+  '  STB         @0@'.format(enable_stb_truetype),
+  '',
+  'Building Image Provider Modules:',
+  '  BMP         @0@'.format(enable_bmp),
+  '  FFmpeg      @0@'.format(enable_ffmpeg),
+  '  GIF         @0@'.format(enable_gif),
+  '  Imlib2      @0@'.format(enable_imlib2),
+  '  JasPer      @0@'.format(enable_jasper),
+  '  JPEG        @0@'.format(enable_jpeg),
+  '  LodePNG     @0@'.format(enable_lodepng),
+  '  OpenEXR     @0@'.format(enable_openexr),
+  '  PNG         @0@'.format(enable_png),
+  '  STB         @0@'.format(enable_stb_image),
+  '  SVG         @0@'.format(enable_svg),
+  '  TIFF        @0@'.format(enable_tiff),
+  '  WebP        @0@'.format(enable_webp),
+  '  YUV         @0@'.format(enable_yuv),
+  '',
+  'Building Video Provider Modules:',
+  '  FFmpeg      @0@'.format(enable_ffmpeg),
+  '  GStreamer   @0@'.format(enable_gstreamer),
+  '  MNG         @0@'.format(enable_mng),
+  '  Swfdec      @0@'.format(enable_swfdec),
+  '  Video4Linux @0@'.format(enable_v4l),
+  ''
+]
+
+if enable_fusionsound
+summary += [
+  'Building Music Provider Modules:',
+  '  FFmpeg      @0@'.format(enable_ffmpeg),
+  '  MAD         @0@'.format(enable_mad),
+  '  Playlist    @0@'.format(enable_playlist),
+  '  Tremor      @0@'.format(enable_tremor),
+  '  Vorbis      @0@'.format(enable_vorbis),
+  ''
+]
+endif
+
+message('\n  '.join(summary))
