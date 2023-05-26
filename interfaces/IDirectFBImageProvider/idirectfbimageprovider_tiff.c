@@ -16,7 +16,9 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
+#include <direct/system.h>
 #include <display/idirectfbsurface.h>
+#include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 #include <tiffio.h>
 
@@ -270,9 +272,14 @@ IDirectFBImageProvider_TIFF_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     unsigned short tiff_magic = ctx->header[0] | (ctx->header[1] << 8);
+     unsigned short tiff_magic;
+
+     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
+          return DFB_OK;
 
      /* Check the magic. */
+     tiff_magic = ctx->header[0] | (ctx->header[1] << 8);
+
      if ((tiff_magic != TIFF_BIGENDIAN) && (tiff_magic != TIFF_LITTLEENDIAN) &&
          (tiff_magic !=  MDI_BIGENDIAN) && (tiff_magic !=  MDI_LITTLEENDIAN))
           return DFB_UNSUPPORTED;
@@ -286,22 +293,30 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult ret;
+     DFBResult                 ret;
+     IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_TIFF )
 
      D_DEBUG_AT( ImageProvider_TIFF, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref    = 1;
-     data->buffer = buffer;
+     data->ref = 1;
 
-     /* Increase the data buffer reference counter. */
-     buffer->AddRef( buffer );
+     if (!(direct_getenv( "D_STREAM_BYPASS" ) && buffer_data->filename)) {
+          data->buffer = buffer;
+
+          /* Increase the data buffer reference counter. */
+          buffer->AddRef( buffer );
+     }
 
      data->idirectfb = idirectfb;
 
-     data->tiff = TIFFClientOpen( "TIFF", "rM", data->buffer,
-                                  readTIFF, writeTIFF, seekTIFF, closeTIFF, sizeTIFF, NULL, NULL );
+     if (data->buffer)
+          data->tiff = TIFFClientOpen( "TIFF", "rM", data->buffer,
+                                       readTIFF, writeTIFF, seekTIFF, closeTIFF, sizeTIFF, NULL, NULL );
+     else
+          data->tiff = TIFFOpen( buffer_data->filename, "rM" );
+
      if (!data->tiff) {
           ret = DFB_FAILURE;
           goto error;

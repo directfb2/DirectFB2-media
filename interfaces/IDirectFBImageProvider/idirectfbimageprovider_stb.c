@@ -16,7 +16,9 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
+#include <direct/system.h>
 #include <display/idirectfbsurface.h>
+#include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 #define  STB_IMAGE_IMPLEMENTATION
 #define  STBI_NO_HDR
@@ -256,6 +258,9 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      stbi__context s;
 
+     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
+          return DFB_OK;
+
      stbi__start_mem( &s, ctx->header, D_ARRAY_SIZE(ctx->header) );
 
      if (stbi__bmp_test( &s ))
@@ -282,19 +287,23 @@ Construct( IDirectFBImageProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult         ret;
-     stbi_io_callbacks callbacks;
-     int               width, height;
+     DFBResult                 ret;
+     stbi_io_callbacks         callbacks;
+     int                       width, height;
+     IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_STB )
 
      D_DEBUG_AT( ImageProvider_STB, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref    = 1;
-     data->buffer = buffer;
+     data->ref = 1;
 
-     /* Increase the data buffer reference counter. */
-     buffer->AddRef( buffer );
+     if (!(direct_getenv( "D_STREAM_BYPASS" ) && buffer_data->filename)) {
+          data->buffer = buffer;
+
+          /* Increase the data buffer reference counter. */
+          buffer->AddRef( buffer );
+     }
 
      data->idirectfb = idirectfb;
 
@@ -302,7 +311,11 @@ Construct( IDirectFBImageProvider *thiz,
      callbacks.skip = skipSTB;
      callbacks.eof  = eofSTB;
 
-     data->image = stbi_load_from_callbacks( &callbacks, data->buffer, &width, &height, NULL, 4 );
+     if (data->buffer)
+          data->image = stbi_load_from_callbacks( &callbacks, data->buffer, &width, &height, NULL, 4 );
+     else
+          data->image = stbi_load( buffer_data->filename, &width, &height, NULL, 4 );
+
      if (!data->image) {
           ret = DFB_FAILURE;
           goto error;
