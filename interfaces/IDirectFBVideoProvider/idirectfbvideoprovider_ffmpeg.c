@@ -18,6 +18,7 @@
 
 #include <config.h>
 #include <core/layers.h>
+#include <direct/system.h>
 #include <direct/thread.h>
 #include <display/idirectfbsurface.h>
 #ifdef HAVE_FUSIONSOUND
@@ -1382,7 +1383,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      av_register_all();
      avformat_network_init();
 
-     if (ctx->filename && strstr( ctx->filename, "rtsp://" ))
+     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
           return DFB_OK;
 
      ret = buffer->WaitForData( buffer, sizeof(buf) );
@@ -1426,7 +1427,7 @@ Construct( IDirectFBVideoProvider *thiz,
      AVProbeData               pd;
      unsigned int              len;
      unsigned char             buf[2048];
-     AVInputFormat            *fmt = NULL;
+     AVInputFormat            *fmt         = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_FFmpeg )
@@ -1435,7 +1436,7 @@ Construct( IDirectFBVideoProvider *thiz,
 
      data->ref = 1;
 
-     if (!(buffer_data->filename && strstr( buffer_data->filename, "rtsp://" ))) {
+     if (!(direct_getenv( "D_STREAM_BYPASS" ) && buffer_data->filename)) {
           data->buffer = buffer;
 
           /* Increase the data buffer reference counter. */
