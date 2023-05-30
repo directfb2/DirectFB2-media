@@ -499,9 +499,10 @@ gif_image_alloc( IDirectFBDataBuffer *buffer,
 {
      DFBResult  ret;
      u8         buf[255];
-     int        i, num_colors;
+     int        i;
      u16        width, height;
      u32        color_key;
+     int        num_colors  = 0;
      int        transparent = -1;
      u32       *image       = NULL;
 

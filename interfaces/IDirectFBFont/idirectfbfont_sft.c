@@ -205,11 +205,7 @@ Probe( IDirectFBFont_ProbeContext *ctx )
 {
      SFT_Font *font;
 
-     /* Check for valid filename. */
-     if (!ctx->filename)
-          return DFB_UNSUPPORTED;
-
-     font = sft_loadfile( ctx->filename );
+     font = sft_loadmem( ctx->content, ctx->content_size );
      if (!font)
           return DFB_UNSUPPORTED;
 
@@ -247,9 +243,9 @@ Construct( IDirectFBFont              *thiz,
           goto error;
      }
 
-     sft->font = sft_loadfile( ctx->filename );
+     sft->font = sft_loadmem( ctx->content, ctx->content_size );
      if (!sft->font) {
-          D_ERROR( "Font/Schrift: Failed to load font file '%s'!\n", ctx->filename );
+          D_ERROR( "Font/Schrift: Failed to load font!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
