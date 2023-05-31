@@ -219,14 +219,10 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      unsigned int width, height;
      LodePNGState state;
 
-     /* Check for valid filename. */
-     if (!ctx->filename)
-          return DFB_UNSUPPORTED;
-
+     /* Check the signature. */
      lodepng_state_init( &state );
      state.decoder.ignore_crc = 1;
 
-     /* Check the signature. */
      error = lodepng_inspect( &width, &height, &state, ctx->header, 33 );
 
      lodepng_state_cleanup( &state );
@@ -242,10 +238,12 @@ Construct( IDirectFBImageProvider *thiz,
 {
      DFBResult                 ret;
      DirectFile                fd;
-     DirectFileInfo            info;
-     void                     *ptr;
+     int                       len;
+     size_t                    size;
      unsigned int              error;
      unsigned int              width, height;
+     void                     *ptr;
+     void                     *chunk       = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_LodePNG )
@@ -255,32 +253,77 @@ Construct( IDirectFBImageProvider *thiz,
      data->ref       = 1;
      data->idirectfb = idirectfb;
 
-     /* Open the file. */
-     ret = direct_file_open( &fd, buffer_data->filename, O_RDONLY, 0 );
-     if (ret) {
-          D_DERROR( ret, "ImageProvider/LodePNG: Failed to open file '%s'!\n", buffer_data->filename );
-          DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return ret;
+     if (buffer_data->buffer) {
+          len  = -1;
+          ptr  = buffer_data->buffer;
+          size = buffer_data->length;
+     }
+     else if (buffer_data->filename) {
+          DirectFileInfo info;
+
+          /* Open the file. */
+          ret = direct_file_open( &fd, buffer_data->filename, O_RDONLY, 0 );
+          if (ret) {
+               D_DERROR( ret, "ImageProvider/LodePNG: Failed to open file '%s'!\n", buffer_data->filename );
+               len = 0;
+               return ret;
+          }
+
+          /* Query file size. */
+          ret = direct_file_get_info( &fd, &info );
+          if (ret) {
+               D_DERROR( ret, "ImageProvider/LodePNG: Failed during get_info() of '%s'!\n", buffer_data->filename );
+               len = -1;
+               goto error;
+          }
+          else
+               len = info.size;
+
+          /* Memory-mapped file. */
+          ret = direct_file_map( &fd, NULL, 0, len, DFP_READ, &ptr );
+          if (ret) {
+               D_DERROR( ret, "ImageProvider/LodePNG: Failed during mmap() of '%s'!\n", buffer_data->filename );
+               goto error;
+          }
+          else
+               size = len;
+     }
+     else {
+          size = len = 0;
+
+          while (1) {
+               unsigned int bytes;
+
+               chunk = D_REALLOC( chunk, size + 4096 );
+               if (!chunk) {
+                    ret = D_OOM();
+                    goto error;
+               }
+
+               buffer->WaitForData( buffer, 4096 );
+               if (buffer->GetData( buffer, 4096, chunk + size, &bytes ))
+                    break;
+
+               size += bytes;
+          }
+
+          if (!size) {
+               ret = DFB_IO;
+               goto error;
+          }
+
+          ptr = chunk;
      }
 
-     /* Query file size. */
-     ret = direct_file_get_info( &fd, &info );
-     if (ret) {
-          D_DERROR( ret, "ImageProvider/LodePNG: Failed during get_info() of '%s'!\n", buffer_data->filename );
-          goto error;
+     error = lodepng_decode32( &data->image, &width, &height, ptr, size );
+
+     if (!len) {
+          D_FREE( ptr );
      }
-
-     /* Memory-mapped file. */
-     ret = direct_file_map( &fd, NULL, 0, info.size, DFP_READ, &ptr );
-     if (ret) {
-          D_DERROR( ret, "ImageProvider/LodePNG: Failed during mmap() of '%s'!\n", buffer_data->filename );
-          goto error;
+     else if (len > 0) {
+          direct_file_unmap( ptr, len );
+          direct_file_close( &fd );
      }
-
-     error = lodepng_decode32( &data->image, &width, &height, ptr, info.size );
-
-     direct_file_unmap( ptr, info.size );
-     direct_file_close( &fd );
 
      if (error) {
           D_ERROR( "ImageProvider/LodePNG: Error during decoding: %s!\n", lodepng_error_text( error ) );
@@ -303,7 +346,11 @@ Construct( IDirectFBImageProvider *thiz,
      return DFB_OK;
 
 error:
-     direct_file_close( &fd );
+     if (len)
+          direct_file_close( &fd );
+
+     if (chunk)
+          D_FREE( chunk );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 
