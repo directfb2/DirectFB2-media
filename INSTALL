@@ -1,4 +1,8 @@
-DirectFB2-media is built using Meson.
+Installation Instructions
+=========================
+
+Linux
+=====
 
 First, configure the build:
 
@@ -11,3 +15,8 @@ Start the build with:
 And install DirectFB2-media using:
 
   $ meson install -C build/
+
+NuttX
+=====
+
+On NuttX, copy the DirectFB2-media directory to your NuttX apps/graphics/ directory.
