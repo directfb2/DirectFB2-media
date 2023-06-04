@@ -1,3 +1,84 @@
+commit 70775f8ffc189c9c1d72897e3c2359dc3776fbd2
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun Jun 4 08:10:51 2023 +0200
+
+    Add NuttX build support for BMP, GIF, LodePNG, Schrift and STB media providers
+
+commit 441d8618cba3f8b5088e4eaffb9ad5b0b6af332e
+Merge: f86a643 86b03f2
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed May 31 09:58:15 2023 +0200
+
+    Merge pull request #48 from caramelli/master
+    
+    ImageProvider/LodePNG: Add support for input data located in memory or streamed
+
+commit 86b03f2814eecd4116f967365b07c0de56ad67ab
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed May 31 09:54:09 2023 +0200
+
+    ImageProvider/LodePNG: Add support for input data located in memory or streamed
+
+commit f86a643c7e3735eda5b581d6a5b5a42f8ff75113
+Merge: 72d0e23 93c98e4
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue May 30 08:47:09 2023 +0200
+
+    Merge pull request #47 from caramelli/master
+    
+    Font/Schrift: Load font from memory
+
+commit 93c98e47246648821d4019d4035c59aa006d67ad
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue May 30 08:30:46 2023 +0200
+
+    Font/Schrift: Load font from memory
+
+commit 72d0e23f770db63c322d8f36e90b5ee3766a82db
+Merge: a4693b5 60c3815
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri May 26 14:59:02 2023 +0200
+
+    Merge pull request #46 from caramelli/master
+    
+    VideoProvider/FFmpeg: Use D_STREAM_BYPASS
+
+commit 60c3815f9dec5617c26171ca33573fe877036f88
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri May 26 14:44:22 2023 +0200
+
+    VideoProvider/FFmpeg: Use D_STREAM_BYPASS
+
+commit a4693b5295ab571c8a5e5e56ec3612e9fdf4cc44
+Merge: 9d7c717 bc3db57
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri May 19 10:27:52 2023 +0200
+
+    Merge pull request #45 from caramelli/master
+    
+    meson: Print a summary of built providers
+
+commit bc3db57197cade0172229bdc072f29c6d0285011
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri May 19 10:14:05 2023 +0200
+
+    meson: Print a summary of built providers
+
+commit 9d7c7179500dd81816c625a017523d3aeb5d6278
+Merge: 84205af 152dd65
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue May 16 06:17:13 2023 +0200
+
+    Merge pull request #44 from caramelli/master
+    
+    Move tools to DirectFB2-tools repository
+
+commit 152dd65e48495179996b406ad9c79a8a40d1594b
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue May 16 06:07:28 2023 +0200
+
+    Update ChangeLog
+
 commit 957cc6a98bd8f2f3942259b88422789df7f2f343
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue May 16 06:07:07 2023 +0200
