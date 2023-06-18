@@ -16,53 +16,53 @@
 
 menu "DirectFB2-media"
 
-config DIRECTFB2_MEDIA_BMP
+config GRAPHICS_DIRECTFB2_MEDIA_BMP
 	bool "BMP image provider"
 	depends on GRAPHICS_DIRECTFB2
 	default n
 
-config DIRECTFB2_MEDIA_GIF
+config GRAPHICS_DIRECTFB2_MEDIA_GIF
 	bool "GIF image provider"
 	depends on GRAPHICS_DIRECTFB2
 	default n
 
-config DIRECTFB2_MEDIA_LODEPNG
+config GRAPHICS_DIRECTFB2_MEDIA_LODEPNG
 	bool "LodePNG image provider"
 	depends on GRAPHICS_DIRECTFB2
 	default n
 
-if DIRECTFB2_MEDIA_LODEPNG
+if GRAPHICS_DIRECTFB2_MEDIA_LODEPNG
 
-config DIRECTFB2_MEDIA_LODEPNG_DIR
+config GRAPHICS_DIRECTFB2_MEDIA_LODEPNG_DIR
 	string "LodePNG source directory"
 	default "lodepng"
 
-endif # DIRECTFB2_MEDIA_LODEPNG
+endif # GRAPHICS_DIRECTFB2_MEDIA_LODEPNG
 
-config DIRECTFB2_MEDIA_SCHRIFT
+config GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 	bool "Schrift font provider"
 	depends on GRAPHICS_DIRECTFB2
 	default n
 
-if DIRECTFB2_MEDIA_SCHRIFT
+if GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 
-config DIRECTFB2_MEDIA_SCHRIFT_DIR
+config GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR
 	string "Schrift source directory"
 	default "libschrift"
 
-endif # DIRECTFB2_MEDIA_LODEPNG
+endif # GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 
-config DIRECTFB2_MEDIA_STB
+config GRAPHICS_DIRECTFB2_MEDIA_STB
 	bool "STB font provider and image provider"
 	depends on GRAPHICS_DIRECTFB2
 	default n
 
-if DIRECTFB2_MEDIA_STB
+if GRAPHICS_DIRECTFB2_MEDIA_STB
 
-config DIRECTFB2_MEDIA_STB_DIR
+config GRAPHICS_DIRECTFB2_MEDIA_STB_DIR
 	string "STB source directory"
 	default "stb"
 
-endif # DIRECTFB2_MEDIA_STB
+endif # GRAPHICS_DIRECTFB2_MEDIA_STB
 
 endmenu
