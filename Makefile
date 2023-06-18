@@ -20,27 +20,27 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/graphics/DirectFB2/src
 
 CFLAGS += -I.
 
-ifeq ($(CONFIG_DIRECTFB2_MEDIA_BMP),y)
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_BMP),y)
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_bmp.c
 endif
 
-ifeq ($(CONFIG_DIRECTFB2_MEDIA_GIF),y)
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_GIF),y)
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_gif.c
 endif
 
-ifeq ($(CONFIG_DIRECTFB2_MEDIA_LODEPNG),y)
-CFLAGS += -I$(CONFIG_DIRECTFB2_MEDIA_LODEPNG_DIR) -DLODEPNG_C=\"lodepng.cpp\"
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_LODEPNG),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_LODEPNG_DIR) -DLODEPNG_C=\"lodepng.cpp\"
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_lodepng.c
 endif
 
-ifeq ($(CONFIG_DIRECTFB2_MEDIA_SCHRIFT),y)
-CFLAGS += -I$(CONFIG_DIRECTFB2_MEDIA_SCHRIFT_DIR)
-CSRCS += $(shell echo $(CONFIG_DIRECTFB2_MEDIA_SCHRIFT_DIR))/schrift.c
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR)
+CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR))/schrift.c
 CSRCS += interfaces/IDirectFBFont/idirectfbfont_sft.c
 endif
 
-ifeq ($(CONFIG_DIRECTFB2_MEDIA_STB),y)
-CFLAGS += -I$(CONFIG_DIRECTFB2_MEDIA_STB_DIR) -DSTB_IMAGE_H=\"stb_image.h\" -DSTB_TRUETYPE_H=\"stb_truetype.h\"
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB_DIR) -DSTB_IMAGE_H=\"stb_image.h\" -DSTB_TRUETYPE_H=\"stb_truetype.h\"
 CSRCS += interfaces/IDirectFBFont/idirectfbfont_stb.c
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_stb.c
 endif
