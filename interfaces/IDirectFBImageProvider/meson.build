@@ -110,6 +110,22 @@ if enable_jpeg
                                          '-Wl,--whole-archive -lidirectfbimageprovider_jpeg -Wl,--no-whole-archive'])
 endif
 
+if enable_jxl
+  library('idirectfbimageprovider_jxl',
+          'idirectfbimageprovider_jxl.c',
+          dependencies: [directfb_dep, jxl_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_jxl',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_jxl',
+                     description: 'JPEG XL image provider',
+                     requires_private: 'libjxl',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_jxl -Wl,--no-whole-archive'])
+endif
+
 if enable_lodepng != 'false'
   library('idirectfbimageprovider_lodepng',
           'idirectfbimageprovider_lodepng.c',

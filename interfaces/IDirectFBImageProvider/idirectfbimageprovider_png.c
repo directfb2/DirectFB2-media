@@ -358,6 +358,12 @@ IDirectFBImageProvider_PNG_RenderTo( IDirectFBImageProvider *thiz,
                break;
      }
 
+     if (data->render_callback) {
+          DFBRectangle r = { 0, 0, data->desc.width, data->desc.height };
+
+          data->render_callback( &r, data->render_callback_context );
+     }
+
      dfb_surface_unlock_buffer( dst_data->surface, &lock );
 
      if (data->stage != STAGE_END)
@@ -848,17 +854,6 @@ png_row_callback( png_structp png_read_ptr,
      }
      else
          png_progressive_combine_row( data->png_ptr, data->image + row_num * data->pitch, new_row );
-
-     if (data->render_callback) {
-          DIRenderCallbackResult cb_result;
-          DFBRectangle           r = { 0, row_num, data->desc.width, 1 };
-
-          cb_result = data->render_callback( &r, data->render_callback_context );
-          if (cb_result != DIRCR_OK) {
-               /* Set abort stage. */
-               data->stage = STAGE_ABORT;
-          }
-     }
 }
 
 static void

@@ -261,7 +261,7 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
           return DFB_OK;
 
-     stbi__start_mem( &s, ctx->header, D_ARRAY_SIZE(ctx->header) );
+     stbi__start_mem( &s, ctx->header, sizeof(ctx->header) );
 
      if (stbi__bmp_test( &s ))
           return DFB_OK;
