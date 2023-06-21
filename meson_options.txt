@@ -50,6 +50,10 @@ option('jpeg',
        type: 'boolean',
        description: 'JPEG image provider')
 
+option('jxl',
+       type: 'boolean',
+       description: 'JPEG XL image provider')
+
 option('lodepng',
        type: 'string',
        value: 'lodepng',

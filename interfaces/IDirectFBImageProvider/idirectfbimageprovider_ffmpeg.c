@@ -264,13 +264,13 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
      dfb_scale_linear_32( data->image, data->desc.width, data->desc.height,
                           lock.addr, lock.pitch, &rect, dst_data->surface, &clip );
 
-     dfb_surface_unlock_buffer( dst_data->surface, &lock );
-
      if (data->render_callback) {
           DFBRectangle r = { 0, 0, data->desc.width, data->desc.height };
 
           data->render_callback( &r, data->render_callback_context );
      }
+
+     dfb_surface_unlock_buffer( dst_data->surface, &lock );
 
      return DFB_OK;
 }

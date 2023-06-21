@@ -253,7 +253,7 @@ IDirectFBImageProvider_WebP_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     if (WebPGetInfo( ctx->header, D_ARRAY_SIZE( ctx->header ), NULL, NULL ))
+     if (WebPGetInfo( ctx->header, sizeof(ctx->header), NULL, NULL ))
           return DFB_OK;
 
      return DFB_UNSUPPORTED;

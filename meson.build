@@ -52,6 +52,7 @@ enable_gstreamer    = get_option('gstreamer')
 enable_imlib2       = get_option('imlib2')
 enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
+enable_jxl          = get_option('jxl')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad')
 enable_mng          = get_option('mng')
@@ -135,6 +136,15 @@ if enable_jpeg
   if not jpeg_dep.found()
     warning('JPEG image provider will not be built.')
     enable_jpeg = false
+  endif
+endif
+
+if enable_jxl
+  jxl_dep = dependency('libjxl', required: false)
+
+  if not jxl_dep.found()
+    warning('JPEG XL image provider will not be built.')
+    enable_jxl = false
   endif
 endif
 
@@ -296,6 +306,7 @@ summary = [
   '  Imlib2      @0@'.format(enable_imlib2),
   '  JasPer      @0@'.format(enable_jasper),
   '  JPEG        @0@'.format(enable_jpeg),
+  '  JXL         @0@'.format(enable_jxl),
   '  LodePNG     @0@'.format(enable_lodepng),
   '  OpenEXR     @0@'.format(enable_openexr),
   '  PNG         @0@'.format(enable_png),
