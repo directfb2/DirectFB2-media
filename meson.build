@@ -44,6 +44,7 @@ config_inc = include_directories('.')
 
 fs = import('fs')
 
+enable_avif         = get_option('avif')
 enable_bmp          = get_option('bmp')
 enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
@@ -70,6 +71,15 @@ enable_v4l          = get_option('v4l')
 enable_vorbis       = get_option('vorbis')
 enable_webp         = get_option('webp')
 enable_yuv          = get_option('yuv')
+
+if enable_avif
+  avif_dep = dependency('libavif', required: false)
+
+  if not avif_dep.found()
+    warning('AVIF image provider will not be built.')
+    enable_avif = false
+  endif
+endif
 
 if enable_ffmpeg
   ffmpeg_dep = [dependency('libavcodec',  required: false),
@@ -300,6 +310,7 @@ summary = [
   '  STB         @0@'.format(enable_stb_truetype),
   '',
   'Building Image Provider Modules:',
+  '  AVIF        @0@'.format(enable_avif),
   '  BMP         @0@'.format(enable_bmp),
   '  FFmpeg      @0@'.format(enable_ffmpeg),
   '  GIF         @0@'.format(enable_gif),
