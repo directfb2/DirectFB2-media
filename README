@@ -3,6 +3,7 @@ DirectFB2-media
 
 DirectFB2-media contains additional font/image/music/video providers for DirectFB2:
 
+  - AVIF image provider
   - BMP image provider
   - FFmpeg image provider, music provider and video provider
   - FreeType2 font provider

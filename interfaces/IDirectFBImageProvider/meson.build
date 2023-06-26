@@ -14,6 +14,22 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
+if enable_avif
+  library('idirectfbimageprovider_avif',
+          'idirectfbimageprovider_avif.c',
+          dependencies: [avif_dep, directfb_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_avif',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_avif',
+                     description: 'AVIF image provider',
+                     requires_private: 'libavif',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_avif -Wl,--no-whole-archive'])
+endif
+
 if enable_bmp
   library('idirectfbimageprovider_bmp',
           'idirectfbimageprovider_bmp.c',
