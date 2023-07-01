@@ -43,7 +43,6 @@ DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, STB )
 typedef struct {
      int                    ref;                     /* reference counter */
 
-     IDirectFBDataBuffer   *buffer;
      IDirectFB             *idirectfb;
 
      stbi_uc               *image;
@@ -98,10 +97,6 @@ IDirectFBImageProvider_STB_Destruct( IDirectFBImageProvider *thiz )
      D_DEBUG_AT( ImageProvider_STB, "%s( %p )\n", __FUNCTION__, thiz );
 
      stbi_image_free( data->image );
-
-     /* Decrease the data buffer reference counter. */
-     if (data->buffer)
-          data->buffer->Release( data->buffer );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 }
@@ -258,18 +253,28 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      stbi__context s;
 
-     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
-          return DFB_OK;
+     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename) {
+          if (strrchr( ctx->filename, '.' ) &&
+              (strcasecmp( strrchr( ctx->filename, '.' ), ".bmp"  ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".gif"  ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".jpg"  ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".jpeg" ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".png"  ) == 0 ||
+               strcasecmp( strrchr( ctx->filename, '.' ), ".tga"  ) == 0))
+               return DFB_OK;
+          else
+               return DFB_UNSUPPORTED;
+     }
 
      stbi__start_mem( &s, ctx->header, sizeof(ctx->header) );
 
      if (stbi__bmp_test( &s ))
           return DFB_OK;
 
-     if (stbi__jpeg_test( &s ))
+     if (stbi__gif_test( &s ))
           return DFB_OK;
 
-     if (stbi__gif_test( &s ))
+     if (stbi__jpeg_test( &s ))
           return DFB_OK;
 
      if (stbi__png_test( &s ))
@@ -296,23 +301,15 @@ Construct( IDirectFBImageProvider *thiz,
 
      D_DEBUG_AT( ImageProvider_STB, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref = 1;
-
-     if (!(direct_getenv( "D_STREAM_BYPASS" ) && buffer_data->filename)) {
-          data->buffer = buffer;
-
-          /* Increase the data buffer reference counter. */
-          buffer->AddRef( buffer );
-     }
-
+     data->ref       = 1;
      data->idirectfb = idirectfb;
 
      callbacks.read = readSTB;
      callbacks.skip = skipSTB;
      callbacks.eof  = eofSTB;
 
-     if (data->buffer)
-          data->image = stbi_load_from_callbacks( &callbacks, data->buffer, &width, &height, NULL, 4 );
+     if (!(direct_getenv( "D_STREAM_BYPASS" ) && buffer_data->filename))
+          data->image = stbi_load_from_callbacks( &callbacks, buffer, &width, &height, NULL, 4 );
      else
           data->image = stbi_load( buffer_data->filename, &width, &height, NULL, 4 );
 
@@ -336,8 +333,6 @@ Construct( IDirectFBImageProvider *thiz,
      return DFB_OK;
 
 error:
-     buffer->Release( buffer );
-
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 
      return ret;

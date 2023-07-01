@@ -61,6 +61,7 @@ enable_openexr      = get_option('openexr')
 enable_playlist     = get_option('playlist')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
+enable_spng         = get_option('spng')
 enable_stb_image    = get_option('stb_image')
 enable_stb_truetype = get_option('stb_truetype')
 enable_svg          = get_option('svg')
@@ -212,6 +213,15 @@ if enable_sft
   endif
 endif
 
+if enable_spng
+  spng_dep = dependency('spng', required: false)
+
+  if not spng_dep.found()
+    warning('Simple PNG image provider will not be built.')
+    enable_spng = false
+  endif
+endif
+
 if enable_stb_image != 'false'
   if not fs.is_file(enable_stb_image)
     warning('STB image provider will not be built.')
@@ -321,6 +331,7 @@ summary = [
   '  LodePNG     @0@'.format(enable_lodepng),
   '  OpenEXR     @0@'.format(enable_openexr),
   '  PNG         @0@'.format(enable_png),
+  '  SPNG        @0@'.format(enable_spng),
   '  STB         @0@'.format(enable_stb_image),
   '  SVG         @0@'.format(enable_svg),
   '  TIFF        @0@'.format(enable_tiff),
