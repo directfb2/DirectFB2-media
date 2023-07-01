@@ -274,8 +274,13 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      unsigned short tiff_magic;
 
-     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename)
-          return DFB_OK;
+     if (direct_getenv( "D_STREAM_BYPASS" ) && ctx->filename) {
+          if (strrchr( ctx->filename, '.' ) &&
+              strcasecmp( strrchr( ctx->filename, '.' ), ".tiff" ) == 0)
+               return DFB_OK;
+          else
+               return DFB_UNSUPPORTED;
+     }
 
      /* Check the magic. */
      tiff_magic = ctx->header[0] | (ctx->header[1] << 8);

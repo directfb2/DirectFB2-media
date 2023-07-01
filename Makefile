@@ -39,6 +39,15 @@ CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR))/schrift.c
 CSRCS += interfaces/IDirectFBFont/idirectfbfont_sft.c
 endif
 
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SPNG),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SPNG_DIR)/spng -DSPNG_USE_MINIZ
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_MINIZ_DIR)
+CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SPNG_DIR))/spng/spng.c
+CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_MINIZ_DIR))/miniz.c
+CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_MINIZ_DIR))/miniz_tinfl.c
+CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_spng.c
+endif
+
 ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB),y)
 CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB_DIR) -DSTB_IMAGE_H=\"stb_image.h\" -DSTB_TRUETYPE_H=\"stb_truetype.h\"
 CSRCS += interfaces/IDirectFBFont/idirectfbfont_stb.c

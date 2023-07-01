@@ -20,6 +20,7 @@ DirectFB2-media contains additional font/image/music/video providers for DirectF
   - Playlist music provider
   - PNG image provider
   - Schrift font provider
+  - Simple PNG image provider
   - STB font provider and image provider
   - SVG image provider
   - Swfdec video provider

@@ -16,7 +16,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include <direct/filesystem.h>
+#include <direct/system.h>
 #include <display/idirectfbsurface.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
@@ -227,6 +227,14 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      /* Check for valid filename. */
      if (!ctx->filename)
           return DFB_UNSUPPORTED;
+
+     if (direct_getenv( "D_STREAM_BYPASS" )) {
+          if (strrchr( ctx->filename, '.' ) &&
+              strcasecmp( strrchr( ctx->filename, '.' ), ".exr" ) == 0)
+               return DFB_OK;
+          else
+               return DFB_UNSUPPORTED;
+     }
 
      /* Check the magic. */
      if (ctx->header[0] == 0x76 && ctx->header[1] == 0x2f && ctx->header[2] == 0x31 && ctx->header[3] == 0x01)

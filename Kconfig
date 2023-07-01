@@ -52,6 +52,23 @@ config GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR
 
 endif # GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 
+config GRAPHICS_DIRECTFB2_MEDIA_SPNG
+	bool "Simple PNG image provider"
+	depends on GRAPHICS_DIRECTFB2
+	default n
+
+if GRAPHICS_DIRECTFB2_MEDIA_SPNG
+
+config GRAPHICS_DIRECTFB2_MEDIA_SPNG_DIR
+	string "Simple PNG source directory"
+	default "libspng"
+
+config GRAPHICS_DIRECTFB2_MEDIA_MINIZ_DIR
+	string "Miniz source directory"
+	default "miniz"
+
+endif # GRAPHICS_DIRECTFB2_MEDIA_SPNG
+
 config GRAPHICS_DIRECTFB2_MEDIA_STB
 	bool "STB font provider and image provider"
 	depends on GRAPHICS_DIRECTFB2

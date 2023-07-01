@@ -191,6 +191,22 @@ if enable_png
                                          '-Wl,--whole-archive -lidirectfbimageprovider_png -Wl,--no-whole-archive'])
 endif
 
+if enable_spng
+  library('idirectfbimageprovider_spng',
+          'idirectfbimageprovider_spng.c',
+          dependencies: [directfb_dep, spng_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_spng',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_spng',
+                     description: 'Simple PNG image provider',
+                     requires_private: 'spng',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_spng -Wl,--no-whole-archive'])
+endif
+
 if enable_stb_image != 'false'
   library('idirectfbimageprovider_stb',
           'idirectfbimageprovider_stb.c',

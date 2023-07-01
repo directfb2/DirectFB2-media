@@ -340,11 +340,7 @@ Construct( IDirectFBImageProvider *thiz,
 
      D_DEBUG_AT( ImageProvider_SVG, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref = 1;
-
-     /* Increase the data buffer reference counter. */
-     buffer->AddRef( buffer );
-
+     data->ref       = 1;
      data->idirectfb = idirectfb;
 
      status = svg_cairo_create( &data->svg_cairo );
@@ -391,9 +387,6 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
-     /* Decrease the data buffer reference counter. */
-     buffer->Release( buffer );
-
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
      svg_cairo_get_size( data->svg_cairo, (unsigned int*) &data->desc.width, (unsigned int*) &data->desc.height );
      data->desc.pixelformat = DSPF_ARGB;
@@ -410,8 +403,6 @@ Construct( IDirectFBImageProvider *thiz,
 error:
      if (data->svg_cairo)
           svg_cairo_destroy( data->svg_cairo );
-
-     buffer->Release( buffer );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 

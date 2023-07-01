@@ -180,9 +180,9 @@ IDirectFBImageProvider_JasPer_RenderTo( IDirectFBImageProvider *thiz,
           int  hs, vs;
           int  i, j;
           bool mono;
-          bool direct = (rect.w == data->desc.width && rect.h == data->desc.height && data->render_callback);
+          bool direct = (rect.w == data->desc.width && rect.h == data->desc.height);
 
-          if (jas_image_numcmpts(data->jas_ptr) > 1) {
+          if (jas_image_numcmpts( data->jas_ptr ) > 1) {
                cmpts[0] = jas_image_getcmptbytype( data->jas_ptr, JAS_IMAGE_CT_COLOR( JAS_CLRSPC_CHANIND_RGB_R ) );
                cmpts[1] = jas_image_getcmptbytype( data->jas_ptr, JAS_IMAGE_CT_COLOR( JAS_CLRSPC_CHANIND_RGB_G ) );
                cmpts[2] = jas_image_getcmptbytype( data->jas_ptr, JAS_IMAGE_CT_COLOR( JAS_CLRSPC_CHANIND_RGB_B ) );

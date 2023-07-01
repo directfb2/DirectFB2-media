@@ -87,6 +87,10 @@ option('sft',
        type: 'boolean',
        description: 'Schrift font provider')
 
+option('spng',
+       type: 'boolean',
+       description: 'Simple PNG image provider')
+
 option('stb_image',
        type: 'string',
        value: 'stb_image.h',
