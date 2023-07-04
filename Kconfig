@@ -37,7 +37,20 @@ config GRAPHICS_DIRECTFB2_MEDIA_LODEPNG_DIR
 	string "LodePNG source directory"
 	default "lodepng"
 
-endif # GRAPHICS_DIRECTFB2_MEDIA_LODEPNG
+endif # GRAPHICS_DIRECTFB2_MEDIA_LODEPNG
+
+config GRAPHICS_DIRECTFB2_MEDIA_NANOSVG
+	bool "NanoSVG image provider"
+	depends on GRAPHICS_DIRECTFB2
+	default n
+
+if GRAPHICS_DIRECTFB2_MEDIA_NANOSVG
+
+config GRAPHICS_DIRECTFB2_MEDIA_NANOSVG_DIR
+	string "NanoSVG source directory"
+	default "nanosvg/src"
+
+endif # GRAPHICS_DIRECTFB2_MEDIA_NANOSVG
 
 config GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 	bool "Schrift font provider"

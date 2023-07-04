@@ -22,7 +22,7 @@
 #include <direct/utf8.h>
 #include <media/idirectfbfont.h>
 #define  STB_TRUETYPE_IMPLEMENTATION
-#include STB_TRUETYPE_H
+#include <stb_truetype.h>
 
 D_DEBUG_DOMAIN( Font_STB, "Font/STB", "STB Font Provider" );
 

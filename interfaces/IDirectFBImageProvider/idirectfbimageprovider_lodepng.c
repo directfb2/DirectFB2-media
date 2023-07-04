@@ -19,7 +19,7 @@
 #include <direct/filesystem.h>
 #include <display/idirectfbsurface.h>
 #define  LODEPNG_NO_COMPILE_ENCODER
-#include LODEPNG_C
+#include LODEPNG_SRC
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 

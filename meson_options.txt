@@ -71,6 +71,11 @@ option('mng',
        type: 'boolean',
        description: 'MNG video provider')
 
+option('nanosvg',
+       type: 'string',
+       value: 'nanosvg/src',
+       description: 'NanoSVG image provider')
+
 option('openexr',
        type: 'boolean',
        description: 'OpenEXR image provider')
@@ -93,12 +98,12 @@ option('spng',
 
 option('stb_image',
        type: 'string',
-       value: 'stb_image.h',
+       value: 'stb',
        description: 'STB image provider')
 
 option('stb_truetype',
        type: 'string',
-       value: 'stb_truetype.h',
+       value: 'stb',
        description: 'STB font provider')
 
 option('svg',

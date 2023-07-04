@@ -57,6 +57,7 @@ enable_jxl          = get_option('jxl')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad')
 enable_mng          = get_option('mng')
+enable_nanosvg      = get_option('nanosvg')
 enable_openexr      = get_option('openexr')
 enable_playlist     = get_option('playlist')
 enable_png          = get_option('png')
@@ -186,6 +187,18 @@ if enable_mng
   endif
 endif
 
+if enable_nanosvg != 'false'
+  nanosvg_dep = meson.get_compiler('c').find_library('m', required: false)
+
+  if not fs.is_dir(enable_nanosvg) or not nanosvg_dep.found()
+    warning('NanoSVG provider will not be built.')
+    enable_nanosvg = 'false'
+  else
+    nanosvg_dep = declare_dependency(include_directories: include_directories(enable_nanosvg),
+                                     dependencies: nanosvg_dep)
+  endif
+endif
+
 if enable_openexr
   openexr_dep = dependency('OpenEXR', required: false)
 
@@ -223,18 +236,23 @@ if enable_spng
 endif
 
 if enable_stb_image != 'false'
-  if not fs.is_file(enable_stb_image)
+  if not fs.is_dir(enable_stb_image)
     warning('STB image provider will not be built.')
     enable_stb_image = 'false'
+  else
+    stb_image_dep = declare_dependency(include_directories: include_directories(enable_stb_image))
   endif
 endif
 
 if enable_stb_truetype != 'false'
   stb_truetype_dep = meson.get_compiler('c').find_library('m', required: false)
 
-  if not fs.is_file(enable_stb_truetype) or not stb_truetype_dep.found()
+  if not fs.is_dir(enable_stb_truetype) or not stb_truetype_dep.found()
     warning('STB font provider will not be built.')
     enable_stb_truetype = 'false'
+  else
+    stb_truetype_dep = declare_dependency(include_directories: include_directories(enable_stb_truetype),
+                                          dependencies: stb_truetype_dep)
   endif
 endif
 
@@ -329,6 +347,7 @@ summary = [
   '  JPEG        @0@'.format(enable_jpeg),
   '  JXL         @0@'.format(enable_jxl),
   '  LodePNG     @0@'.format(enable_lodepng),
+  '  NanoSVG     @0@'.format(enable_nanosvg),
   '  OpenEXR     @0@'.format(enable_openexr),
   '  PNG         @0@'.format(enable_png),
   '  SPNG        @0@'.format(enable_spng),

@@ -234,8 +234,8 @@ Construct( IDirectFBImageProvider *thiz,
      size_t                    size;
      JxlDecoderStatus          status;
      void                     *ptr;
-     JxlDecoder               *dec;
      void                     *chunk       = NULL;
+     JxlDecoder               *dec         = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_JXL )
@@ -390,6 +390,14 @@ Construct( IDirectFBImageProvider *thiz,
      } while (status != JXL_DEC_SUCCESS);
 
      JxlDecoderDestroy( dec );
+
+     if (!len) {
+          D_FREE( ptr );
+     }
+     else if (len > 0) {
+          direct_file_unmap( ptr, len );
+          direct_file_close( &fd );
+     }
 
      thiz->AddRef                = IDirectFBImageProvider_JXL_AddRef;
      thiz->Release               = IDirectFBImageProvider_JXL_Release;

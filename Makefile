@@ -29,8 +29,13 @@ CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_gif.c
 endif
 
 ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_LODEPNG),y)
-CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_LODEPNG_DIR) -DLODEPNG_C=\"lodepng.cpp\"
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_LODEPNG_DIR) -DLODEPNG_SRC=\"lodepng.cpp\"
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_lodepng.c
+endif
+
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_NANOSVG),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_NANOSVG_DIR)
+CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_nanosvg.c
 endif
 
 ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT),y)
@@ -49,7 +54,7 @@ CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_spng.c
 endif
 
 ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB),y)
-CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB_DIR) -DSTB_IMAGE_H=\"stb_image.h\" -DSTB_TRUETYPE_H=\"stb_truetype.h\"
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_STB_DIR)
 CSRCS += interfaces/IDirectFBFont/idirectfbfont_stb.c
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_stb.c
 endif

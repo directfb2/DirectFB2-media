@@ -172,7 +172,9 @@ IDirectFBImageProvider_YUV_RenderTo( IDirectFBImageProvider *thiz,
 
      desc = data->desc;
 
-     desc.preallocated[0].data = data->image;
+     desc.flags                 |= DSDESC_PREALLOCATED;
+     desc.preallocated[0].data   = data->image;
+     desc.preallocated[0].pitch  = data->desc.width;
 
      ret = data->idirectfb->CreateSurface( data->idirectfb, &desc, &source );
      if (ret)
@@ -430,16 +432,13 @@ Construct( IDirectFBImageProvider *thiz,
 
      direct_file_close( &fd );
 
-     data->ptr                        = ptr;
-     data->len                        = info.size;
-     data->desc.flags                 = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT | DSDESC_COLORSPACE |
-                                        DSDESC_PREALLOCATED;
-     data->desc.width                 = width;
-     data->desc.height                = height;
-     data->desc.pixelformat           = format;
-     data->desc.preallocated[0].data  = ptr + data->offset;
-     data->desc.preallocated[0].pitch = width;
-     data->desc.colorspace            = colorspace;
+     data->ptr              = ptr;
+     data->len              = info.size;
+     data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT | DSDESC_COLORSPACE;
+     data->desc.width       = width;
+     data->desc.height      = height;
+     data->desc.pixelformat = format;
+     data->desc.colorspace  = colorspace;
 
      thiz->AddRef                = IDirectFBImageProvider_YUV_AddRef;
      thiz->Release               = IDirectFBImageProvider_YUV_Release;

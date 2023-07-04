@@ -16,12 +16,15 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include <avif/avif.h>
+#include <direct/memcpy.h>
 #include <display/idirectfbsurface.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
+#define  NANOSVG_IMPLEMENTATION
+#define  NANOSVGRAST_IMPLEMENTATION
+#include <nanosvgrast.h>
 
-D_DEBUG_DOMAIN( ImageProvider_AVIF, "ImageProvider/AVIF", "AVIF Image Provider" );
+D_DEBUG_DOMAIN( ImageProvider_NanoSVG, "ImageProvider/NanoSVG", "NanoSVG Image Provider" );
 
 static DFBResult Probe    ( IDirectFBImageProvider_ProbeContext *ctx );
 
@@ -32,7 +35,7 @@ static DFBResult Construct( IDirectFBImageProvider              *thiz,
 
 #include <direct/interface_implementation.h>
 
-DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, AVIF )
+DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, NanoSVG )
 
 /**********************************************************************************************************************/
 
@@ -41,38 +44,35 @@ typedef struct {
 
      IDirectFB             *idirectfb;
 
-     avifDecoder           *dec;
-     avifRGBImage           rgb;
+     unsigned char         *image;
 
      DFBSurfaceDescription  desc;
 
      DIRenderCallback       render_callback;
      void                  *render_callback_context;
-} IDirectFBImageProvider_AVIF_data;
+} IDirectFBImageProvider_NanoSVG_data;
 
 /**********************************************************************************************************************/
 
 static void
-IDirectFBImageProvider_AVIF_Destruct( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_NanoSVG_Destruct( IDirectFBImageProvider *thiz )
 {
-     IDirectFBImageProvider_AVIF_data *data = thiz->priv;
+     IDirectFBImageProvider_NanoSVG_data *data = thiz->priv;
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      /* Deallocate image data. */
-     avifRGBImageFreePixels( &data->rgb );
-
-     avifDecoderDestroy( data->dec );
+     D_FREE( data->image );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 }
 
 static DirectResult
-IDirectFBImageProvider_AVIF_AddRef( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_NanoSVG_AddRef( IDirectFBImageProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -80,25 +80,25 @@ IDirectFBImageProvider_AVIF_AddRef( IDirectFBImageProvider *thiz )
 }
 
 static DirectResult
-IDirectFBImageProvider_AVIF_Release( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_NanoSVG_Release( IDirectFBImageProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
-          IDirectFBImageProvider_AVIF_Destruct( thiz );
+          IDirectFBImageProvider_NanoSVG_Destruct( thiz );
 
      return DFB_OK;
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_GetSurfaceDescription( IDirectFBImageProvider *thiz,
-                                                   DFBSurfaceDescription  *ret_desc )
+IDirectFBImageProvider_NanoSVG_GetSurfaceDescription( IDirectFBImageProvider *thiz,
+                                                      DFBSurfaceDescription  *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -109,12 +109,12 @@ IDirectFBImageProvider_AVIF_GetSurfaceDescription( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_GetImageDescription( IDirectFBImageProvider *thiz,
-                                                 DFBImageDescription    *ret_desc )
+IDirectFBImageProvider_NanoSVG_GetImageDescription( IDirectFBImageProvider *thiz,
+                                                    DFBImageDescription    *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -125,9 +125,9 @@ IDirectFBImageProvider_AVIF_GetImageDescription( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
-                                      IDirectFBSurface       *destination,
-                                      const DFBRectangle     *dest_rect )
+IDirectFBImageProvider_NanoSVG_RenderTo( IDirectFBImageProvider *thiz,
+                                         IDirectFBSurface       *destination,
+                                         const DFBRectangle     *dest_rect )
 {
      DFBResult              ret;
      IDirectFBSurface_data *dst_data;
@@ -137,9 +137,9 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
      DFBSurfaceDescription  desc;
      IDirectFBSurface      *source;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -169,8 +169,8 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
      desc = data->desc;
 
      desc.flags                 |= DSDESC_PREALLOCATED;
-     desc.preallocated[0].data   = data->rgb.pixels;
-     desc.preallocated[0].pitch  = data->rgb.rowBytes;
+     desc.preallocated[0].data   = data->image;
+     desc.preallocated[0].pitch  = data->desc.width * 4;
 
      ret = data->idirectfb->CreateSurface( data->idirectfb, &desc, &source );
      if (ret)
@@ -198,13 +198,13 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_SetRenderCallback( IDirectFBImageProvider *thiz,
-                                               DIRenderCallback        callback,
-                                               void                   *ctx )
+IDirectFBImageProvider_NanoSVG_SetRenderCallback( IDirectFBImageProvider *thiz,
+                                                  DIRenderCallback        callback,
+                                                  void                   *ctx )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->render_callback         = callback;
      data->render_callback_context = ctx;
@@ -217,9 +217,19 @@ IDirectFBImageProvider_AVIF_SetRenderCallback( IDirectFBImageProvider *thiz,
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     /* Check the magic. */
-     if (!strncmp( (const char*) ctx->header + 4, "ftypavif", 8 ))
-          return DFB_OK;
+     int i;
+
+     /* Look for the magic. */
+     for (i = 0; i < sizeof(ctx->header) - 5; i++) {
+          if (!memcmp( &ctx->header[i], "<?xml", 5 ))
+               return DFB_OK;
+     }
+
+     /* Else look for the file extension. */
+     if (ctx->filename && strrchr( ctx->filename, '.' )) {
+          if (!strcasecmp( strrchr( ctx->filename, '.' ), ".svg" ))
+               return DFB_OK;
+     }
 
      return DFB_UNSUPPORTED;
 }
@@ -231,29 +241,26 @@ Construct( IDirectFBImageProvider *thiz,
            IDirectFB              *idirectfb )
 {
      DFBResult                 ret;
-     avifResult                result;
-     char                     *chunk       = NULL;
+     int                       width, height;
+     void                     *chunk       = NULL;
+     NSVGimage                *im          = NULL;
+     NSVGrasterizer           *rast        = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
-     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_AVIF )
+     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_NanoSVG )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_NanoSVG, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
 
-     data->dec = avifDecoderCreate();
-     if (!data->dec) {
-          D_ERROR( "ImageProvider/AVIF: Failed to create AVIF decoder!\n" );
-          ret = DFB_FAILURE;
-          goto error;
-     }
-
      if (buffer_data->buffer) {
-          avifDecoderSetIOMemory( data->dec, buffer_data->buffer, buffer_data->length );
+          chunk = D_MALLOC( buffer_data->length );
+          direct_memcpy( chunk, buffer_data->buffer, buffer_data->length );
+          im = nsvgParse( chunk, "px", 96 );
      }
      else if (buffer_data->filename) {
-          avifDecoderSetIOFile( data->dec, buffer_data->filename );
+          im = nsvgParseFromFile( buffer_data->filename, "px", 96 );
      }
      else {
           unsigned int size = 0;
@@ -279,54 +286,64 @@ Construct( IDirectFBImageProvider *thiz,
                goto error;
           }
 
-          avifDecoderSetIOMemory( data->dec, (const uint8_t*) chunk, size );
+          im = nsvgParse( chunk, "px", 96 );
      }
 
-     result = avifDecoderParse( data->dec );
-     if (result != AVIF_RESULT_OK) {
-          D_ERROR( "ImageProvider/AVIF: Failed to parse image: %s!\n", avifResultToString( result ) );
-          ret = DFB_FAILURE;
-          goto error;
-     }
-
-     result = avifDecoderNextImage( data->dec );
-     if (result != AVIF_RESULT_OK) {
-          D_ERROR( "ImageProvider/AVIF: Error during decoding: %s!\n", avifResultToString( result ) );
-          ret = DFB_FAILURE;
+     if (!im) {
+          D_ERROR( "ImageProvider/NanoSVG: Failed to parse SVG!\n" );
+          ret = DFB_UNSUPPORTED;
           goto error;
      }
 
      if (chunk)
           D_FREE( chunk );
 
-     avifRGBImageSetDefaults( &data->rgb, data->dec->image );
+     width  = im->width;
+     height = im->height;
 
      /* Allocate image data. */
-     avifRGBImageAllocatePixels( &data->rgb );
+     data->image = D_CALLOC( height, width * 4 );
+     if (!data->image) {
+          ret = D_OOM();
+          goto error;
+     }
 
-     /* Conversion from YUV. */
-     avifImageYUVToRGB( data->dec->image, &data->rgb );
+     rast = nsvgCreateRasterizer();
+     if (!rast) {
+          D_ERROR( "ImageProvider/NanoSVG: Failed to create rasterizer!\n" );
+          ret = DFB_FAILURE;
+          goto error;
+     }
+
+     nsvgRasterize( rast, im, 0, 0, 1, data->image, width, height, width * 4 );
+
+     nsvgDeleteRasterizer( rast );
+
+     nsvgDelete( im );
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width       = data->dec->image->width;
-     data->desc.height      = data->dec->image->height;
+     data->desc.width       = width;
+     data->desc.height      = height;
      data->desc.pixelformat = DSPF_ABGR;
 
-     thiz->AddRef                = IDirectFBImageProvider_AVIF_AddRef;
-     thiz->Release               = IDirectFBImageProvider_AVIF_Release;
-     thiz->GetSurfaceDescription = IDirectFBImageProvider_AVIF_GetSurfaceDescription;
-     thiz->GetImageDescription   = IDirectFBImageProvider_AVIF_GetImageDescription;
-     thiz->RenderTo              = IDirectFBImageProvider_AVIF_RenderTo;
-     thiz->SetRenderCallback     = IDirectFBImageProvider_AVIF_SetRenderCallback;
+     thiz->AddRef                = IDirectFBImageProvider_NanoSVG_AddRef;
+     thiz->Release               = IDirectFBImageProvider_NanoSVG_Release;
+     thiz->GetSurfaceDescription = IDirectFBImageProvider_NanoSVG_GetSurfaceDescription;
+     thiz->GetImageDescription   = IDirectFBImageProvider_NanoSVG_GetImageDescription;
+     thiz->RenderTo              = IDirectFBImageProvider_NanoSVG_RenderTo;
+     thiz->SetRenderCallback     = IDirectFBImageProvider_NanoSVG_SetRenderCallback;
 
      return DFB_OK;
 
 error:
+     if (data->image)
+          D_FREE( data->image );
+
+     if (im)
+          nsvgDelete( im );
+
      if (chunk)
           D_FREE( chunk );
-
-     if (data->dec)
-          avifDecoderDestroy( data->dec );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 

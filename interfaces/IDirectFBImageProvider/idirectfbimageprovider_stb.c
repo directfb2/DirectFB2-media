@@ -23,7 +23,7 @@
 #define  STB_IMAGE_IMPLEMENTATION
 #define  STBI_NO_HDR
 #define  STBI_NO_LINEAR
-#include STB_IMAGE_H
+#include <stb_image.h>
 
 D_DEBUG_DOMAIN( ImageProvider_STB, "ImageProvider/STB", "STB Image Provider" );
 
