@@ -16,6 +16,7 @@ DirectFB2-media contains additional font/image/music/video providers for DirectF
   - LodePNG image provider
   - MAD music provider
   - MNG video provider
+  - NanoSVG image provider
   - OpenEXR image provider
   - Playlist music provider
   - PNG image provider

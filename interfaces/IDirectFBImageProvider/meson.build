@@ -145,7 +145,7 @@ endif
 if enable_lodepng != 'false'
   library('idirectfbimageprovider_lodepng',
           'idirectfbimageprovider_lodepng.c',
-          c_args: '-DLODEPNG_C="lodepng.cpp"',
+          c_args: '-DLODEPNG_SRC="lodepng.cpp"',
           dependencies: [directfb_dep, lodepng_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
@@ -156,6 +156,21 @@ if enable_lodepng != 'false'
                      description: 'LodePNG image provider',
                      libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
                                          '-Wl,--whole-archive -lidirectfbimageprovider_lodepng -Wl,--no-whole-archive'])
+endif
+
+if enable_nanosvg != 'false'
+  library('idirectfbimageprovider_nanosvg',
+          'idirectfbimageprovider_nanosvg.c',
+          dependencies: [directfb_dep, nanosvg_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_nanosvg',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_nanosvg',
+                     description: 'NanoSVG image provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_nanosvg -Wl,--no-whole-archive'])
 endif
 
 if enable_openexr
@@ -210,8 +225,7 @@ endif
 if enable_stb_image != 'false'
   library('idirectfbimageprovider_stb',
           'idirectfbimageprovider_stb.c',
-          c_args: '-DSTB_IMAGE_H="@0@"'.format(enable_stb_image),
-          dependencies: directfb_dep,
+          dependencies: [directfb_dep, stb_image_dep],
           install: true,
           install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
 

@@ -378,6 +378,7 @@ Construct( IDirectFBImageProvider *thiz,
      }
 
      if (!st) {
+          D_ERROR( "ImageProvider/JasPer: Failed to open stream!\n" );
           ret = DFB_UNSUPPORTED;
           goto error;
      }
@@ -385,6 +386,7 @@ Construct( IDirectFBImageProvider *thiz,
      data->jas_ptr = jas_image_decode( st, -1, 0 );
 
      jas_stream_close( st );
+
      if (chunk)
           D_FREE( chunk );
 
