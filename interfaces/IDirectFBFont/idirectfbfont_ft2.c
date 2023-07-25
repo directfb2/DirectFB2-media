@@ -808,15 +808,10 @@ Probe( IDirectFBFont_ProbeContext *ctx )
      FT_Error  err;
      FT_Face   face;
 
-     if (!ctx->content)
-          return DFB_UNSUPPORTED;
-
      /* Initialize the FreeType library object. */
      ret = init_freetype();
-     if (ret) {
-          D_DERROR( ret, "Font/FT2: Initialization of the FreeType2 library failed!\n" );
-          return ret;
-     }
+     if (ret)
+          return DFB_UNSUPPORTED;
 
      /* Open the font loaded into memory. */
      direct_mutex_lock( &library_mutex );

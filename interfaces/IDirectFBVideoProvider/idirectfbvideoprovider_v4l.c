@@ -113,7 +113,7 @@ V4LVideo( DirectThread *thread,
 
      for (i = 0; i < NUMBER_OF_BUFFERS; i++) {
           desc.preallocated[0].data  = data->ptr[i];
-          desc.preallocated[0].pitch = DFB_BYTES_PER_LINE( DSPF_YUY2, data->desc.width );;
+          desc.preallocated[0].pitch = DFB_BYTES_PER_LINE( DSPF_YUY2, data->desc.width );
 
           ret = data->idirectfb->CreateSurface( data->idirectfb, &desc, &source[i] );
           if (ret)

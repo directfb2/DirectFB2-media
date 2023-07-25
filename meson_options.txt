@@ -58,6 +58,10 @@ option('jxl',
        type: 'boolean',
        description: 'JPEG XL image provider')
 
+option('libmpeg3',
+       type: 'boolean',
+       description: 'Libmpeg3 video provider')
+
 option('lodepng',
        type: 'string',
        value: 'lodepng',

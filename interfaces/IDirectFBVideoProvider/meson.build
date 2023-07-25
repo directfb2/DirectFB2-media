@@ -53,6 +53,23 @@ if enable_gstreamer
                                          '-Wl,--whole-archive -lidirectfbvideoprovider_gstreamer -Wl,--no-whole-archive'])
 endif
 
+if enable_libmpeg3
+  library('idirectfbvideoprovider_libmpeg3',
+          'idirectfbvideoprovider_libmpeg3.c',
+          include_directories: config_inc,
+          dependencies: [directfb_dep, libmpeg3_dep, fusionsound_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_libmpeg3',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_libmpeg3',
+                     description: 'Libmpeg3 video provider',
+                     requires_private: 'libmpeg3',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_libmpeg3 -Wl,--no-whole-archive'])
+endif
+
 if enable_mng
   library('idirectfbvideoprovider_mng',
           'idirectfbvideoprovider_mng.c',

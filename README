@@ -13,6 +13,7 @@ DirectFB2-media contains additional font/image/music/video providers for DirectF
   - JasPer image provider
   - JPEG image provider
   - JPEG XL image provider
+  - Libmpeg3 video provider
   - LodePNG image provider
   - MAD music provider
   - MNG video provider

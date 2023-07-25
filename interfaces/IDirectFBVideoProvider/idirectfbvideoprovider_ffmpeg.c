@@ -601,7 +601,7 @@ FFmpegVideo( DirectThread *thread,
                if (data->speed != 1.0)
                     length = length / data->speed;
 
-               delay = data->video.pts - get_stream_clock(data);
+               delay = data->video.pts - get_stream_clock( data );
 
                if (delay > -GAP_THRESHOLD && delay < GAP_THRESHOLD)
                     delay = CLAMP( delay, -GAP_TOLERANCE, GAP_TOLERANCE );
