@@ -17,7 +17,6 @@
 */
 
 #include <config.h>
-#include <direct/filesystem.h>
 #include <direct/memcpy.h>
 #include <direct/thread.h>
 #include <display/idirectfbsurface.h>
@@ -25,7 +24,6 @@
 #include <fusionsound.h>
 #endif
 #include <libswfdec/swfdec.h>
-#include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbvideoprovider.h>
 
 D_DEBUG_DOMAIN( VideoProvider_Swfdec, "VideoProvider/Swfdec", "Swfdec Video Provider" );
@@ -57,8 +55,6 @@ typedef struct {
      int                        ref;                    /* reference counter */
 
      IDirectFB                 *idirectfb;
-
-     DFBBoolean                 seekable;
 
      SwfdecPlayer              *player;
      DirectMutex                player_lock;
@@ -117,8 +113,6 @@ typedef struct {
      SwfdecLoader         loader;
 
      IDirectFBDataBuffer *buffer;
-
-     DirectThread        *thread;
 } DataBufferLoader;
 
 typedef struct {
@@ -127,12 +121,17 @@ typedef struct {
 
 G_DEFINE_TYPE (DataBufferLoader, databuffer_loader, SWFDEC_TYPE_LOADER)
 
-static void *
-SwfLoader( DirectThread *thread,
-           void         *arg )
+static void
+databuffer_loader_load( SwfdecLoader        *loader,
+                        SwfdecLoader        *parent,
+                        SwfdecLoaderRequest  request,
+                        const char          *data,
+                        gsize                data_len )
 {
      DFBResult         ret;
-     DataBufferLoader *databuffer_loader = arg;
+     DataBufferLoader *databuffer_loader = (DataBufferLoader*) loader;
+
+     swfdec_loader_open( &databuffer_loader->loader, NULL );
 
      while (1) {
           char          buf[4096];
@@ -141,7 +140,7 @@ SwfLoader( DirectThread *thread,
 
           ret = databuffer_loader->buffer->WaitForData( databuffer_loader->buffer, sizeof(buf) );
           if (ret == DFB_OK)
-               databuffer_loader->buffer->GetData( databuffer_loader->buffer, sizeof(buf), buf, &len );
+               ret = databuffer_loader->buffer->GetData( databuffer_loader->buffer, sizeof(buf), buf, &len );
 
           if (ret)
                break;
@@ -150,85 +149,11 @@ SwfLoader( DirectThread *thread,
           direct_memcpy( buffer->data, buf, len );
           swfdec_loader_push( &databuffer_loader->loader, buffer );
      }
-
-     swfdec_loader_eof( &databuffer_loader->loader );
-
-     return NULL;
-}
-
-static void
-databuffer_loader_load( SwfdecLoader        *loader,
-                        SwfdecLoader        *parent,
-                        SwfdecLoaderRequest  request,
-                        const char          *data,
-                        gsize                data_len )
-{
-     DFBResult                 ret;
-     SwfdecBuffer             *buffer;
-     unsigned int              length            = 0;
-     DataBufferLoader         *databuffer_loader = (DataBufferLoader*) loader;
-     IDirectFBDataBuffer_data *buffer_data       = databuffer_loader->buffer->priv;
-
-     if (request == SWFDEC_LOADER_REQUEST_POST)
-          return;
-
-     ret = databuffer_loader->buffer->GetLength( databuffer_loader->buffer, &length );
-     if (ret == DFB_OK)
-          swfdec_loader_set_size( loader, length );
-
-     swfdec_loader_open( loader, NULL );
-
-     if (buffer_data->buffer) {
-          buffer = swfdec_buffer_new_for_data( buffer_data->buffer, buffer_data->length );
-          swfdec_loader_push( loader, buffer );
-          swfdec_loader_eof( loader );
-     }
-     else {
-          char         buf[4096];
-          unsigned int len;
-
-          ret = databuffer_loader->buffer->WaitForData( databuffer_loader->buffer, sizeof(buf) );
-          if (ret == DFB_OK)
-               ret = databuffer_loader->buffer->GetData( databuffer_loader->buffer, sizeof(buf), buf, &len );
-
-          if (ret)
-               return;
-
-          buffer = swfdec_buffer_new_and_alloc( len );
-          direct_memcpy( buffer->data, buf, len );
-          swfdec_loader_push( &databuffer_loader->loader, buffer );
-
-          if (!length || length > len)
-               databuffer_loader->thread = direct_thread_create( DTT_DEFAULT, SwfLoader, databuffer_loader,
-                                                                 "Swf Loader" );
-          else
-               swfdec_loader_eof( &databuffer_loader->loader );
-     }
-}
-
-static void
-databuffer_loader_close( SwfdecLoader *loader )
-{
-     DataBufferLoader *databuffer_loader = (DataBufferLoader*) loader;
-
-     if (databuffer_loader->thread) {
-          direct_thread_cancel( databuffer_loader->thread );
-          direct_thread_join( databuffer_loader->thread );
-          direct_thread_destroy( databuffer_loader->thread );
-     }
-
-     /* Decrease the data buffer reference counter. */
-     if (databuffer_loader->buffer)
-          databuffer_loader->buffer->Release( databuffer_loader->buffer );
 }
 
 static void
 databuffer_loader_class_init( DataBufferLoaderClass *klass )
 {
-     SwfdecLoaderClass *loader_class = SWFDEC_LOADER_CLASS (klass);
-
-     loader_class->load  = databuffer_loader_load;
-     loader_class->close = databuffer_loader_close;
 }
 
 static void
@@ -538,7 +463,7 @@ SwfVideo( DirectThread *thread,
           swfdec_player_render( data->player, cairo, 0, 0, data->desc.width, data->desc.height );
           cairo_destroy( cairo );
 
-          data->video.dest->StretchBlit( data->video.dest, source, NULL, NULL );
+          data->video.dest->StretchBlit( data->video.dest, source, NULL, &data->video.rect );
 
           data->video.pos += next;
 
@@ -582,8 +507,8 @@ static void *
 SwfAudio( DirectThread *thread,
           void         *arg )
 {
-     gint16                              buf[1152*2];
      IDirectFBVideoProvider_Swfdec_data *data = arg;
+     gint16                              buf[1152 * 2];
 
      while (data->status != DVSTATE_STOP) {
           AudioLink *link;
@@ -697,9 +622,7 @@ IDirectFBVideoProvider_Swfdec_GetCapabilities( IDirectFBVideoProvider       *thi
      if (!ret_caps)
           return DFB_INVARG;
 
-     *ret_caps = DVCAPS_BASIC | DVCAPS_INTERACTIVE | DVCAPS_SPEED;
-     if (data->seekable)
-          *ret_caps |= DVCAPS_SEEK;
+     *ret_caps = DVCAPS_BASIC | DVCAPS_INTERACTIVE | DVCAPS_SCALE | DVCAPS_SEEK | DVCAPS_SPEED;
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.playback)
           *ret_caps |= DVCAPS_VOLUME;
@@ -844,7 +767,7 @@ IDirectFBVideoProvider_Swfdec_Stop( IDirectFBVideoProvider *thiz )
           direct_waitqueue_signal( &data->audio.cond );
           direct_thread_join( data->audio.thread );
           direct_thread_destroy( data->audio.thread );
-          data->video.thread = NULL;
+          data->audio.thread = NULL;
      }
 #endif
 
@@ -882,9 +805,6 @@ IDirectFBVideoProvider_Swfdec_SeekTo( IDirectFBVideoProvider *thiz,
      if (seconds < 0.0)
           return DFB_INVARG;
 
-     if (!data->seekable)
-          return DFB_UNSUPPORTED;
-
      msecs = seconds * 1000;
 
      direct_mutex_lock( &data->video.lock );
@@ -917,22 +837,6 @@ IDirectFBVideoProvider_Swfdec_GetPos( IDirectFBVideoProvider *thiz,
      *ret_seconds = data->video.pos / 1000.0;
 
      return DFB_OK;
-}
-
-static DFBResult
-IDirectFBVideoProvider_Swfdec_GetLength( IDirectFBVideoProvider *thiz,
-                                         double                 *ret_seconds )
-{
-     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_Swfdec )
-
-     D_DEBUG_AT( VideoProvider_Swfdec, "%s( %p )\n", __FUNCTION__, thiz );
-
-     if (!ret_seconds)
-          return DFB_INVARG;
-
-     *ret_seconds = 0.0;
-
-     return DFB_UNIMPLEMENTED;
 }
 
 static DFBResult
@@ -1313,10 +1217,6 @@ IDirectFBVideoProvider_Swfdec_SetDestination( IDirectFBVideoProvider *thiz,
 static DFBResult
 Probe( IDirectFBVideoProvider_ProbeContext *ctx )
 {
-     /* Check for valid filename. */
-     if (!ctx->filename)
-          return DFB_UNSUPPORTED;
-
      /* Check the magic. */
      if ((ctx->header[0] == 'F' || ctx->header[0] == 'C') && ctx->header[1] == 'W' && ctx->header[2] == 'S')
           return DFB_OK;
@@ -1330,59 +1230,39 @@ Construct( IDirectFBVideoProvider *thiz,
            CoreDFB                *core,
            IDirectFB              *idirectfb )
 {
-     DFBResult                 ret;
-     SwfdecURL                *url;
-     SwfdecLoader             *loader;
-     IDirectFBDataBuffer_data *buffer_data = buffer->priv;
+     DFBResult     ret;
+     SwfdecURL    *url;
+     SwfdecLoader *loader;
 
      DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBVideoProvider_Swfdec )
 
      D_DEBUG_AT( VideoProvider_Swfdec, "%s( %p )\n", __FUNCTION__, thiz );
 
-     data->ref = 1;
+     data->ref       = 1;
+     data->idirectfb = idirectfb;
 
      swfdec_init();
 
-     if (g_strstr_len( buffer_data->filename, -1, "://" )) {
-          url = swfdec_url_new( buffer_data->filename );
-     }
-     else {
-          char *uri;
-
-          if (*buffer_data->filename == '/')
-               uri = g_strconcat( "file://", buffer_data->filename, NULL );
-          else
-               uri = g_strconcat( "file://", g_get_current_dir(), "/", buffer_data->filename, NULL );
-
-          url = swfdec_url_new( uri );
-
-          g_free( uri );
-     }
+     url = swfdec_url_new( "://" );
 
      loader = g_object_new( databuffer_loader_get_type(), "url", url, NULL );
      if (!loader) {
-        D_ERROR( "VideoProvider/Swfdec: Failed to create loader!\n" );
-        swfdec_url_free( url );
-        DIRECT_DEALLOCATE_INTERFACE( thiz );
-        return DFB_FAILURE;
+          D_ERROR( "VideoProvider/Swfdec: Failed to create loader!\n" );
+          swfdec_url_free( url );
+          ret =  DFB_FAILURE;
+          goto error;
      }
 
      ((DataBufferLoader*) loader)->buffer = buffer;
 
      swfdec_url_free( url );
 
-     /* Increase the data buffer reference counter. */
-     buffer->AddRef( buffer );
-
-     data->seekable = (buffer->SeekTo( buffer, 0 ) == DFB_OK);
-
-     data->idirectfb = idirectfb;
-
      databuffer_loader_load( loader, NULL, SWFDEC_LOADER_REQUEST_DEFAULT, NULL, 0 );
 
      data->player = swfdec_player_new( NULL );
      if (!data->player) {
           D_ERROR( "VideoProvider/Swfdec: Failed to create player!\n" );
+          g_object_unref( loader );
           ret = DFB_FAILURE;
           goto error;
      }
@@ -1455,7 +1335,6 @@ Construct( IDirectFBVideoProvider *thiz,
      thiz->GetStatus             = IDirectFBVideoProvider_Swfdec_GetStatus;
      thiz->SeekTo                = IDirectFBVideoProvider_Swfdec_SeekTo;
      thiz->GetPos                = IDirectFBVideoProvider_Swfdec_GetPos;
-     thiz->GetLength             = IDirectFBVideoProvider_Swfdec_GetLength;
      thiz->SendEvent             = IDirectFBVideoProvider_Swfdec_SendEvent;
      thiz->SetSpeed              = IDirectFBVideoProvider_Swfdec_SetSpeed;
      thiz->GetSpeed              = IDirectFBVideoProvider_Swfdec_GetSpeed;
@@ -1486,10 +1365,6 @@ error:
 
      if (data->player)
           g_object_unref( data->player );
-
-     g_object_unref( loader );
-
-     buffer->Release( buffer );
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 

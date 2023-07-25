@@ -54,6 +54,7 @@ enable_imlib2       = get_option('imlib2')
 enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
 enable_jxl          = get_option('jxl')
+enable_libmpeg3     = get_option('libmpeg3')
 enable_lodepng      = get_option('lodepng')
 enable_mad          = get_option('mad')
 enable_mng          = get_option('mng')
@@ -160,6 +161,15 @@ if enable_jxl
   endif
 endif
 
+if enable_libmpeg3
+  libmpeg3_dep = dependency('libmpeg3', required: false)
+
+  if not libmpeg3_dep.found()
+    warning('Libmpeg3 video provider will not be built.')
+    enable_libmpeg3 = false
+  endif
+endif
+
 if enable_lodepng != 'false'
   if not fs.is_dir(enable_lodepng)
     warning('LodePNG image provider will not be built.')
@@ -191,7 +201,7 @@ if enable_nanosvg != 'false'
   nanosvg_dep = meson.get_compiler('c').find_library('m', required: false)
 
   if not fs.is_dir(enable_nanosvg) or not nanosvg_dep.found()
-    warning('NanoSVG provider will not be built.')
+    warning('NanoSVG image provider will not be built.')
     enable_nanosvg = 'false'
   else
     nanosvg_dep = declare_dependency(include_directories: include_directories(enable_nanosvg),
@@ -360,6 +370,7 @@ summary = [
   'Building Video Provider Modules:',
   '  FFmpeg      @0@'.format(enable_ffmpeg),
   '  GStreamer   @0@'.format(enable_gstreamer),
+  '  Libmpeg3    @0@'.format(enable_libmpeg3),
   '  MNG         @0@'.format(enable_mng),
   '  Swfdec      @0@'.format(enable_swfdec),
   '  Video4Linux @0@'.format(enable_v4l),

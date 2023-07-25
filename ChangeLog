@@ -1,3 +1,99 @@
+commit 0d1047d3573c1b3db5580ae008e68c01ad1405ae
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jul 25 06:27:23 2023 +0200
+
+    Add Libmpeg3 video provider
+
+commit c21e39a782cc8349eec420c407af5e01111f38fe
+Merge: a9a01b9 f972d79
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jul 4 18:45:15 2023 +0200
+
+    Merge pull request #54 from caramelli/master
+    
+    Add NanoSVG image provider
+
+commit f972d7924ce013890a6024bc088e23aa7e54920d
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jul 4 18:36:41 2023 +0200
+
+    Add NanoSVG image provider
+
+commit a9a01b97ef8217ec0e60b2a35c0b10a312e40fd6
+Merge: 103248a 559fbd6
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sat Jul 1 09:19:01 2023 +0200
+
+    Merge pull request #53 from caramelli/master
+    
+    Add Simple PNG image provider
+
+commit 559fbd6ddbb890148e54b9934f16d8eea8b79143
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Jul 1 09:09:23 2023 +0200
+
+    Add Simple PNG image provider
+
+commit 103248a02575fdf59655ea861a9608f7be806d0c
+Merge: 9e0ebfc 604341b
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Mon Jun 26 14:03:37 2023 +0200
+
+    Merge pull request #52 from caramelli/master
+    
+    Add AVIF image provider
+
+commit 604341b9857c05fa03c06e772fea56c2ea4bc8cc
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Jun 26 13:59:43 2023 +0200
+
+    Add AVIF image provider
+
+commit 9e0ebfc04881f27641d3cd3686883167d6b34524
+Merge: 08530e9 4f66230
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Jun 21 10:04:14 2023 +0200
+
+    Merge pull request #51 from caramelli/master
+    
+    Add JPEG XL image provider
+
+commit 4f66230d6f754279d425858b9b0667b6ccae5b86
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jun 21 09:59:16 2023 +0200
+
+    Add JPEG XL image provider
+
+commit 08530e928bd77475c8544c4d2ec3d632f1a3887b
+Merge: 1be3728 adbb6b1
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sun Jun 18 11:34:29 2023 +0200
+
+    Merge pull request #50 from caramelli/master
+    
+    NuttX Kconfig: DIRECTFB2_MEDIA -> GRAPHICS_DIRECTFB2_MEDIA
+
+commit adbb6b1e01030f84e5f5205a0b821b99384096c7
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun Jun 18 11:29:24 2023 +0200
+
+    NuttX Kconfig: DIRECTFB2_MEDIA -> GRAPHICS_DIRECTFB2_MEDIA
+
+commit 1be372857df6b7b0efbe92caeeeba08527e74f6b
+Merge: 441d861 5213471
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Sun Jun 4 08:16:15 2023 +0200
+
+    Merge pull request #49 from caramelli/master
+    
+    Add NuttX build support for BMP, GIF, LodePNG, Schrift and STB media providers
+
+commit 5213471fba3f11c0ca079280e17a3ff9b8e81291
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sun Jun 4 08:11:03 2023 +0200
+
+    Update ChangeLog
+
 commit 70775f8ffc189c9c1d72897e3c2359dc3776fbd2
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Sun Jun 4 08:10:51 2023 +0200

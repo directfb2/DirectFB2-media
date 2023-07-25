@@ -211,9 +211,6 @@ Probe( IDirectFBFont_ProbeContext *ctx )
      int            err;
      stbtt_fontinfo fontinfo;
 
-     if (!ctx->content)
-          return DFB_UNSUPPORTED;
-
      err = stbtt_InitFont( &fontinfo, ctx->content, 0 );
 
      return err ? DFB_OK : DFB_UNSUPPORTED;

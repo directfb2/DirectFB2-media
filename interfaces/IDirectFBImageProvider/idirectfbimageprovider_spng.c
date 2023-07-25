@@ -240,10 +240,8 @@ Probe( IDirectFBImageProvider_ProbeContext *ctx )
      spng_ctx         *spng = NULL;
 
      spng = spng_ctx_new( 0 );
-     if (!spng) {
-          D_ERROR( "ImageProvider/SPNG: Failed to create SPNG context!\n" );
-          return DFB_FAILURE;
-     }
+     if (!spng)
+          return DFB_UNSUPPORTED;
 
      spng_set_png_buffer( spng, ctx->header, sizeof(ctx->header) );
 
