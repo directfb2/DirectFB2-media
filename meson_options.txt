@@ -88,6 +88,11 @@ option('playlist',
        type: 'boolean',
        description: 'Playlist music provider')
 
+option('plm',
+       type: 'string',
+       value: 'pl_mpeg',
+       description: 'PL_MPEG video provider')
+
 option('png',
        type: 'boolean',
        description: 'PNG image provider')

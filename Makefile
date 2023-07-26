@@ -38,6 +38,11 @@ CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_NANOSVG_DIR)
 CSRCS += interfaces/IDirectFBImageProvider/idirectfbimageprovider_nanosvg.c
 endif
 
+ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG),y)
+CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG_DIR)
+CSRCS += interfaces/IDirectFBVideoProvider/idirectfbvideoprovider_plm.c
+endif
+
 ifeq ($(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT),y)
 CFLAGS += -I$(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR)
 CSRCS += $(shell echo $(CONFIG_GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT_DIR))/schrift.c
