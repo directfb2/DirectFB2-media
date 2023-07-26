@@ -86,6 +86,22 @@ if enable_mng
                                          '-Wl,--whole-archive -lidirectfbvideoprovider_mng -Wl,--no-whole-archive'])
 endif
 
+if enable_plm != 'false'
+  library('idirectfbvideoprovider_plm',
+          'idirectfbvideoprovider_plm.c',
+          include_directories: config_inc,
+          dependencies: [directfb_dep, plm_dep, fusionsound_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_plm',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-videoprovider_plm',
+                     description: 'PL_MPEG video provider',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                         '-Wl,--whole-archive -lidirectfbvideoprovider_plm -Wl,--no-whole-archive'])
+endif
+
 if enable_swfdec
   library('idirectfbvideoprovider_swfdec',
           'idirectfbvideoprovider_swfdec.c',

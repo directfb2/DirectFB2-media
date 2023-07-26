@@ -61,6 +61,7 @@ enable_mng          = get_option('mng')
 enable_nanosvg      = get_option('nanosvg')
 enable_openexr      = get_option('openexr')
 enable_playlist     = get_option('playlist')
+enable_plm          = get_option('plm')
 enable_png          = get_option('png')
 enable_sft          = get_option('sft')
 enable_spng         = get_option('spng')
@@ -218,6 +219,15 @@ if enable_openexr
   endif
 endif
 
+if enable_plm != 'false'
+  if not fs.is_dir(enable_plm)
+    warning('PL_MPEG video provider will not be built.')
+    enable_plm = 'false'
+  else
+    plm_dep = declare_dependency(include_directories: include_directories(enable_plm))
+  endif
+endif
+
 if enable_png
   png_dep = dependency('libpng', required: false)
 
@@ -372,6 +382,7 @@ summary = [
   '  GStreamer   @0@'.format(enable_gstreamer),
   '  Libmpeg3    @0@'.format(enable_libmpeg3),
   '  MNG         @0@'.format(enable_mng),
+  '  PL_MPEG     @0@'.format(enable_plm),
   '  Swfdec      @0@'.format(enable_swfdec),
   '  Video4Linux @0@'.format(enable_v4l),
   ''

@@ -52,6 +52,19 @@ config GRAPHICS_DIRECTFB2_MEDIA_NANOSVG_DIR
 
 endif # GRAPHICS_DIRECTFB2_MEDIA_NANOSVG
 
+config GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG
+	bool "PL_MPEG video provider"
+	depends on GRAPHICS_DIRECTFB2
+	default n
+
+if GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG
+
+config GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG_DIR
+	string "PL_MPEG source directory"
+	default "pl_mpeg"
+
+endif # GRAPHICS_DIRECTFB2_MEDIA_PL_MPEG
+
 config GRAPHICS_DIRECTFB2_MEDIA_SCHRIFT
 	bool "Schrift font provider"
 	depends on GRAPHICS_DIRECTFB2

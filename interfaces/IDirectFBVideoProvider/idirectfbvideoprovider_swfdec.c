@@ -622,7 +622,7 @@ IDirectFBVideoProvider_Swfdec_GetCapabilities( IDirectFBVideoProvider       *thi
      if (!ret_caps)
           return DFB_INVARG;
 
-     *ret_caps = DVCAPS_BASIC | DVCAPS_INTERACTIVE | DVCAPS_SCALE | DVCAPS_SEEK | DVCAPS_SPEED;
+     *ret_caps = DVCAPS_BASIC | DVCAPS_SEEK | DVCAPS_SCALE | DVCAPS_SPEED | DVCAPS_INTERACTIVE;
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.playback)
           *ret_caps |= DVCAPS_VOLUME;
