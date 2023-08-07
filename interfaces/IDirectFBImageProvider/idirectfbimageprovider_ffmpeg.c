@@ -43,6 +43,8 @@ typedef struct {
 
      IDirectFBDataBuffer   *buffer;
 
+     int                    peeked_bytes;
+
      unsigned char         *io_buf;
      AVIOContext           *io_ctx;
      AVFormatContext       *fmt_ctx;
@@ -62,18 +64,18 @@ av_read_callback( void    *opaque,
                   uint8_t *buf,
                   int      size )
 {
-     DFBResult            ret;
-     unsigned int         len    = 0;
-     IDirectFBDataBuffer *buffer = opaque;
+     unsigned int                        len    = 0;
+     IDirectFBImageProvider_FFmpeg_data *data   = opaque;
+     IDirectFBDataBuffer                *buffer = data->buffer;
 
      if (!buf || size < 0)
           return -1;
 
      if (size) {
           buffer->WaitForData( buffer, size );
-          ret = buffer->GetData( buffer, size, buf, &len );
-          if (ret && ret != DFB_EOF)
-               return -1;
+          buffer->PeekData( buffer, size, data->peeked_bytes, buf, &len );
+
+          data->peeked_bytes += len;
      }
 
      return len;
@@ -209,11 +211,13 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
           return DFB_OK;
 
      ret = data->buffer->SeekTo( data->buffer, 0 );
-     if (ret == DFB_OK)
-          ret = data->buffer->GetLength( data->buffer, &len );
-
-     if (ret != DFB_OK)
-          return DFB_FAILURE;
+     if (ret == DFB_OK) {
+          data->buffer->GetLength( data->buffer, &len );
+     }
+     else {
+          len = 128 * 1024;
+          data->buffer->WaitForDataWithTimeout( data->buffer, len, 0, 200 );
+     }
 
      buf = D_MALLOC( len );
      if (!buf)
@@ -336,7 +340,7 @@ Construct( IDirectFBImageProvider *thiz,
           goto error;
      }
 
-     data->io_ctx = avio_alloc_context( data->io_buf, len, 0, data->buffer, av_read_callback, NULL, NULL );
+     data->io_ctx = avio_alloc_context( data->io_buf, len, 0, data, av_read_callback, NULL, NULL );
      if (!data->io_ctx) {
           av_free( data->io_buf );
           ret = D_OOM();

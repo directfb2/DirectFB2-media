@@ -173,6 +173,10 @@ IDirectFBImageProvider_WebP_RenderTo( IDirectFBImageProvider *thiz,
      else
           clip = DFB_REGION_INIT_FROM_RECTANGLE( &rect );
 
+     ret = data->buffer->SeekTo( data->buffer, 0 );
+     if (ret)
+          return ret;
+
      ret = data->idirectfb->CreateSurface( data->idirectfb, &data->desc, &source );
      if (ret)
           return ret;
@@ -186,10 +190,6 @@ IDirectFBImageProvider_WebP_RenderTo( IDirectFBImageProvider *thiz,
      config.output.u.RGBA.stride      = pitch;
      config.output.u.RGBA.size        = pitch * data->desc.height;
      config.output.is_external_memory = 1;
-
-     ret = data->buffer->SeekTo( data->buffer, 0 );
-     if (ret)
-          return ret;
 
      status = VP8_STATUS_NOT_ENOUGH_DATA;
 
@@ -207,10 +207,12 @@ IDirectFBImageProvider_WebP_RenderTo( IDirectFBImageProvider *thiz,
 
      WebPFreeDecBuffer( &config.output );
 
-     if (ret || status != VP8_STATUS_OK)
-          return ret ?: DFB_FAILURE;
-
      source->Unlock( source );
+
+     if (ret || status != VP8_STATUS_OK) {
+          source->Release( source );
+          return ret ?: DFB_FAILURE;
+     }
 
      destination->GetClip( destination, &old_clip );
 

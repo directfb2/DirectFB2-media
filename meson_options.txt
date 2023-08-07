@@ -42,6 +42,10 @@ option('gstreamer',
        type: 'boolean',
        description: 'GStreamer video provider')
 
+option('heif',
+       type: 'boolean',
+       description: 'HEIF image provider')
+
 option('imlib2',
        type: 'boolean',
        description: 'Imlib2 image provider')
