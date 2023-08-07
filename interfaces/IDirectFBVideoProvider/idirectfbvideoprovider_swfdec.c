@@ -937,12 +937,12 @@ IDirectFBVideoProvider_Swfdec_SendEvent( IDirectFBVideoProvider *thiz,
                          break;
                     case DWET_BUTTONUP:
                          swfdec_player_mouse_release( data->player,
-                                                      event->window.x*x, event->window.y*y,
+                                                      event->window.x * x, event->window.y * y,
                                                       event->window.button + 1 );
                          break;
 
-                    case DWET_ENTER:
                     case DWET_MOTION:
+                    case DWET_ENTER:
                          swfdec_player_mouse_move( data->player, event->window.x * x, event->window.y * y );
                          break;
 

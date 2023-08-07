@@ -339,10 +339,7 @@ GStreamerVideo( DirectThread *self,
                 void         *arg )
 {
      DFBResult                              ret;
-     GstSample                             *sample;
-     GstBuffer                             *buffer;
      IDirectFBSurface_data                 *dst_data;
-     CoreSurfaceBufferLock                  lock;
      IDirectFBVideoProvider_GStreamer_data *data = arg;
 
      dst_data = data->video_dest->priv;
@@ -355,6 +352,10 @@ GStreamerVideo( DirectThread *self,
      dispatch_event( data, DVPET_STARTED );
 
      while (data->status != DVSTATE_STOP) {
+          CoreSurfaceBufferLock  lock;
+          GstSample             *sample;
+          GstBuffer             *buffer = NULL;
+
           sample = gst_app_sink_pull_sample( GST_APP_SINK( data->appsink_video) );
 
           if (sample)
@@ -967,6 +968,12 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
      if (!ctx->filename)
           return DFB_UNSUPPORTED;
 
+     if (ctx->filename && strrchr( ctx->filename, '.' ) &&
+         (strcasecmp( strrchr( ctx->filename, '.' ), ".dfvff" ) == 0 ||
+          strcasecmp( strrchr( ctx->filename, '.' ), ".mng"   ) == 0 ||
+          strcasecmp( strrchr( ctx->filename, '.' ), ".swf"   ) == 0))
+          return DFB_UNSUPPORTED;
+
      return DFB_OK;
 }
 
@@ -1010,7 +1017,7 @@ Construct( IDirectFBVideoProvider *thiz,
                g_error_free( err );
           }
           DIRECT_DEALLOCATE_INTERFACE( thiz );
-          return DFB_INIT;
+          return DFB_FAILURE;
      }
 
      data->pipeline = gst_pipeline_new( "uri-decode-pipeline" );

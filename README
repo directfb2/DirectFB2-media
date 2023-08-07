@@ -9,6 +9,7 @@ DirectFB2-media contains additional font/image/music/video providers for DirectF
   - FreeType2 font provider
   - GIF image provider
   - GStreamer video provider
+  - HEIF image provider
   - Imlib2 image provider
   - JasPer image provider
   - JPEG image provider

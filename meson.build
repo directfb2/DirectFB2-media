@@ -50,6 +50,7 @@ enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
 enable_gif          = get_option('gif')
 enable_gstreamer    = get_option('gstreamer')
+enable_heif         = get_option('heif')
 enable_imlib2       = get_option('imlib2')
 enable_jasper       = get_option('jasper')
 enable_jpeg         = get_option('jpeg')
@@ -123,6 +124,15 @@ if enable_gstreamer
   if not gstreamer_dep.found()
     warning('GStreamer video provider will not be built.')
     enable_gstreamer = false
+  endif
+endif
+
+if enable_heif
+  heif_dep = dependency('libheif', required: false)
+
+  if not heif_dep.found()
+    warning('HEIF image provider will not be built.')
+    enable_heif = false
   endif
 endif
 
@@ -362,6 +372,7 @@ summary = [
   '  BMP         @0@'.format(enable_bmp),
   '  FFmpeg      @0@'.format(enable_ffmpeg),
   '  GIF         @0@'.format(enable_gif),
+  '  HEIF        @0@'.format(enable_heif),
   '  Imlib2      @0@'.format(enable_imlib2),
   '  JasPer      @0@'.format(enable_jasper),
   '  JPEG        @0@'.format(enable_jpeg),

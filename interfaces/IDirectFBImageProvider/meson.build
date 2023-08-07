@@ -77,6 +77,22 @@ if enable_gif
                                          '-Wl,--whole-archive -lidirectfbimageprovider_gif -Wl,--no-whole-archive'])
 endif
 
+if enable_heif
+  library('idirectfbimageprovider_heif',
+          'idirectfbimageprovider_heif.c',
+          dependencies: [directfb_dep, heif_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_heif',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_heif',
+                     description: 'HEIF image provider',
+                     requires_private: 'libheif',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_heif -Wl,--no-whole-archive'])
+endif
+
 if enable_imlib2
   library('idirectfbimageprovider_imlib2',
           'idirectfbimageprovider_imlib2.c',

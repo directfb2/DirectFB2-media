@@ -16,12 +16,12 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include <avif/avif.h>
 #include <display/idirectfbsurface.h>
+#include <libheif/heif.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 
-D_DEBUG_DOMAIN( ImageProvider_AVIF, "ImageProvider/AVIF", "AVIF Image Provider" );
+D_DEBUG_DOMAIN( ImageProvider_HEIF, "ImageProvider/HEIF", "HEIF Image Provider" );
 
 static DFBResult Probe    ( IDirectFBImageProvider_ProbeContext *ctx );
 
@@ -32,7 +32,7 @@ static DFBResult Construct( IDirectFBImageProvider              *thiz,
 
 #include <direct/interface_implementation.h>
 
-DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, AVIF )
+DIRECT_INTERFACE_IMPLEMENTATION( IDirectFBImageProvider, HEIF )
 
 /**********************************************************************************************************************/
 
@@ -41,38 +41,41 @@ typedef struct {
 
      IDirectFB             *idirectfb;
 
-     avifDecoder           *dec;
-     avifRGBImage           rgb;
+     struct heif_context   *context;
+     struct heif_image     *image;
+     const uint8_t         *rgba;
+     int                    stride;
 
      DFBSurfaceDescription  desc;
 
      DIRenderCallback       render_callback;
      void                  *render_callback_context;
-} IDirectFBImageProvider_AVIF_data;
+} IDirectFBImageProvider_HEIF_data;
 
 /**********************************************************************************************************************/
 
 static void
-IDirectFBImageProvider_AVIF_Destruct( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_HEIF_Destruct( IDirectFBImageProvider *thiz )
 {
-     IDirectFBImageProvider_AVIF_data *data = thiz->priv;
+     IDirectFBImageProvider_HEIF_data *data = thiz->priv;
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
-     /* Deallocate image data. */
-     avifRGBImageFreePixels( &data->rgb );
+     heif_image_release( data->image );
 
-     avifDecoderDestroy( data->dec );
+     heif_context_free( data->context );
+
+     heif_deinit();
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 }
 
 static DirectResult
-IDirectFBImageProvider_AVIF_AddRef( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_HEIF_AddRef( IDirectFBImageProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref++;
 
@@ -80,25 +83,25 @@ IDirectFBImageProvider_AVIF_AddRef( IDirectFBImageProvider *thiz )
 }
 
 static DirectResult
-IDirectFBImageProvider_AVIF_Release( IDirectFBImageProvider *thiz )
+IDirectFBImageProvider_HEIF_Release( IDirectFBImageProvider *thiz )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (--data->ref == 0)
-          IDirectFBImageProvider_AVIF_Destruct( thiz );
+          IDirectFBImageProvider_HEIF_Destruct( thiz );
 
      return DFB_OK;
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_GetSurfaceDescription( IDirectFBImageProvider *thiz,
+IDirectFBImageProvider_HEIF_GetSurfaceDescription( IDirectFBImageProvider *thiz,
                                                    DFBSurfaceDescription  *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -109,12 +112,12 @@ IDirectFBImageProvider_AVIF_GetSurfaceDescription( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_GetImageDescription( IDirectFBImageProvider *thiz,
+IDirectFBImageProvider_HEIF_GetImageDescription( IDirectFBImageProvider *thiz,
                                                  DFBImageDescription    *ret_desc )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!ret_desc)
           return DFB_INVARG;
@@ -125,7 +128,7 @@ IDirectFBImageProvider_AVIF_GetImageDescription( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
+IDirectFBImageProvider_HEIF_RenderTo( IDirectFBImageProvider *thiz,
                                       IDirectFBSurface       *destination,
                                       const DFBRectangle     *dest_rect )
 {
@@ -137,9 +140,9 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
      DFBSurfaceDescription  desc;
      IDirectFBSurface      *source;
 
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      if (!destination)
           return DFB_INVARG;
@@ -169,8 +172,8 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
      desc = data->desc;
 
      desc.flags                 |= DSDESC_PREALLOCATED;
-     desc.preallocated[0].data   = data->rgb.pixels;
-     desc.preallocated[0].pitch  = data->rgb.rowBytes;
+     desc.preallocated[0].data   = (void*) data->rgba;
+     desc.preallocated[0].pitch  = data->stride;
 
      ret = data->idirectfb->CreateSurface( data->idirectfb, &desc, &source );
      if (ret)
@@ -198,13 +201,13 @@ IDirectFBImageProvider_AVIF_RenderTo( IDirectFBImageProvider *thiz,
 }
 
 static DFBResult
-IDirectFBImageProvider_AVIF_SetRenderCallback( IDirectFBImageProvider *thiz,
+IDirectFBImageProvider_HEIF_SetRenderCallback( IDirectFBImageProvider *thiz,
                                                DIRenderCallback        callback,
                                                void                   *ctx )
 {
-     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_AVIF )
+     DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->render_callback         = callback;
      data->render_callback_context = ctx;
@@ -218,7 +221,7 @@ static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
      /* Check the magic. */
-     if (!strncmp( (const char*) ctx->header + 4, "ftypavif", 8 ))
+     if (!strncmp( (const char*) ctx->header + 4, "ftyp", 4 ))
           return DFB_OK;
 
      return DFB_UNSUPPORTED;
@@ -231,29 +234,37 @@ Construct( IDirectFBImageProvider *thiz,
            IDirectFB              *idirectfb )
 {
      DFBResult                 ret;
-     avifResult                result;
-     uint8_t                  *chunk       = NULL;
+     struct heif_error         err;
+     struct heif_image_handle *image_handle;
+     void                     *chunk       = NULL;
      IDirectFBDataBuffer_data *buffer_data = buffer->priv;
 
-     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_AVIF )
+     DIRECT_ALLOCATE_INTERFACE_DATA( thiz, IDirectFBImageProvider_HEIF )
 
-     D_DEBUG_AT( ImageProvider_AVIF, "%s( %p )\n", __FUNCTION__, thiz );
+     D_DEBUG_AT( ImageProvider_HEIF, "%s( %p )\n", __FUNCTION__, thiz );
 
      data->ref       = 1;
      data->idirectfb = idirectfb;
 
-     data->dec = avifDecoderCreate();
-     if (!data->dec) {
-          D_ERROR( "ImageProvider/AVIF: Failed to create AVIF decoder!\n" );
+     err = heif_init( NULL );
+     if (err.code != heif_error_Ok) {
+          D_ERROR( "ImageProvider/HEIF: Initialization of the HEIF library failed: %s!\n", err.message );
+          DIRECT_DEALLOCATE_INTERFACE( thiz );
+          return DFB_FAILURE;
+     }
+
+     data->context = heif_context_alloc();
+     if (!data->context) {
+          D_ERROR( "ImageProvider/HEIF: Failed to create HEIF context!\n" );
           ret = DFB_FAILURE;
           goto error;
      }
 
      if (buffer_data->buffer) {
-          avifDecoderSetIOMemory( data->dec, buffer_data->buffer, buffer_data->length );
+          heif_context_read_from_memory_without_copy( data->context, buffer_data->buffer, buffer_data->length, NULL );
      }
      else if (buffer_data->filename) {
-          avifDecoderSetIOFile( data->dec, buffer_data->filename );
+          heif_context_read_from_file( data->context, buffer_data->filename, NULL );
      }
      else {
           unsigned int size = 0;
@@ -279,45 +290,41 @@ Construct( IDirectFBImageProvider *thiz,
                goto error;
           }
 
-          avifDecoderSetIOMemory( data->dec, chunk, size );
+          heif_context_read_from_memory_without_copy( data->context, chunk, size, NULL );
      }
 
-     result = avifDecoderParse( data->dec );
-     if (result != AVIF_RESULT_OK) {
-          D_ERROR( "ImageProvider/AVIF: Failed to parse image: %s!\n", avifResultToString( result ) );
+     err = heif_context_get_primary_image_handle( data->context, &image_handle );
+     if (err.code != heif_error_Ok) {
+          D_ERROR( "ImageProvider/HEIF: Failed to get handle to the primary image: %s!\n", err.message );
           ret = DFB_FAILURE;
           goto error;
      }
 
-     result = avifDecoderNextImage( data->dec );
-     if (result != AVIF_RESULT_OK) {
-          D_ERROR( "ImageProvider/AVIF: Error during decoding: %s!\n", avifResultToString( result ) );
+     err = heif_decode_image( image_handle, &data->image, heif_colorspace_RGB, heif_chroma_interleaved_RGBA, NULL );
+     if (err.code != heif_error_Ok) {
+          D_ERROR( "ImageProvider/HEIF: Error during decoding: %s!\n", err.message );
           ret = DFB_FAILURE;
           goto error;
      }
+
+     heif_image_handle_release( image_handle );
 
      if (chunk)
           D_FREE( chunk );
 
-     avifRGBImageSetDefaults( &data->rgb, data->dec->image );
-
-     /* Allocate image data. */
-     avifRGBImageAllocatePixels( &data->rgb );
-
-     /* Conversion from YUV. */
-     avifImageYUVToRGB( data->dec->image, &data->rgb );
+     data->rgba = heif_image_get_plane_readonly( data->image, heif_channel_interleaved, &data->stride );
 
      data->desc.flags       = DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-     data->desc.width       = data->dec->image->width;
-     data->desc.height      = data->dec->image->height;
+     data->desc.width       = heif_image_get_width( data->image, heif_channel_interleaved );
+     data->desc.height      = heif_image_get_height( data->image, heif_channel_interleaved );
      data->desc.pixelformat = DSPF_ABGR;
 
-     thiz->AddRef                = IDirectFBImageProvider_AVIF_AddRef;
-     thiz->Release               = IDirectFBImageProvider_AVIF_Release;
-     thiz->GetSurfaceDescription = IDirectFBImageProvider_AVIF_GetSurfaceDescription;
-     thiz->GetImageDescription   = IDirectFBImageProvider_AVIF_GetImageDescription;
-     thiz->RenderTo              = IDirectFBImageProvider_AVIF_RenderTo;
-     thiz->SetRenderCallback     = IDirectFBImageProvider_AVIF_SetRenderCallback;
+     thiz->AddRef                = IDirectFBImageProvider_HEIF_AddRef;
+     thiz->Release               = IDirectFBImageProvider_HEIF_Release;
+     thiz->GetSurfaceDescription = IDirectFBImageProvider_HEIF_GetSurfaceDescription;
+     thiz->GetImageDescription   = IDirectFBImageProvider_HEIF_GetImageDescription;
+     thiz->RenderTo              = IDirectFBImageProvider_HEIF_RenderTo;
+     thiz->SetRenderCallback     = IDirectFBImageProvider_HEIF_SetRenderCallback;
 
      return DFB_OK;
 
@@ -325,8 +332,10 @@ error:
      if (chunk)
           D_FREE( chunk );
 
-     if (data->dec)
-          avifDecoderDestroy( data->dec );
+     if (data->context)
+          heif_context_free( data->context );
+
+     heif_deinit();
 
      DIRECT_DEALLOCATE_INTERFACE( thiz );
 

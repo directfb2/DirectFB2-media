@@ -982,11 +982,6 @@ IDirectFBVideoProvider_FFmpeg_Stop( IDirectFBVideoProvider *thiz )
 
      data->video.pts = 0;
 
-     if (data->seekable) {
-          av_seek_frame( data->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD );
-          flush_packets( &data->video.queue );
-     }
-
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.thread) {
           direct_waitqueue_signal( &data->audio.cond );
@@ -997,6 +992,14 @@ IDirectFBVideoProvider_FFmpeg_Stop( IDirectFBVideoProvider *thiz )
 
      data->audio.pts = 0;
 #endif
+
+     if (data->seekable) {
+          av_seek_frame( data->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD );
+          flush_packets( &data->video.queue );
+#ifdef HAVE_FUSIONSOUND
+          flush_packets( &data->audio.queue );
+#endif
+     }
 
      dispatch_event( data, DVPET_STOPPED );
 
@@ -1406,6 +1409,7 @@ Probe( IDirectFBVideoProvider_ProbeContext *ctx )
                    !strcmp( fmt->name, "au"  ) ||
                    !strcmp( fmt->name, "mp2" ) ||
                    !strcmp( fmt->name, "mp3" ) ||
+                   !strcmp( fmt->name, "swf" ) ||
                    !strcmp( fmt->name, "wav" ))
                     return DFB_UNSUPPORTED;
           }
@@ -1459,7 +1463,7 @@ Construct( IDirectFBVideoProvider *thiz,
           fmt = av_probe_input_format( &pd, 1 );
           if (!fmt) {
                D_ERROR( "VideoProvider/FFmpeg: Failed to guess the file format!\n" );
-               ret = DFB_INIT;
+               ret = DFB_FAILURE;
                goto error;
           }
 

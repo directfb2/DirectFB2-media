@@ -410,6 +410,9 @@ IDirectFBVideoProvider_PLM_Stop( IDirectFBVideoProvider *thiz )
           data->thread = NULL;
      }
 
+     data->seeked    = true;
+     data->seek_time = 0;
+
      dispatch_event( data, DVPET_STOPPED );
 
      return DFB_OK;
