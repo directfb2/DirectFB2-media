@@ -1,3 +1,54 @@
+commit 293426856427742d4e82ae48a5d48b684f1dffc1
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 27 08:57:53 2024 +0100
+
+    VideoProvider/PLM: Add support for changing playback speed
+
+commit ec35e5b31949f73b2e1e649f68f290b0c57f4f01
+Merge: 9d55f15 e3ad32f
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Mon Aug 7 12:10:59 2023 +0200
+
+    Merge pull request #57 from caramelli/master
+    
+    Add HEIF image provider
+
+commit e3ad32f5fb30825163004b521c3e2c4fa2a8f62e
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Mon Aug 7 12:01:55 2023 +0200
+
+    Add HEIF image provider
+
+commit 9d55f156479ee6ea0ca2e45bc701f7e5c6743a4f
+Merge: 26dc10f 428151b
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Jul 26 11:04:29 2023 +0200
+
+    Merge pull request #56 from caramelli/master
+    
+    Add PL_MPEG video provider
+
+commit 428151b9fd6af81be567628614540e206f50fea0
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Jul 26 10:57:03 2023 +0200
+
+    Add PL_MPEG video provider
+
+commit 26dc10f9aa135962510df03e8baefb5a7e70783e
+Merge: c21e39a bc339fa
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Jul 25 06:35:18 2023 +0200
+
+    Merge pull request #55 from caramelli/master
+    
+    Add Libmpeg3 video provider
+
+commit bc339fa4fc62fd312058a690ee5c7ff65569b77f
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Jul 25 06:29:52 2023 +0200
+
+    Update ChangeLog
+
 commit 0d1047d3573c1b3db5580ae008e68c01ad1405ae
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Jul 25 06:27:23 2023 +0200
