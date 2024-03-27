@@ -59,6 +59,7 @@ typedef struct {
 
      double                     rate;
      DFBVideoProviderStatus     status;
+     double                     speed;
 
      DirectThread              *thread;
      DirectMutex                lock;
@@ -176,7 +177,7 @@ PLMDecode( DirectThread *thread,
                data->seeked = false;
           }
           else
-               plm_decode( data->plm, elapsed_time );
+               plm_decode( data->plm, elapsed_time * data->speed );
 
           if (plm_has_ended( data->plm )) {
                data->status = DVSTATE_FINISHED;
@@ -191,13 +192,18 @@ PLMDecode( DirectThread *thread,
           if (data->frame_callback)
                data->frame_callback( data->frame_callback_context );
 
-          delay = direct_clock_get_abs_micros() - current_time * 1000000;
-          if (delay > duration) {
-               direct_mutex_unlock( &data->lock );
-               continue;
+          if (!data->speed) {
+               direct_waitqueue_wait( &data->cond, &data->lock );
           }
+          else {
+               delay = direct_clock_get_abs_micros() - current_time * 1000000;
+               if (delay > duration) {
+                    direct_mutex_unlock( &data->lock );
+                    continue;
+               }
 
-          direct_waitqueue_wait_timeout( &data->cond, &data->lock, duration - delay );
+               direct_waitqueue_wait_timeout( &data->cond, &data->lock, duration - delay );
+          }
 
           direct_mutex_unlock( &data->lock );
      }
@@ -282,7 +288,7 @@ IDirectFBVideoProvider_PLM_GetCapabilities( IDirectFBVideoProvider       *thiz,
      if (!ret_caps)
           return DFB_INVARG;
 
-     *ret_caps = DVCAPS_BASIC | DVCAPS_SEEK | DVCAPS_SCALE;
+     *ret_caps = DVCAPS_BASIC | DVCAPS_SEEK | DVCAPS_SCALE | DVCAPS_SPEED;
 #ifdef HAVE_FUSIONSOUND
      if (data->audio_playback)
           *ret_caps |= DVCAPS_VOLUME;
@@ -501,6 +507,50 @@ IDirectFBVideoProvider_PLM_SetPlaybackFlags( IDirectFBVideoProvider        *thiz
           return DFB_UNSUPPORTED;
 
      plm_set_loop( data->plm, flags & DVPLAY_LOOPING );
+
+     return DFB_OK;
+}
+
+static DFBResult
+IDirectFBVideoProvider_PLM_SetSpeed( IDirectFBVideoProvider *thiz,
+                                     double                  multiplier )
+{
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_PLM )
+
+     D_DEBUG_AT( VideoProvider_PLM, "%s( %p )\n", __FUNCTION__, thiz );
+
+     if (multiplier < 0.0 || multiplier > 64.0)
+          return DFB_UNSUPPORTED;
+
+     if (multiplier == data->speed)
+          return DFB_OK;
+
+     direct_mutex_lock( &data->lock );
+
+     if (multiplier > data->speed && data->status != DVSTATE_FINISHED)
+          direct_waitqueue_signal( &data->cond );
+
+     data->speed = multiplier;
+
+     dispatch_event( data, DVPET_SPEEDCHANGE );
+
+     direct_mutex_unlock( &data->lock );
+
+     return DFB_OK;
+}
+
+static DFBResult
+IDirectFBVideoProvider_PLM_GetSpeed( IDirectFBVideoProvider *thiz,
+                                     double                 *ret_multiplier )
+{
+     DIRECT_INTERFACE_GET_DATA( IDirectFBVideoProvider_PLM )
+
+     D_DEBUG_AT( VideoProvider_PLM, "%s( %p )\n", __FUNCTION__, thiz );
+
+     if (!ret_multiplier)
+          return DFB_INVARG;
+
+     *ret_multiplier = data->speed;
 
      return DFB_OK;
 }
@@ -806,6 +856,7 @@ Construct( IDirectFBVideoProvider *thiz,
 #endif
 
      data->status = DVSTATE_STOP;
+     data->speed  = 1.0;
 
      data->events_mask = DVPET_ALL;
 
@@ -830,6 +881,8 @@ Construct( IDirectFBVideoProvider *thiz,
      thiz->GetPos                = IDirectFBVideoProvider_PLM_GetPos;
      thiz->GetLength             = IDirectFBVideoProvider_PLM_GetLength;
      thiz->SetPlaybackFlags      = IDirectFBVideoProvider_PLM_SetPlaybackFlags;
+     thiz->SetSpeed              = IDirectFBVideoProvider_PLM_SetSpeed;
+     thiz->GetSpeed              = IDirectFBVideoProvider_PLM_GetSpeed;
 #ifdef HAVE_FUSIONSOUND
      thiz->SetVolume             = IDirectFBVideoProvider_PLM_SetVolume;
      thiz->GetVolume             = IDirectFBVideoProvider_PLM_GetVolume;
