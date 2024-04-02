@@ -18,11 +18,11 @@
 
 #include <core/layers.h>
 #include <display/idirectfbsurface.h>
+#define X_DISPLAY_MISSING
+#include <Imlib2.h>
 #include <media/idirectfbdatabuffer.h>
 #include <media/idirectfbimageprovider.h>
 #include <misc/gfx_util.h>
-#define X_DISPLAY_MISSING
-#include <Imlib2.h>
 
 D_DEBUG_DOMAIN( ImageProvider_Imlib2, "ImageProvider/Imlib2", "Imlib2 Image Provider" );
 
@@ -93,7 +93,7 @@ IDirectFBImageProvider_Imlib2_Release( IDirectFBImageProvider *thiz )
 
 static DFBResult
 IDirectFBImageProvider_Imlib2_GetSurfaceDescription( IDirectFBImageProvider *thiz,
-                                                     DFBSurfaceDescription  *ret_desc)
+                                                     DFBSurfaceDescription  *ret_desc )
 {
      DIRECT_INTERFACE_GET_DATA( IDirectFBImageProvider_Imlib2 )
 

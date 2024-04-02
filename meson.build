@@ -44,10 +44,13 @@ config_inc = include_directories('.')
 
 fs = import('fs')
 
+sysroot = run_command(meson.get_compiler('c'), '--print-sysroot', check: false).stdout().strip()
+
 enable_avif         = get_option('avif')
 enable_bmp          = get_option('bmp')
 enable_ffmpeg       = get_option('ffmpeg')
 enable_ft2          = get_option('ft2')
+enable_gdkpixbuf    = get_option('gdkpixbuf')
 enable_gif          = get_option('gif')
 enable_gstreamer    = get_option('gstreamer')
 enable_heif         = get_option('heif')
@@ -118,6 +121,15 @@ if enable_ft2
   endforeach
 endif
 
+if enable_gdkpixbuf
+  gdkpixbuf_dep = dependency('gdk-pixbuf-2.0', required: false)
+
+  if not gdkpixbuf_dep.found()
+    warning('GdkPixbuf image provider will not be built.')
+    enable_gdkpixbuf = false
+  endif
+endif
+
 if enable_gstreamer
   gstreamer_dep = dependency('gstreamer-app-1.0', required: false)
 
@@ -183,6 +195,10 @@ endif
 
 if enable_lodepng != 'false'
   if not fs.is_dir(enable_lodepng)
+    enable_lodepng = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_lodepng)
+  endif
+
+  if not fs.is_dir(enable_lodepng)
     warning('LodePNG image provider will not be built.')
     enable_lodepng = 'false'
   else
@@ -211,6 +227,10 @@ endif
 if enable_nanosvg != 'false'
   nanosvg_dep = meson.get_compiler('c').find_library('m', required: false)
 
+  if not fs.is_dir(enable_nanosvg)
+    enable_nanosvg = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_nanosvg)
+  endif
+
   if not fs.is_dir(enable_nanosvg) or not nanosvg_dep.found()
     warning('NanoSVG image provider will not be built.')
     enable_nanosvg = 'false'
@@ -230,6 +250,10 @@ if enable_openexr
 endif
 
 if enable_plm != 'false'
+  if not fs.is_dir(enable_plm)
+    enable_plm = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_plm)
+  endif
+
   if not fs.is_dir(enable_plm)
     warning('PL_MPEG video provider will not be built.')
     enable_plm = 'false'
@@ -267,6 +291,10 @@ endif
 
 if enable_stb_image != 'false'
   if not fs.is_dir(enable_stb_image)
+    enable_stb_image = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_stb_image)
+  endif
+
+  if not fs.is_dir(enable_stb_image)
     warning('STB image provider will not be built.')
     enable_stb_image = 'false'
   else
@@ -276,6 +304,10 @@ endif
 
 if enable_stb_truetype != 'false'
   stb_truetype_dep = meson.get_compiler('c').find_library('m', required: false)
+
+  if not fs.is_dir(enable_stb_truetype)
+    enable_stb_truetype = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_stb_truetype)
+  endif
 
   if not fs.is_dir(enable_stb_truetype) or not stb_truetype_dep.found()
     warning('STB font provider will not be built.')
@@ -371,6 +403,7 @@ summary = [
   '  AVIF        @0@'.format(enable_avif),
   '  BMP         @0@'.format(enable_bmp),
   '  FFmpeg      @0@'.format(enable_ffmpeg),
+  '  GdkPixbuf   @0@'.format(enable_gdkpixbuf),
   '  GIF         @0@'.format(enable_gif),
   '  HEIF        @0@'.format(enable_heif),
   '  Imlib2      @0@'.format(enable_imlib2),
