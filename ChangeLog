@@ -1,3 +1,24 @@
+commit c3910f97a656b9528b9ffa03d99311820db154c9
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Apr 2 22:16:14 2024 +0200
+
+    Add GdkPixbuf image provider
+
+commit 25096b46c5cb7ae3a6ae5872c2f8eb115e957791
+Merge: ec35e5b 7248b82
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Wed Mar 27 09:03:32 2024 +0100
+
+    Merge pull request #58 from caramelli/master
+    
+    VideoProvider/PLM: Add support for changing playback speed
+
+commit 7248b825a84728fe3161c115113f232aa5518536
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Wed Mar 27 08:58:25 2024 +0100
+
+    Update ChangeLog
+
 commit 293426856427742d4e82ae48a5d48b684f1dffc1
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Wed Mar 27 08:57:53 2024 +0100

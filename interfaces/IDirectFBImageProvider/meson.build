@@ -62,6 +62,22 @@ if enable_ffmpeg
                                          '-Wl,--whole-archive -lidirectfbimageprovider_ffmpeg -Wl,--no-whole-archive'])
 endif
 
+if enable_gdkpixbuf
+  library('idirectfbimageprovider_gdkpixbuf',
+          'idirectfbimageprovider_gdkpixbuf.c',
+          dependencies: [directfb_dep, gdkpixbuf_dep],
+          install: true,
+          install_dir: join_paths(moduledir, 'interfaces/IDirectFBImageProvider'))
+
+  pkgconfig.generate(filebase: 'directfb-interface-imageprovider_gdkpixbuf',
+                     variables: 'moduledir=' + moduledir,
+                     name: 'DirectFB-interface-imageprovider_gdkpixbuf',
+                     description: 'GdkPixbuf image provider',
+                     requires_private: 'gdk-pixbuf-2.0',
+                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBImageProvider',
+                                         '-Wl,--whole-archive -lidirectfbimageprovider_gdkpixbuf -Wl,--no-whole-archive'])
+endif
+
 if enable_gif
   library('idirectfbimageprovider_gif',
           'idirectfbimageprovider_gif.c',
