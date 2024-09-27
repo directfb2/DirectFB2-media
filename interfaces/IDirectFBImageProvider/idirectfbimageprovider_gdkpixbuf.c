@@ -213,11 +213,31 @@ IDirectFBImageProvider_GdkPixbuf_SetRenderCallback( IDirectFBImageProvider *thiz
 static DFBResult
 Probe( IDirectFBImageProvider_ProbeContext *ctx )
 {
-     /* Check for valid filename. */
-     if (!ctx->filename)
-          return DFB_UNSUPPORTED;
+     char   *ext;
+     GSList *format;
+     GSList *formats = gdk_pixbuf_get_formats();
 
-     return DFB_OK;
+     /* Check for valid filename. */
+     if (!ctx->filename || !(ext = strrchr( ctx->filename, '.' )))
+          return DFB_UNSUPPORTED;
+     else
+          ext++;
+
+     for (format = formats; format; format = format->next) {
+          gchar **extension;
+          gchar **extensions = gdk_pixbuf_format_get_extensions( format->data );
+
+          for (extension = extensions; *extension; extension++) {
+               if (!strcasecmp( *extension, ext ))
+                    return DFB_OK;
+          }
+
+          g_strfreev( extensions );
+     }
+
+     g_slist_free( formats );
+
+     return DFB_UNSUPPORTED;
 }
 
 static DFBResult
