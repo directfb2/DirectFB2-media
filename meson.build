@@ -18,13 +18,29 @@ project('DirectFB2-media', 'c',
         version: '2.0.0',
         meson_version: '>= 0.57')
 
+if get_option('default_library') == 'both'
+  error('''Choose library type between 'shared' or 'static'.''')
+endif
+
 directfb_dep = dependency('directfb-internal')
+
+if run_command('pkg-config', '--print-requires-private', 'directfb', check: false).stdout().strip() != ''
+  if get_option('default_library') == 'shared'
+    error('''Building with 'shared' library type, but DirectFB was built with 'static' library type.''')
+  endif
+else
+  if get_option('default_library') == 'static'
+    error('''Building with 'static' library type, but DirectFB was built with 'shared' library type.''')
+  endif
+endif
 
 moduledir = directfb_dep.get_variable(pkgconfig: 'moduledir')
 
-config_h = configuration_data()
+cc = meson.get_compiler('c')
 
-config_h.set('WORDS_BIGENDIAN', host_machine.endian() == 'big', description: 'Byte ordering is bigendian.')
+config_conf = configuration_data()
+
+config_conf.set('WORDS_BIGENDIAN', host_machine.endian() == 'big', description: 'Byte ordering is bigendian.')
 
 enable_fusionsound = get_option('fusionsound')
 
@@ -32,19 +48,29 @@ fusionsound_dep = []
 if enable_fusionsound
   fusionsound_dep = dependency('fusionsound-internal', required: false)
   if fusionsound_dep.found()
-    config_h.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
+    if run_command('pkg-config', '--print-requires-private', 'fusionsound', check: false).stdout().strip() != ''
+      if get_option('default_library') == 'shared'
+        error('''Building with 'shared' library type, but FusionSound was built with 'static' library type.''')
+      endif
+    else
+      if get_option('default_library') == 'static'
+        error('''Building with 'static' library type, but FusionSound was built with 'shared' library type.''')
+      endif
+    endif
+
+    config_conf.set('HAVE_FUSIONSOUND', 1, description: 'Define to 1 if you are compiling FusionSound support.')
   else
     enable_fusionsound = false
   endif
 endif
 
-configure_file(configuration: config_h, output: 'config.h')
+configure_file(configuration: config_conf, output: 'config.h')
 
 config_inc = include_directories('.')
 
 fs = import('fs')
 
-sysroot = run_command(meson.get_compiler('c'), '--print-sysroot', check: false).stdout().strip()
+sysroot = run_command(cc, '--print-sysroot', check: false).stdout().strip()
 
 enable_avif         = get_option('avif')
 enable_bmp          = get_option('bmp')
@@ -110,7 +136,7 @@ endif
 
 if enable_ft2
   ft2_dep = [dependency('freetype2', required: false),
-             meson.get_compiler('c').find_library('m', required: false)]
+             cc.find_library('m', required: false)]
 
   foreach dep : ft2_dep
     if not dep.found()
@@ -195,7 +221,7 @@ endif
 
 if enable_lodepng != 'false'
   if not fs.is_dir(enable_lodepng)
-    enable_lodepng = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_lodepng)
+    enable_lodepng = sysroot != '' ? sysroot : '/' / 'include' / enable_lodepng
   endif
 
   if not fs.is_dir(enable_lodepng)
@@ -225,10 +251,10 @@ if enable_mng
 endif
 
 if enable_nanosvg != 'false'
-  nanosvg_dep = meson.get_compiler('c').find_library('m', required: false)
+  nanosvg_dep = cc.find_library('m', required: false)
 
   if not fs.is_dir(enable_nanosvg)
-    enable_nanosvg = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_nanosvg)
+    enable_nanosvg = sysroot != '' ? sysroot : '/' / 'include' / enable_nanosvg
   endif
 
   if not fs.is_dir(enable_nanosvg) or not nanosvg_dep.found()
@@ -251,7 +277,7 @@ endif
 
 if enable_plm != 'false'
   if not fs.is_dir(enable_plm)
-    enable_plm = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_plm)
+    enable_plm = sysroot != '' ? sysroot : '/' / 'include' / enable_plm
   endif
 
   if not fs.is_dir(enable_plm)
@@ -291,7 +317,7 @@ endif
 
 if enable_stb_image != 'false'
   if not fs.is_dir(enable_stb_image)
-    enable_stb_image = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_stb_image)
+    enable_stb_image = sysroot != '' ? sysroot : '/' / 'include' / enable_stb_image
   endif
 
   if not fs.is_dir(enable_stb_image)
@@ -303,10 +329,10 @@ if enable_stb_image != 'false'
 endif
 
 if enable_stb_truetype != 'false'
-  stb_truetype_dep = meson.get_compiler('c').find_library('m', required: false)
+  stb_truetype_dep = cc.find_library('m', required: false)
 
   if not fs.is_dir(enable_stb_truetype)
-    enable_stb_truetype = join_paths(sysroot != '' ? sysroot : '/', 'include', enable_stb_truetype)
+    enable_stb_truetype = sysroot != '' ? sysroot : '/' / 'include' / enable_stb_truetype
   endif
 
   if not fs.is_dir(enable_stb_truetype) or not stb_truetype_dep.found()
@@ -356,7 +382,7 @@ endif
 
 if enable_vorbis and enable_fusionsound
   vorbis_dep = [dependency('vorbisfile', required: false),
-                meson.get_compiler('c').find_library('m', required: false)]
+                cc.find_library('m', required: false)]
 
   foreach dep : vorbis_dep
     if not dep.found()
@@ -385,7 +411,9 @@ if enable_fusionsound
   subdir('interfaces/IFusionSoundMusicProvider')
 endif
 
-if get_option('default_library') != 'shared'
+# generate the .pc files of the static modules
+
+if get_option('default_library') == 'static'
   meson.add_install_script('dfb-update-pkgconfig', skip_if_destdir: true)
   if enable_fusionsound
     meson.add_install_script('fs-update-pkgconfig', skip_if_destdir: true)

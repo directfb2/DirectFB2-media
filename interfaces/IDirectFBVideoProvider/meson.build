@@ -25,15 +25,17 @@ if enable_ffmpeg
           include_directories: config_inc,
           dependencies: [directfb_dep, ffmpeg_dep, fusionsound_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_ffmpeg',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_ffmpeg',
-                     description: 'FFmpeg video provider',
-                     requires_private: ['libavformat', 'libswscale', fusionsound],
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_ffmpeg -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_ffmpeg',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_ffmpeg',
+                       description: 'FFmpeg video provider',
+                       requires_private: ['libavformat', 'libswscale', fusionsound],
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_ffmpeg -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_gstreamer
@@ -42,15 +44,17 @@ if enable_gstreamer
           include_directories: config_inc,
           dependencies: [directfb_dep, gstreamer_dep, fusionsound_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_gstreamer',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_gstreamer',
-                     description: 'GStreamer video provider',
-                     requires_private: ['gstreamer-app-1.0', fusionsound],
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_gstreamer -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_gstreamer',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_gstreamer',
+                       description: 'GStreamer video provider',
+                       requires_private: ['gstreamer-app-1.0', fusionsound],
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_gstreamer -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_libmpeg3
@@ -59,15 +63,17 @@ if enable_libmpeg3
           include_directories: config_inc,
           dependencies: [directfb_dep, libmpeg3_dep, fusionsound_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_libmpeg3',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_libmpeg3',
-                     description: 'Libmpeg3 video provider',
-                     requires_private: 'libmpeg3',
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_libmpeg3 -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_libmpeg3',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_libmpeg3',
+                       description: 'Libmpeg3 video provider',
+                       requires_private: 'libmpeg3',
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_libmpeg3 -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_mng
@@ -75,15 +81,17 @@ if enable_mng
           'idirectfbvideoprovider_mng.c',
           dependencies: [directfb_dep, mng_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_mng',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_mng',
-                     description: 'MNG video provider',
-                     requires_private: 'libmng',
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_mng -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_mng',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_mng',
+                       description: 'MNG video provider',
+                       requires_private: 'libmng',
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_mng -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_plm != 'false'
@@ -92,14 +100,16 @@ if enable_plm != 'false'
           include_directories: config_inc,
           dependencies: [directfb_dep, plm_dep, fusionsound_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_plm',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_plm',
-                     description: 'PL_MPEG video provider',
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_plm -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_plm',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_plm',
+                       description: 'PL_MPEG video provider',
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_plm -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_swfdec
@@ -108,15 +118,17 @@ if enable_swfdec
           include_directories: config_inc,
           dependencies: [directfb_dep, swfdec_dep, fusionsound_dep],
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_swfdec',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_swfdec',
-                     description: 'Swfdec video provider',
-                     requires_private: ['swfdec-0.5', fusionsound],
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_swfdec -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_swfdec',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_swfdec',
+                       description: 'Swfdec video provider',
+                       requires_private: ['swfdec-0.5', fusionsound],
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_swfdec -Wl,--no-whole-archive'])
+  endif
 endif
 
 if enable_v4l
@@ -124,12 +136,14 @@ if enable_v4l
           'idirectfbvideoprovider_v4l.c',
           dependencies: directfb_dep,
           install: true,
-          install_dir: join_paths(moduledir, 'interfaces/IDirectFBVideoProvider'))
+          install_dir: moduledir / 'interfaces/IDirectFBVideoProvider')
 
-  pkgconfig.generate(filebase: 'directfb-interface-videoprovider_v4l',
-                     variables: 'moduledir=' + moduledir,
-                     name: 'DirectFB-interface-videoprovider_v4l',
-                     description: 'Video4Linux video provider',
-                     libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
-                                         '-Wl,--whole-archive -lidirectfbvideoprovider_v4l -Wl,--no-whole-archive'])
+  if get_option('default_library') == 'static'
+    pkgconfig.generate(filebase: 'directfb-interface-videoprovider_v4l',
+                       variables: 'moduledir=' + moduledir,
+                       name: 'DirectFB-interface-videoprovider_v4l',
+                       description: 'Video4Linux video provider',
+                       libraries_private: ['-L${moduledir}/interfaces/IDirectFBVideoProvider',
+                                           '-Wl,--whole-archive -lidirectfbvideoprovider_v4l -Wl,--no-whole-archive'])
+  endif
 endif
