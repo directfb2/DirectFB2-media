@@ -241,7 +241,7 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
 
      if (!got_frame) {
           D_ERROR( "ImageProvider/FFmpeg: Couldn't decode frame!\n" );
-          av_free( frame );
+          av_frame_free( &frame );
           D_FREE( buf );
           return DFB_FAILURE;
      }
@@ -257,7 +257,7 @@ IDirectFBImageProvider_FFmpeg_RenderTo( IDirectFBImageProvider *thiz,
 
      sws_freeContext( sws_ctx );
 
-     av_free( frame );
+     av_frame_free( &frame );
 
      D_FREE( buf );
 

@@ -25,6 +25,7 @@
 #include <fusionsound.h>
 #endif
 #include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
 #ifdef HAVE_FUSIONSOUND
 #include <libswresample/swresample.h>
 #endif
@@ -251,7 +252,6 @@ put_packet( PacketQueue *queue,
           return false;
      }
 
-     av_dup_packet( pkt );
      p->packet = *pkt;
 
      direct_mutex_lock( &queue->lock );
@@ -289,7 +289,7 @@ flush_packets( PacketQueue *queue )
      for (p = (PacketLink*) queue->list; p;) {
           PacketLink *next = (PacketLink*) p->link.next;
           direct_list_remove( &queue->list, &p->link );
-          av_free_packet( &p->packet );
+          av_packet_unref( &p->packet );
           D_FREE( p );
           p = next;
      }
@@ -479,7 +479,7 @@ FFmpegInput( DirectThread *thread,
           }
 #endif
           else {
-               av_free_packet( &pkt );
+               av_packet_unref( &pkt );
           }
 
           direct_mutex_unlock( &data->input.lock );
@@ -503,7 +503,7 @@ FFmpegVideo( DirectThread *thread,
      long                                duration;
      DFBSurfacePixelFormat               pixelformat;
      enum AVPixelFormat                  pix_fmt;
-     AVPicture                           picture;
+     AVFrame                             frame;
      int                                 pitch;
      void                               *ptr;
      struct SwsContext                  *sws_ctx;
@@ -543,7 +543,8 @@ FFmpegVideo( DirectThread *thread,
                                SWS_FAST_BILINEAR, NULL, NULL, NULL );
 
      data->video.dest->Lock( data->video.dest, DSLF_WRITE, &ptr, &pitch );
-     avpicture_fill( &picture, ptr, pix_fmt, data->video.codec_ctx->width, data->video.codec_ctx->height );
+     av_image_fill_arrays(frame.data, frame.linesize, ptr, pix_fmt,
+                          data->video.codec_ctx->width, data->video.codec_ctx->height, 1);
      data->video.dest->Unlock( data->video.dest );
 
      duration = 1000000 / data->rate;
@@ -573,7 +574,7 @@ FFmpegVideo( DirectThread *thread,
 
           if (got_frame && !drop) {
                sws_scale( sws_ctx, (void*) data->video.frame->data, data->video.frame->linesize,
-                          0, data->video.codec_ctx->height, picture.data, picture.linesize );
+                          0, data->video.codec_ctx->height, frame.data, frame.linesize );
 
                if (data->frame_callback)
                     data->frame_callback( data->frame_callback_context );
@@ -584,7 +585,7 @@ FFmpegVideo( DirectThread *thread,
           else
                data->video.pts += duration;
 
-          av_free_packet( &pkt );
+          av_packet_unref( &pkt );
 
           if (!data->speed) {
                direct_waitqueue_wait( &data->video.cond, &data->video.lock );
@@ -696,7 +697,7 @@ FFmpegAudio( DirectThread *thread,
                data->audio.pts += (s64) length * AV_TIME_BASE / data->audio.codec_ctx->sample_rate;
           }
 
-          av_free_packet( &pkt );
+          av_packet_unref( &pkt );
 
           direct_mutex_unlock( &data->audio.lock );
 
@@ -731,7 +732,7 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
 
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.frame)
-          av_free( data->audio.frame );
+          av_frame_free( &data->audio.frame );
 
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
@@ -751,7 +752,7 @@ IDirectFBVideoProvider_FFmpeg_Destruct( IDirectFBVideoProvider *thiz )
      direct_mutex_deinit( &data->audio.lock );
 #endif
 
-     av_free( data->video.frame );
+     av_frame_free( &data->video.frame );
 
      avcodec_close( data->video.codec_ctx );
 
@@ -1707,7 +1708,7 @@ Construct( IDirectFBVideoProvider *thiz,
 error:
 #ifdef HAVE_FUSIONSOUND
      if (data->audio.frame)
-          av_free( data->audio.frame );
+          av_frame_free( &data->audio.frame );
 
      if (data->audio.playback)
           data->audio.playback->Release( data->audio.playback );
@@ -1723,7 +1724,7 @@ error:
 #endif
 
      if (data->video.frame)
-          av_free( data->video.frame );
+          av_frame_free( &data->video.frame );
 
      if (data->video.codec_ctx)
           avcodec_close( data->video.codec_ctx );

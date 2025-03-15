@@ -1,3 +1,39 @@
+commit 3659c803eaa5ecafcd308db44054ee7272cc3355
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Sat Mar 15 18:06:35 2025 +0100
+
+    Fix deprecated function warnings with FFmpeg providers
+
+commit 8e3ca47d2415f49f6bd0b8a16649f158b72858a5
+Merge: 8f8cb02 d4e1410
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Fri Sep 27 10:14:58 2024 +0200
+
+    Merge pull request #60 from caramelli/master
+    
+    ImageProvider/GdkPixbuf: Check if file extension is supported in Probe()
+
+commit d4e14108b9410391efefd6970d92f9bd32c48956
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Fri Sep 27 10:12:12 2024 +0200
+
+    ImageProvider/GdkPixbuf: Check if file extension is supported in Probe()
+
+commit 8f8cb02a3d67a3eb9726ca2927061e2697b7f2de
+Merge: 25096b4 366c8df
+Author: DirectFB2 <80045286+directfb2@users.noreply.github.com>
+Date:   Tue Apr 2 22:57:54 2024 +0200
+
+    Merge pull request #59 from caramelli/master
+    
+    Add GdkPixbuf image provider
+
+commit 366c8df160bf92689b2e0fd403c3d8be8cc2372b
+Author: Nicolas Caramelli <caramelli.devel@gmail.com>
+Date:   Tue Apr 2 22:16:30 2024 +0200
+
+    Update ChangeLog
+
 commit c3910f97a656b9528b9ffa03d99311820db154c9
 Author: Nicolas Caramelli <caramelli.devel@gmail.com>
 Date:   Tue Apr 2 22:16:14 2024 +0200

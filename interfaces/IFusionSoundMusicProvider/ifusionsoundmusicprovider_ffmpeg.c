@@ -220,7 +220,7 @@ FFmpegStream( DirectThread *thread,
           if (data->seeked) {
                data->dest.stream->Flush( data->dest.stream );
                if (pkt_size > 0) {
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
                     pkt_size = 0;
                }
                avcodec_flush_buffers( data->codec_ctx );
@@ -241,7 +241,7 @@ FFmpegStream( DirectThread *thread,
                }
 
                if (pkt.stream_index != data->st->index) {
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
                     direct_mutex_unlock( &data->lock );
                     continue;
                }
@@ -258,13 +258,13 @@ FFmpegStream( DirectThread *thread,
           decoded = avcodec_decode_audio4( data->codec_ctx, data->frame, &got_frame, &pkt );
 
           if (decoded < 0) {
-               av_free_packet( &pkt );
+               av_packet_unref( &pkt );
                pkt_size = 0;
           }
           else {
                pkt_size -= decoded;
                if (pkt_size <= 0)
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
 
                length = data->frame->nb_samples;
                data->pts += (s64) length * AV_TIME_BASE / data->samplerate;
@@ -283,7 +283,7 @@ FFmpegStream( DirectThread *thread,
      }
 
      if (pkt_size > 0)
-          av_free_packet( &pkt );
+          av_packet_unref( &pkt );
 
      swr_free( &swr_ctx );
 
@@ -323,7 +323,7 @@ FFmpegBuffer( DirectThread *thread,
 
           if (data->seeked) {
                if (pkt_size > 0) {
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
                     pkt_size = 0;
                }
                avcodec_flush_buffers( data->codec_ctx );
@@ -348,7 +348,7 @@ FFmpegBuffer( DirectThread *thread,
                }
 
                if (pkt.stream_index != data->st->index) {
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
                     direct_mutex_unlock( &data->lock );
                     continue;
                }
@@ -365,13 +365,13 @@ FFmpegBuffer( DirectThread *thread,
           decoded = avcodec_decode_audio4( data->codec_ctx, data->frame, &got_frame, &pkt );
 
           if (decoded < 0) {
-               av_free_packet( &pkt );
+               av_packet_unref( &pkt );
                pkt_size = 0;
           }
           else {
                pkt_size -= decoded;
                if (pkt_size <= 0)
-                    av_free_packet( &pkt );
+                    av_packet_unref( &pkt );
 
                length = data->frame->nb_samples;
                data->pts += (s64) length * AV_TIME_BASE / data->samplerate;
@@ -418,7 +418,7 @@ FFmpegBuffer( DirectThread *thread,
      }
 
      if (pkt_size > 0)
-          av_free_packet( &pkt );
+          av_packet_unref( &pkt );
 
      swr_free( &swr_ctx );
 
