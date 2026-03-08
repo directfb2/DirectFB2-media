@@ -208,10 +208,9 @@ IDirectFBFont_STB_Release( IDirectFBFont *thiz )
 static DFBResult
 Probe( IDirectFBFont_ProbeContext *ctx )
 {
-     int            err;
-     stbtt_fontinfo fontinfo;
+     int err;
 
-     err = stbtt_InitFont( &fontinfo, ctx->content, 0 );
+     err = stbtt__isfont( ctx->content );
 
      return err ? DFB_OK : DFB_UNSUPPORTED;
 }
